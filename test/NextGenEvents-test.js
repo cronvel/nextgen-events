@@ -336,6 +336,38 @@ describe( "Basic synchronous event-emitting (node-compatible)" , function() {
 		expect( throwed ).to.be( 2 ) ;
 	} ) ;
 	
+	it( "NextGenEvents.listenerCount() should count listeners for an event" , function() {
+		
+		var bus = Object.create( NextGenEvents.prototype ) ;
+		
+		var onFoo1 ;
+		
+		onFoo1 = function() {} ;
+		
+		bus.on( 'foo' , onFoo1 ) ;
+		expect( NextGenEvents.listenerCount( bus , 'foo' ) ).to.be( 1 ) ;
+		expect( NextGenEvents.listenerCount( bus , 'bar' ) ).to.be( 0 ) ;
+		
+		bus.on( 'foo' , onFoo1 ) ;
+		bus.on( 'foo' , onFoo1 ) ;
+		
+		expect( NextGenEvents.listenerCount( bus , 'foo' ) ).to.be( 3 ) ;
+		expect( NextGenEvents.listenerCount( bus , 'bar' ) ).to.be( 0 ) ;
+		
+		bus.removeListener( 'foo' , onFoo1 ) ;
+		
+		expect( NextGenEvents.listenerCount( bus , 'foo' ) ).to.be( 0 ) ;
+		expect( NextGenEvents.listenerCount( bus , 'bar' ) ).to.be( 0 ) ;
+		
+		bus.once( 'foo' , onFoo1 ) ;
+		expect( NextGenEvents.listenerCount( bus , 'foo' ) ).to.be( 1 ) ;
+		expect( NextGenEvents.listenerCount( bus , 'bar' ) ).to.be( 0 ) ;
+		
+		bus.emit( 'foo' ) ;
+		expect( NextGenEvents.listenerCount( bus , 'foo' ) ).to.be( 0 ) ;
+		expect( NextGenEvents.listenerCount( bus , 'bar' ) ).to.be( 0 ) ;
+		
+	} ) ;
 } ) ;
 
 
@@ -385,7 +417,7 @@ describe( "Basic synchronous event-emitting (NOT compatible with node)" , functi
 			expect( listeners.length ).to.be( 1 ) ;
 			expect( typeof listeners[ 0 ] ).to.be( 'object' ) ;
 			
-			switch ( stats.count[ 'new1' ] )
+			switch ( stats.count.new1 )
 			{
 				case 1 :
 					expect( listeners[ 0 ].event ).to.be( 'foo' ) ;
@@ -418,7 +450,7 @@ describe( "Basic synchronous event-emitting (NOT compatible with node)" , functi
 			expect( listeners.length ).to.be( 1 ) ;
 			expect( typeof listeners[ 0 ] ).to.be( 'object' ) ;
 			
-			switch ( stats.count[ 'new2' ] )
+			switch ( stats.count.new2 )
 			{
 				case 1 :
 					expect( listeners[ 0 ].event ).to.be( 'bar' ) ;
@@ -450,7 +482,7 @@ describe( "Basic synchronous event-emitting (NOT compatible with node)" , functi
 		
 		bus.on( 'removeListener' , genericListener.bind( undefined , 'rm1' , stats , function( listeners ) {
 			
-			switch ( stats.count[ 'rm1' ] )
+			switch ( stats.count.rm1 )
 			{
 				case 1 :
 					expect( listeners.length ).to.be( 1 ) ;
@@ -539,6 +571,53 @@ describe( "Basic synchronous event-emitting (NOT compatible with node)" , functi
 		// 'removeListener' listener are not fired: they are already deleted
 		expect( stats.count ).to.eql( { rm1: 4 , foo: 1 } ) ;
 		expect( stats.orders ).to.eql( [ 'rm1' , 'rm1' , 'foo' , 'rm1' , 'rm1' ] ) ;
+	} ) ;
+	
+	it( ".listeners() should return all the listeners for an event" , function() {
+		
+		var bus = Object.create( NextGenEvents.prototype ) ;
+		
+		var listeners , onFoo1 ;
+		
+		onFoo1 = function() {} ;
+		
+		bus.on( 'foo' , onFoo1 ) ;
+		listeners = bus.listeners( 'foo' ) ;
+		expect( listeners.length ).to.be( 1 ) ;
+		expect( listeners[ 0 ].id ).to.be( onFoo1 ) ;
+		expect( listeners[ 0 ].fn ).to.be( onFoo1 ) ;
+		expect( listeners[ 0 ].event ).to.be( 'foo' ) ;
+		expect( bus.listeners( 'bar' ).length ).to.be( 0 ) ;
+		
+		bus.on( 'foo' , onFoo1 ) ;
+		bus.on( 'foo' , onFoo1 ) ;
+		
+		listeners = bus.listeners( 'foo' ) ;
+		expect( listeners.length ).to.be( 3 ) ;
+		expect( listeners[ 1 ].id ).to.be( onFoo1 ) ;
+		expect( listeners[ 1 ].fn ).to.be( onFoo1 ) ;
+		expect( listeners[ 1 ].event ).to.be( 'foo' ) ;
+		expect( listeners[ 2 ].id ).to.be( onFoo1 ) ;
+		expect( listeners[ 2 ].fn ).to.be( onFoo1 ) ;
+		expect( listeners[ 2 ].event ).to.be( 'foo' ) ;
+		expect( bus.listeners( 'bar' ).length ).to.be( 0 ) ;
+		
+		bus.removeListener( 'foo' , onFoo1 ) ;
+		expect( bus.listeners( 'foo' ).length ).to.be( 0 ) ;
+		expect( bus.listeners( 'bar' ).length ).to.be( 0 ) ;
+		
+		bus.once( 'foo' , onFoo1 ) ;
+		listeners = bus.listeners( 'foo' ) ;
+		expect( listeners.length ).to.be( 1 ) ;
+		expect( listeners[ 0 ].id ).to.be( onFoo1 ) ;
+		expect( listeners[ 0 ].fn ).to.be( onFoo1 ) ;
+		expect( listeners[ 0 ].event ).to.be( 'foo' ) ;
+		expect( bus.listeners( 'bar' ).length ).to.be( 0 ) ;
+		
+		bus.emit( 'foo' ) ;
+		listeners = bus.listeners( 'foo' ) ;
+		expect( bus.listeners( 'foo' ).length ).to.be( 0 ) ;
+		expect( bus.listeners( 'bar' ).length ).to.be( 0 ) ;
 	} ) ;
 } ) ;
 
