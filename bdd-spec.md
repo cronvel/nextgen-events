@@ -1,15 +1,3 @@
-
-
-# NextGen Events
-
-Next generation of events handling for node.js
-
-**Early alpha, not ready for the show.**
-
-
-
-
-
 # TOC
    - [Basic synchronous event-emitting (node-compatible)](#basic-synchronous-event-emitting-node-compatible)
    - [Basic synchronous event-emitting (NOT compatible with node)](#basic-synchronous-event-emitting-not-compatible-with-node)
