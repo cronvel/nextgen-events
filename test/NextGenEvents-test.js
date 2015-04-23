@@ -37,6 +37,30 @@ var expect = require( 'expect.js' ) ;
 
 
 
+			/* Helpers */
+
+
+
+var genericListener = function( tag , stats , fn ) {
+	
+	//console.log( 'Listener #' + tag + ' received an event with arguments: ' , arguments ) ;
+	
+	if ( ! stats.count[ tag ] ) { stats.count[ tag ] = 1 ; }
+	else { stats.count[ tag ] ++ ; }
+	
+	stats.orders.push( tag ) ;
+	
+	if ( fn ) { fn.apply( undefined , Array.prototype.slice.call( arguments , 3 ) ) ; }
+} ;
+
+
+
+
+
+			/* Tests */
+
+
+
 describe( "Basic synchronous event-emitting (node-compatible)" , function() {
 	
 	//var NextGenEvents = require( 'events' ).EventEmitter ;
@@ -63,6 +87,23 @@ describe( "Basic synchronous event-emitting (node-compatible)" , function() {
 		bus.on( 'hello' , function() { triggered ++ ; } ) ;
 		
 		bus.emit( 'hello' ) ;
+		
+		expect( triggered ).to.be( 1 ) ;
+	} ) ;
+	
+	it( "should emit with argument" , function() {
+		
+		var bus = Object.create( NextGenEvents.prototype ) ;
+		
+		var triggered = 0 ;
+		
+		bus.on( 'hello' , function( arg1 , arg2 ) {
+			triggered ++ ;
+			expect( arg1 ).to.be( 'world' ) ;
+			expect( arg2 ).to.be( '!' ) ;
+		} ) ;
+		
+		bus.emit( 'hello' , 'world' , '!' ) ;
 		
 		expect( triggered ).to.be( 1 ) ;
 	} ) ;
@@ -295,9 +336,6 @@ describe( "Basic synchronous event-emitting (node-compatible)" , function() {
 		expect( throwed ).to.be( 2 ) ;
 	} ) ;
 	
-	
-	it( "should trigger 'newListener' event accordingly" ) ;
-	it( "should trigger 'removeListener' event accordingly" ) ;
 } ) ;
 
 
@@ -333,6 +371,174 @@ describe( "Basic synchronous event-emitting (NOT compatible with node)" , functi
 		bus.removeListener( 'bar' , onBar2 ) ;
 		bus.emit( 'bar' ) ;
 		expect( triggered ).to.eql( { foo1: 1 , bar1: 2 , bar2: 3 } ) ;
+	} ) ;
+	
+	it( "should emit 'newListener' every time a new listener is added, with an array of listener object" , function() {
+		
+		var bus = Object.create( NextGenEvents.prototype ) ;
+		
+		var stats = { count: {} , orders: [] } ;
+		
+		
+		bus.on( 'newListener' , genericListener.bind( undefined , 'new1' , stats , function( listeners ) {
+			
+			expect( listeners.length ).to.be( 1 ) ;
+			expect( typeof listeners[ 0 ] ).to.be( 'object' ) ;
+			
+			switch ( stats.count[ 'new1' ] )
+			{
+				case 1 :
+					expect( listeners[ 0 ].event ).to.be( 'foo' ) ;
+					break ;
+				case 2 :
+					expect( listeners[ 0 ].event ).to.be( 'newListener' ) ;
+					break ;
+				case 3 :
+					expect( listeners[ 0 ].event ).to.be( 'bar' ) ;
+					break ;
+				default :
+					expect().fail() ;
+			}
+		} ) ) ;
+		
+		expect( stats.count ).to.eql( {} ) ;
+		
+		
+		bus.on( 'foo' , genericListener.bind( undefined , 'foo' , stats , undefined ) ) ;
+		expect( stats.count ).to.eql( { new1: 1 } ) ;
+		expect( stats.orders ).to.eql( [ 'new1' ] ) ;
+		
+		bus.emit( 'foo' ) ;
+		expect( stats.count ).to.eql( { new1: 1 , foo: 1 } ) ;
+		expect( stats.orders ).to.eql( [ 'new1' , 'foo' ] ) ;
+		
+		
+		bus.on( 'newListener' , genericListener.bind( undefined , 'new2' , stats , function( listeners ) {
+			
+			expect( listeners.length ).to.be( 1 ) ;
+			expect( typeof listeners[ 0 ] ).to.be( 'object' ) ;
+			
+			switch ( stats.count[ 'new2' ] )
+			{
+				case 1 :
+					expect( listeners[ 0 ].event ).to.be( 'bar' ) ;
+					break ;
+				default :
+					expect().fail() ;
+			}
+		} ) ) ;
+		
+		expect( stats.count ).to.eql( { new1: 2 , foo: 1 } ) ;
+		expect( stats.orders ).to.eql( [ 'new1' , 'foo' , 'new1' ] ) ;
+		
+		
+		bus.once( 'bar' , genericListener.bind( undefined , 'bar' , stats , undefined ) ) ;
+		expect( stats.count ).to.eql( { new1: 3 , new2: 1 , foo: 1 } ) ;
+		expect( stats.orders ).to.eql( [ 'new1' , 'foo' , 'new1' , 'new1' , 'new2' ] ) ;
+		
+		bus.emit( 'bar' ) ;
+		expect( stats.count ).to.eql( { new1: 3 , new2: 1 , foo: 1 , bar: 1 } ) ;
+		expect( stats.orders ).to.eql( [ 'new1' , 'foo' , 'new1' , 'new1' , 'new2' , 'bar' ] ) ;
+	} ) ;
+	
+	it( "should emit 'removeListener' every time a new listener is removed (one time listener count as well once triggered), with an array of listener object" , function() {
+		
+		var bus = Object.create( NextGenEvents.prototype ) ;
+		
+		var stats = { count: {} , orders: [] } ;
+		
+		
+		bus.on( 'removeListener' , genericListener.bind( undefined , 'rm1' , stats , function( listeners ) {
+			
+			switch ( stats.count[ 'rm1' ] )
+			{
+				case 1 :
+					expect( listeners.length ).to.be( 1 ) ;
+					expect( typeof listeners[ 0 ] ).to.be( 'object' ) ;
+					expect( listeners[ 0 ].event ).to.be( 'foo' ) ;
+					expect( listeners[ 0 ].id ).to.be( onFoo ) ;
+					break ;
+				case 2 :
+					expect( listeners.length ).to.be( 3 ) ;
+					expect( typeof listeners[ 0 ] ).to.be( 'object' ) ;
+					expect( typeof listeners[ 1 ] ).to.be( 'object' ) ;
+					expect( typeof listeners[ 2 ] ).to.be( 'object' ) ;
+					expect( listeners[ 0 ].event ).to.be( 'foo' ) ;
+					expect( listeners[ 0 ].id ).to.be( onFoo ) ;
+					expect( listeners[ 1 ].event ).to.be( 'foo' ) ;
+					expect( listeners[ 1 ].id ).to.be( onFoo ) ;
+					expect( listeners[ 2 ].event ).to.be( 'foo' ) ;
+					expect( listeners[ 2 ].id ).to.be( onFoo ) ;
+					break ;
+				case 3 :
+					expect( listeners.length ).to.be( 1 ) ;
+					expect( typeof listeners[ 0 ] ).to.be( 'object' ) ;
+					expect( listeners[ 0 ].event ).to.be( 'foo' ) ;
+					expect( listeners[ 0 ].id ).to.be( onFoo ) ;
+					break ;
+				case 4 :
+					expect( listeners.length ).to.be( 2 ) ;
+					expect( typeof listeners[ 0 ] ).to.be( 'object' ) ;
+					expect( typeof listeners[ 1 ] ).to.be( 'object' ) ;
+					expect( listeners[ 0 ].event ).to.be( 'bar' ) ;
+					expect( listeners[ 0 ].id ).to.be( onBar1 ) ;
+					expect( listeners[ 1 ].event ).to.be( 'bar' ) ;
+					expect( listeners[ 1 ].id ).to.be( onBar2 ) ;
+					break ;
+				default :
+					expect().fail() ;
+			}
+		} ) ) ;
+		
+		expect( stats.count ).to.eql( {} ) ;
+		
+		
+		var onFoo = genericListener.bind( undefined , 'foo' , stats , undefined ) ;
+		var onBar1 = genericListener.bind( undefined , 'bar1' , stats , undefined ) ;
+		var onBar2 = genericListener.bind( undefined , 'bar2' , stats , undefined ) ;
+		
+		bus.on( 'foo' , onFoo ) ;
+		expect( stats.count ).to.eql( {} ) ;
+		expect( stats.orders ).to.eql( [] ) ;
+		
+		bus.off( 'foo' , onFoo ) ;
+		expect( stats.count ).to.eql( { rm1: 1 } ) ;
+		expect( stats.orders ).to.eql( [ 'rm1' ] ) ;
+		
+		bus.on( 'foo' , onFoo ) ;
+		bus.on( 'foo' , onFoo ) ;
+		bus.on( 'foo' , onFoo ) ;
+		expect( stats.count ).to.eql( { rm1: 1 } ) ;
+		expect( stats.orders ).to.eql( [ 'rm1' ] ) ;
+		
+		bus.off( 'foo' , onFoo ) ;
+		expect( stats.count ).to.eql( { rm1: 2 } ) ;
+		expect( stats.orders ).to.eql( [ 'rm1' , 'rm1' ] ) ;
+		
+		bus.once( 'foo' , onFoo ) ;
+		expect( stats.count ).to.eql( { rm1: 2 } ) ;
+		expect( stats.orders ).to.eql( [ 'rm1' , 'rm1' ] ) ;
+		
+		bus.emit( 'foo' , onFoo ) ;
+		expect( stats.count ).to.eql( { rm1: 3 , foo: 1 } ) ;
+		expect( stats.orders ).to.eql( [ 'rm1' , 'rm1' , 'foo' , 'rm1' ] ) ;
+		
+		bus.on( 'foo' , onFoo ) ;
+		bus.on( 'bar' , onBar1 ) ;
+		bus.on( 'bar' , onBar2 ) ;
+		bus.removeAllListeners( 'bar' ) ;
+		
+		expect( stats.count ).to.eql( { rm1: 4 , foo: 1 } ) ;
+		expect( stats.orders ).to.eql( [ 'rm1' , 'rm1' , 'foo' , 'rm1' , 'rm1' ] ) ;
+		
+		bus.on( 'foo' , onFoo ) ;
+		bus.on( 'bar' , onBar1 ) ;
+		bus.on( 'bar' , onBar2 ) ;
+		bus.removeAllListeners() ;
+		
+		// 'removeListener' listener are not fired: they are already deleted
+		expect( stats.count ).to.eql( { rm1: 4 , foo: 1 } ) ;
+		expect( stats.orders ).to.eql( [ 'rm1' , 'rm1' , 'foo' , 'rm1' , 'rm1' ] ) ;
 	} ) ;
 } ) ;
 
