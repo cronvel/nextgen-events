@@ -622,3 +622,11 @@ describe( "Basic synchronous event-emitting (NOT compatible with node)" , functi
 } ) ;
 
 
+
+describe( "Next Gen features" , function() {
+	
+	//it( "" , function() {} ) ;
+} ) ;
+
+
+
