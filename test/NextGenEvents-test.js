@@ -55,6 +55,44 @@ var genericListener = function( tag , stats , fn ) {
 
 
 
+function asyncEventTest( emitterNice , emitNice , listenerNice , contextNice , finish )
+{
+	var order = [] ;
+	var emitter = new NextGenEvents() ;
+	
+	if ( emitterNice !== undefined ) { emitter.setNice( emitterNice ) ; }
+	
+	if ( contextNice !== undefined ) { emitter.addListenerContext( 'context' , { nice: contextNice } ) ; }
+	
+	var listener = {
+		context: 'context' ,
+		fn: function() {
+			order.push( 'listener' ) ;
+		}
+	} ;
+	
+	if ( listenerNice ) { listener.nice = listenerNice ; }
+	
+	emitter.on( 'event' , listener ) ;
+	
+	if ( emitNice ) { emitter.emit( emitNice , 'event' ) ; }
+	else { emitter.emit( 'event' ) ; }
+	
+	process.nextTick( function() { order.push( 'nextTick' ) ; } ) ;
+	setImmediate( function() { order.push( 'setImmediate' ) ; } ) ;
+	setTimeout( function() { order.push( 'setTimeout5' ) ; } , 5 ) ;
+	setTimeout( function() { order.push( 'setTimeout20' ) ; } , 20 ) ;
+	
+	// Finish
+	setTimeout( function() {
+		finish( order ) ;
+	} , 40 ) ;
+	
+	order.push( 'flow' ) ;
+}
+
+
+
 
 
 			/* Tests */
@@ -618,6 +656,86 @@ describe( "Basic synchronous event-emitting (NOT compatible with node)" , functi
 		listeners = bus.listeners( 'foo' ) ;
 		expect( bus.listeners( 'foo' ).length ).to.be( 0 ) ;
 		expect( bus.listeners( 'bar' ).length ).to.be( 0 ) ;
+	} ) ;
+} ) ;
+
+
+
+describe( "Next Gen feature: async emitting" , function() {
+	
+	it( "should emit synchronously, with a synchronous flow (nice = NextGenEvents.SYNC)" , function( done ) {
+		asyncEventTest( NextGenEvents.SYNC , undefined , undefined , undefined , function( order ) {
+			expect( order ).to.eql( [ 'listener' , 'flow' , 'nextTick' , 'setImmediate' , 'setTimeout5' , 'setTimeout20' ] ) ;
+			done() ;
+		} ) ;
+	} ) ;
+	
+	it( "should emit asynchronously, with an asynchronous flow, as fast as possible (nice = NextGenEvents.NEXT_TICK)" , function( done ) {
+		asyncEventTest( NextGenEvents.NEXT_TICK , undefined , undefined , undefined , function( order ) {
+			expect( order ).to.eql( [ 'flow' , 'listener' , 'nextTick' , 'setImmediate' , 'setTimeout5' , 'setTimeout20' ] ) ;
+			done() ;
+		} ) ;
+	} ) ;
+	
+	it( "should emit asynchronously, with an asynchronous flow, almost as fast as possible (nice = NextGenEvents.IMMEDIATE)" , function( done ) {
+		asyncEventTest( NextGenEvents.IMMEDIATE , undefined , undefined , undefined , function( order ) {
+			expect( order ).to.eql( [ 'flow' , 'nextTick' , 'listener' , 'setImmediate' , 'setTimeout5' , 'setTimeout20' ] ) ;
+			done() ;
+		} ) ;
+	} ) ;
+	
+	it( "should emit asynchronously, with an asynchronous flow, with minimal delay (nice = NextGenEvents.TIMEOUT)" , function( done ) {
+		asyncEventTest( NextGenEvents.TIMEOUT , undefined , undefined , undefined , function( order ) {
+			try {
+				expect( order ).to.eql( [ 'flow' , 'nextTick' , 'setImmediate' , 'listener' , 'setTimeout5' , 'setTimeout20' ] ) ;
+			}
+			catch( error ) {
+				// Sometime setImmediate() is unpredictable and is slower than setTimeout(fn,0)
+				// It is a bug of V8, not a bug of the async lib
+				expect( order ).to.eql( [ 'flow' , 'nextTick' , 'listener' , 'setImmediate' , 'setTimeout5' , 'setTimeout20' ] ) ;
+			}
+			done() ;
+		} ) ;
+	} ) ;
+	
+	it( "should emit asynchronously, with an asynchronous flow, with a 10ms delay (nice = 1 -> setTimeout 10ms)" , function( done ) {
+		asyncEventTest( 1 , undefined , undefined , undefined , function( order ) {
+			expect( order ).to.eql( [ 'flow' , 'nextTick' , 'setImmediate' , 'setTimeout5' , 'listener' , 'setTimeout20' ] ) ;
+			done() ;
+		} ) ;
+	} ) ;
+	
+	it( "should emit asynchronously, with an asynchronous flow, with a 30ms delay (nice = 3 -> setTimeout 30ms)" , function( done ) {
+		asyncEventTest( 3 , undefined , undefined , undefined , function( order ) {
+			expect( order ).to.eql( [ 'flow' , 'nextTick' , 'setImmediate' , 'setTimeout5' , 'setTimeout20' , 'listener' ] ) ;
+			done() ;
+		} ) ;
+	} ) ;
+	
+	it( ".emit( nice , event , ... ) should overide emitter's nice value" , function( done ) {
+		asyncEventTest( undefined , 1 , undefined , undefined , function( order ) {
+			expect( order ).to.eql( [ 'flow' , 'nextTick' , 'setImmediate' , 'setTimeout5' , 'listener' , 'setTimeout20' ] ) ;
+			asyncEventTest( NextGenEvents.SYNC , 1 , undefined , undefined , function( order ) {
+				expect( order ).to.eql( [ 'flow' , 'nextTick' , 'setImmediate' , 'setTimeout5' , 'listener' , 'setTimeout20' ] ) ;
+				asyncEventTest( 10 , 1 , undefined , undefined , function( order ) {
+					expect( order ).to.eql( [ 'flow' , 'nextTick' , 'setImmediate' , 'setTimeout5' , 'listener' , 'setTimeout20' ] ) ;
+					done() ;
+				} ) ;
+			} ) ;
+		} ) ;
+	} ) ;
+	
+	it( "should use the highest nice value between the context's nice, the listener's nice and the emitter's nice" , function( done ) {
+		asyncEventTest( undefined , 1 , NextGenEvents.SYNC , NextGenEvents.SYNC , function( order ) {
+			expect( order ).to.eql( [ 'flow' , 'nextTick' , 'setImmediate' , 'setTimeout5' , 'listener' , 'setTimeout20' ] ) ;
+			asyncEventTest( undefined , NextGenEvents.SYNC , 1 , NextGenEvents.SYNC , function( order ) {
+				expect( order ).to.eql( [ 'flow' , 'nextTick' , 'setImmediate' , 'setTimeout5' , 'listener' , 'setTimeout20' ] ) ;
+				asyncEventTest( undefined , NextGenEvents.SYNC , NextGenEvents.SYNC , 1 , function( order ) {
+					expect( order ).to.eql( [ 'flow' , 'nextTick' , 'setImmediate' , 'setTimeout5' , 'listener' , 'setTimeout20' ] ) ;
+					done() ;
+				} ) ;
+			} ) ;
+		} ) ;
 	} ) ;
 } ) ;
 

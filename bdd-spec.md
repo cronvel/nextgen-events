@@ -1,6 +1,7 @@
 # TOC
    - [Basic synchronous event-emitting (node-compatible)](#basic-synchronous-event-emitting-node-compatible)
    - [Basic synchronous event-emitting (NOT compatible with node)](#basic-synchronous-event-emitting-not-compatible-with-node)
+   - [Next Gen feature: async emitting](#next-gen-feature-async-emitting)
    - [Next Gen feature: contexts](#next-gen-feature-contexts)
 <a name=""></a>
  
@@ -569,6 +570,99 @@ bus.emit( 'foo' ) ;
 listeners = bus.listeners( 'foo' ) ;
 expect( bus.listeners( 'foo' ).length ).to.be( 0 ) ;
 expect( bus.listeners( 'bar' ).length ).to.be( 0 ) ;
+```
+
+<a name="next-gen-feature-async-emitting"></a>
+# Next Gen feature: async emitting
+should emit synchronously, with a synchronous flow (nice = NextGenEvents.SYNC).
+
+```js
+asyncEventTest( NextGenEvents.SYNC , undefined , undefined , undefined , function( order ) {
+	expect( order ).to.eql( [ 'listener' , 'flow' , 'nextTick' , 'setImmediate' , 'setTimeout5' , 'setTimeout20' ] ) ;
+	done() ;
+} ) ;
+```
+
+should emit asynchronously, with an asynchronous flow, as fast as possible (nice = NextGenEvents.NEXT_TICK).
+
+```js
+asyncEventTest( NextGenEvents.NEXT_TICK , undefined , undefined , undefined , function( order ) {
+	expect( order ).to.eql( [ 'flow' , 'listener' , 'nextTick' , 'setImmediate' , 'setTimeout5' , 'setTimeout20' ] ) ;
+	done() ;
+} ) ;
+```
+
+should emit asynchronously, with an asynchronous flow, almost as fast as possible (nice = NextGenEvents.IMMEDIATE).
+
+```js
+asyncEventTest( NextGenEvents.IMMEDIATE , undefined , undefined , undefined , function( order ) {
+	expect( order ).to.eql( [ 'flow' , 'nextTick' , 'listener' , 'setImmediate' , 'setTimeout5' , 'setTimeout20' ] ) ;
+	done() ;
+} ) ;
+```
+
+should emit asynchronously, with an asynchronous flow, with minimal delay (nice = NextGenEvents.TIMEOUT).
+
+```js
+asyncEventTest( NextGenEvents.TIMEOUT , undefined , undefined , undefined , function( order ) {
+	try {
+		expect( order ).to.eql( [ 'flow' , 'nextTick' , 'setImmediate' , 'listener' , 'setTimeout5' , 'setTimeout20' ] ) ;
+	}
+	catch( error ) {
+		// Sometime setImmediate() is unpredictable and is slower than setTimeout(fn,0)
+		// It is a bug of V8, not a bug of the async lib
+		expect( order ).to.eql( [ 'flow' , 'nextTick' , 'listener' , 'setImmediate' , 'setTimeout5' , 'setTimeout20' ] ) ;
+	}
+	done() ;
+} ) ;
+```
+
+should emit asynchronously, with an asynchronous flow, with a 10ms delay (nice = 1 -> setTimeout 10ms).
+
+```js
+asyncEventTest( 1 , undefined , undefined , undefined , function( order ) {
+	expect( order ).to.eql( [ 'flow' , 'nextTick' , 'setImmediate' , 'setTimeout5' , 'listener' , 'setTimeout20' ] ) ;
+	done() ;
+} ) ;
+```
+
+should emit asynchronously, with an asynchronous flow, with a 30ms delay (nice = 3 -> setTimeout 30ms).
+
+```js
+asyncEventTest( 3 , undefined , undefined , undefined , function( order ) {
+	expect( order ).to.eql( [ 'flow' , 'nextTick' , 'setImmediate' , 'setTimeout5' , 'setTimeout20' , 'listener' ] ) ;
+	done() ;
+} ) ;
+```
+
+.emit( nice , event , ... ) should overide emitter's nice value.
+
+```js
+asyncEventTest( undefined , 1 , undefined , undefined , function( order ) {
+	expect( order ).to.eql( [ 'flow' , 'nextTick' , 'setImmediate' , 'setTimeout5' , 'listener' , 'setTimeout20' ] ) ;
+	asyncEventTest( NextGenEvents.SYNC , 1 , undefined , undefined , function( order ) {
+		expect( order ).to.eql( [ 'flow' , 'nextTick' , 'setImmediate' , 'setTimeout5' , 'listener' , 'setTimeout20' ] ) ;
+		asyncEventTest( 10 , 1 , undefined , undefined , function( order ) {
+			expect( order ).to.eql( [ 'flow' , 'nextTick' , 'setImmediate' , 'setTimeout5' , 'listener' , 'setTimeout20' ] ) ;
+			done() ;
+		} ) ;
+	} ) ;
+} ) ;
+```
+
+should use the highest nice value between the context's nice, the listener's nice and the emitter's nice.
+
+```js
+asyncEventTest( undefined , 1 , NextGenEvents.SYNC , NextGenEvents.SYNC , function( order ) {
+	expect( order ).to.eql( [ 'flow' , 'nextTick' , 'setImmediate' , 'setTimeout5' , 'listener' , 'setTimeout20' ] ) ;
+	asyncEventTest( undefined , NextGenEvents.SYNC , 1 , NextGenEvents.SYNC , function( order ) {
+		expect( order ).to.eql( [ 'flow' , 'nextTick' , 'setImmediate' , 'setTimeout5' , 'listener' , 'setTimeout20' ] ) ;
+		asyncEventTest( undefined , NextGenEvents.SYNC , NextGenEvents.SYNC , 1 , function( order ) {
+			expect( order ).to.eql( [ 'flow' , 'nextTick' , 'setImmediate' , 'setTimeout5' , 'listener' , 'setTimeout20' ] ) ;
+			done() ;
+		} ) ;
+	} ) ;
+} ) ;
 ```
 
 <a name="next-gen-feature-contexts"></a>
