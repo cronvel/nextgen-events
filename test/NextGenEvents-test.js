@@ -479,6 +479,10 @@ describe( "Basic synchronous event-emitting (NOT compatible with node)" , functi
 		
 		var stats = { count: {} , orders: [] } ;
 		
+		var onFoo = genericListener.bind( undefined , 'foo' , stats , undefined ) ;
+		var onBar1 = genericListener.bind( undefined , 'bar1' , stats , undefined ) ;
+		var onBar2 = genericListener.bind( undefined , 'bar2' , stats , undefined ) ;
+		
 		
 		bus.on( 'removeListener' , genericListener.bind( undefined , 'rm1' , stats , function( listeners ) {
 			
@@ -524,10 +528,6 @@ describe( "Basic synchronous event-emitting (NOT compatible with node)" , functi
 		
 		expect( stats.count ).to.eql( {} ) ;
 		
-		
-		var onFoo = genericListener.bind( undefined , 'foo' , stats , undefined ) ;
-		var onBar1 = genericListener.bind( undefined , 'bar1' , stats , undefined ) ;
-		var onBar2 = genericListener.bind( undefined , 'bar2' , stats , undefined ) ;
 		
 		bus.on( 'foo' , onFoo ) ;
 		expect( stats.count ).to.eql( {} ) ;
@@ -623,9 +623,112 @@ describe( "Basic synchronous event-emitting (NOT compatible with node)" , functi
 
 
 
-describe( "Next Gen features" , function() {
+describe( "Next Gen feature: contexts" , function() {
 	
-	//it( "" , function() {} ) ;
+	it( "when a listener is tied to a context, it should stop receiving events if the context is disabled (implicit context declaration)" , function() {
+		
+		var bus = Object.create( NextGenEvents.prototype ) ;
+		
+		var triggered = 0 ;
+		
+		bus.on( 'foo' , {
+			context: 'bar' ,
+			fn: function() { triggered ++ ; }
+		} ) ;
+		
+		bus.emit( 'foo' ) ;
+		expect( triggered ).to.be( 1 ) ;
+		
+		bus.disableListenerContext( 'bar' ) ;
+		bus.emit( 'foo' ) ;
+		bus.emit( 'foo' ) ;
+		bus.emit( 'foo' ) ;
+		expect( triggered ).to.be( 1 ) ;
+		
+		bus.enableListenerContext( 'bar' ) ;
+		bus.emit( 'foo' ) ;
+		expect( triggered ).to.be( 2 ) ;
+	} ) ;
+	
+	it( "when a listener is tied to a context, it should stop receiving events if the context is disabled (explicit context declaration)" , function() {
+		
+		var bus = Object.create( NextGenEvents.prototype ) ;
+		
+		var triggered = 0 ;
+		
+		bus.addListenerContext( 'bar' , { status: NextGenEvents.CONTEXT_DISABLED } ) ;
+		
+		bus.on( 'foo' , {
+			context: 'bar' ,
+			fn: function() { triggered ++ ; }
+		} ) ;
+		
+		bus.emit( 'foo' ) ;
+		bus.emit( 'foo' ) ;
+		bus.emit( 'foo' ) ;
+		expect( triggered ).to.be( 0 ) ;
+		
+		bus.enableListenerContext( 'bar' ) ;
+		bus.emit( 'foo' ) ;
+		expect( triggered ).to.be( 1 ) ;
+		
+		bus.disableListenerContext( 'bar' ) ;
+		bus.emit( 'foo' ) ;
+		expect( triggered ).to.be( 1 ) ;
+		
+		bus.enableListenerContext( 'bar' ) ;
+		bus.emit( 'foo' ) ;
+		expect( triggered ).to.be( 2 ) ;
+	} ) ;
+	
+	it( ".destroyListenerContext() should destroy a context and all listeners tied to it" , function() {
+		
+		var bus = Object.create( NextGenEvents.prototype ) ;
+		
+		var stats = { count: {} , orders: [] } ;
+		
+		bus.on( 'foo' , {
+			id: 'foo1' ,
+			context: 'bar' ,
+			fn: genericListener.bind( undefined , 'foo1' , stats , undefined )
+		} ) ;
+		
+		bus.on( 'foo' , {
+			id: 'foo2' ,
+			context: 'bar' ,
+			fn: genericListener.bind( undefined , 'foo2' , stats , undefined )
+		} ) ;
+		
+		bus.on( 'baz' , {
+			id: 'baz1' ,
+			context: 'bar' ,
+			fn: genericListener.bind( undefined , 'baz1' , stats , undefined )
+		} ) ;
+		
+		bus.on( 'baz' , {
+			id: 'baz2' ,
+			context: 'qux' ,
+			fn: genericListener.bind( undefined , 'baz2' , stats , undefined )
+		} ) ;
+		
+		bus.emit( 'foo' ) ;
+		expect( stats.count ).to.eql( { foo1: 1 , foo2: 1 } ) ;
+		bus.emit( 'baz' ) ;
+		expect( stats.count ).to.eql( { foo1: 1 , foo2: 1 , baz1: 1 , baz2: 1 } ) ;
+		
+		bus.destroyListenerContext( 'bar' ) ;
+		bus.emit( 'foo' ) ;
+		expect( stats.count ).to.eql( { foo1: 1 , foo2: 1 , baz1: 1 , baz2: 1 } ) ;
+		bus.emit( 'baz' ) ;
+		expect( stats.count ).to.eql( { foo1: 1 , foo2: 1 , baz1: 1 , baz2: 2 } ) ;
+		
+		bus.destroyListenerContext( 'qux' ) ;
+		bus.emit( 'foo' ) ;
+		expect( stats.count ).to.eql( { foo1: 1 , foo2: 1 , baz1: 1 , baz2: 2 } ) ;
+		bus.emit( 'baz' ) ;
+		expect( stats.count ).to.eql( { foo1: 1 , foo2: 1 , baz1: 1 , baz2: 2 } ) ;
+	} ) ;
+	
 } ) ;
 
 
