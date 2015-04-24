@@ -930,3 +930,52 @@ describe( "Next Gen feature: contexts queue" , function() {
 
 
 
+describe( "Next Gen feature: contexts serialization" , function() {
+	
+	it( "" , function() {
+		
+		var bus = Object.create( NextGenEvents.prototype ) ;
+		
+		var stats = { count: {} , orders: [] } ;
+		
+		bus.on( 'foo' , {
+			id: 'foobar' ,
+			context: 'qux' ,
+			async: true ,
+			fn: genericListener.bind( undefined , 'foobar' , stats , function() {
+				var callback = arguments[ arguments.length - 1 ] ;
+				setTimeout( callback , 30 ) ;
+			} )
+		} ) ;
+		
+		bus.on( 'foo' , {
+			id: 'foobaz' ,
+			context: 'qux' ,
+			async: true ,
+			fn: genericListener.bind( undefined , 'foobaz' , stats , function() {
+				var callback = arguments[ arguments.length - 1 ] ;
+				setTimeout( callback , 30 ) ;
+			} )
+		} ) ;
+		
+		bus.on( 'qbar' , {
+			id: 'qbar' ,
+			context: 'qux' ,
+			fn: genericListener.bind( undefined , 'qbarbaz' , stats , undefined )
+		} ) ;
+		
+		bus.serializeListenerContext( 'qux' ) ;
+		bus.emit( 'foo' ) ;
+		bus.emit( 'foo' ) ;
+		bus.emit( 'foo' , 'seven' ) ;
+		bus.emit( 'qbar' ) ;
+		expect( stats.count ).to.eql( { foobar: 1 , foobaz: 1 , qbarbaz: 2 } ) ;
+		
+		bus.enableListenerContext( 'qux' ) ;
+		expect( stats.count ).to.eql( { foobar: 4 , foobaz: 4 , qbarbaz: 2 } ) ;
+	} ) ;
+	
+} ) ;
+
+
+
