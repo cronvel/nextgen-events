@@ -851,3 +851,82 @@ describe( "Next Gen feature: contexts" , function() {
 
 
 
+describe( "Next Gen feature: contexts queue" , function() {
+	
+	it( ".queueListenerContext() should pause the context, queueing events, .enableListenerContext() should resume pending events emitting" , function() {
+		
+		var bus = Object.create( NextGenEvents.prototype ) ;
+		
+		var stats = { count: {} , orders: [] } ;
+		
+		bus.on( 'foo' , {
+			id: 'foobar' ,
+			context: 'qux' ,
+			fn: genericListener.bind( undefined , 'foobar' , stats , function() {
+				var args = Array.prototype.slice.call( arguments ) ;
+				switch ( stats.count.foobar )
+				{
+					case 1 :
+						expect( args ).to.eql( [ 'one' , 'two' , 'three' ] ) ;
+						break ;
+					case 2 :
+						expect( args ).to.eql( [ 'four' , 'five' , 'six' ] ) ;
+						break ;
+					case 3 :
+						expect( args ).to.eql( [] ) ;
+						break ;
+					case 4 :
+						expect( args ).to.eql( [ 'seven' ] ) ;
+						break ;
+				}
+			} )
+		} ) ;
+		
+		bus.on( 'foo' , {
+			id: 'foobaz' ,
+			context: 'qux' ,
+			fn: genericListener.bind( undefined , 'foobaz' , stats , function() {
+				var args = Array.prototype.slice.call( arguments ) ;
+				switch ( stats.count.foobaz )
+				{
+					case 1 :
+						expect( args ).to.eql( [ 'one' , 'two' , 'three' ] ) ;
+						break ;
+					case 2 :
+						expect( args ).to.eql( [ 'four' , 'five' , 'six' ] ) ;
+						break ;
+					case 3 :
+						expect( args ).to.eql( [] ) ;
+						break ;
+					case 4 :
+						expect( args ).to.eql( [ 'seven' ] ) ;
+						break ;
+				}
+			} )
+		} ) ;
+		
+		bus.on( 'qbar' , {
+			id: 'qbarbaz' ,
+			context: 'qbarbaz' ,
+			fn: genericListener.bind( undefined , 'qbarbaz' , stats , undefined )
+		} ) ;
+		
+		bus.emit( 'foo' , 'one' , 'two' , 'three' ) ;
+		bus.emit( 'qbar' ) ;
+		expect( stats.count ).to.eql( { foobar: 1 , foobaz: 1 , qbarbaz: 1 } ) ;
+		
+		bus.queueListenerContext( 'qux' ) ;
+		bus.emit( 'foo' , 'four' , 'five' , 'six' ) ;
+		bus.emit( 'foo' ) ;
+		bus.emit( 'foo' , 'seven' ) ;
+		bus.emit( 'qbar' ) ;
+		expect( stats.count ).to.eql( { foobar: 1 , foobaz: 1 , qbarbaz: 2 } ) ;
+		
+		bus.enableListenerContext( 'qux' ) ;
+		expect( stats.count ).to.eql( { foobar: 4 , foobaz: 4 , qbarbaz: 2 } ) ;
+	} ) ;
+	
+} ) ;
+
+
+
