@@ -1,7 +1,7 @@
 {
   "name": "nextgen-events",
   "version": "0.2.1",
-  "description": "Next generation of events handling for node.js.",
+  "description": "Next generation of events handling for javascript.",
   "main": "lib/NextGenEvents.js",
   "directories": {
     "test": "test"
@@ -20,7 +20,14 @@
     "url": "https://github.com/cronvel/nextgen-events.git"
   },
   "keywords": [
-    "events"
+    "events",
+    "async",
+    "emit",
+    "listener",
+    "context",
+    "series",
+    "serialize",
+    "namespace"
   ],
   "author": "Cédric Ronvel",
   "license": "MIT",
