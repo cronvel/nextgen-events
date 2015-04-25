@@ -121,9 +121,9 @@ emitter.emit( 'message' , 'Hello world!' ) ;
 	  and [the constants section](#ref.constants) for more human readable symbols
 	* async `boolean` (default: false) set it to *true* if the listener is async by nature and a context serialization is wanted
 
-	Adds a listener to the end of the listeners array for the specified event.
-	No checks are made to see if the listener has already been added.
-	Multiple calls passing the same combination of event and listener will result in the listener being added multiple times.
+> Adds a listener to the end of the listeners array for the specified event.
+> No checks are made to see if the listener has already been added.
+> Multiple calls passing the same combination of event and listener will result in the listener being added multiple times.
 
 
 
