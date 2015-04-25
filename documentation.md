@@ -229,7 +229,8 @@ server.removeListener( 'connection' , callback ) ;
 ```
 
 **CAUTION: Unlike the built-in Node.js emitter**, `.removeListener()` will
-remove **\*ALL\*** listeners whose ID are matching the given *listenerID*.
+remove **\*ALL\*** listeners whose ID are matching
+the given *listenerID*.
 If any single listener has been added multiple times to the listener array for the specified event, then only one
 call to `.removeListener()` will remove them all.
 
