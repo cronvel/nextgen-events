@@ -108,8 +108,7 @@ emitter.emit( 'message' , 'Hello world!' ) ;
 
 
 
-### .addListener( eventName , listener )
-### .on( eventName , listener )
+### .addListener( eventName , listener )   *or*   .on( eventName , listener )
 
 * eventName `string` the name of the event to bind to
 * listener `Function` or `Object` the listener that will listen to this event, it can be a function or an object where:
