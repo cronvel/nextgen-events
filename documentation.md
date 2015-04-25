@@ -327,16 +327,22 @@ Node.js documentation:
 
 ## Documentation in progress...
 
+<a name="ref.addListenerContext"></a>
 ### .addListenerContext( contextName , options )
 
+<a name="ref.disableListenerContext"></a>
 ### .disableListenerContext( contextName )
 
+<a name="ref.enableListenerContext"></a>
 ### .enableListenerContext( contextName )
 
+<a name="ref.queueListenerContext"></a>
 ### .queueListenerContext( contextName )
 
+<a name="ref.serializeListenerContext"></a>
 ### .serializeListenerContext( contextName , [value] )
 
+<a name="ref.destroyListenerContext"></a>
 ### .destroyListenerContext( contextName )
 
 <a name="ref.setNice"></a>
