@@ -149,6 +149,9 @@ server.on( 'close' , {
 	context: 'ctx' ,
 	fn: function( stream ) {
 		console.log( 'connection closed!' ) ;
+		
+		// Destroy the context and all listeners tied to it:
+		server.destroyListenerContext( 'ctx' ) ;
 	}
 } ) ;
 
@@ -156,13 +159,11 @@ server.on( 'error' , {
 	context: 'ctx' ,
 	fn: function( stream ) {
 		// some error handling code
+		
+		// Destroy the context and all listeners tied to it:
+		server.destroyListenerContext( 'ctx' ) ;
 	}
 } ) ;
-
-// Some code...
-
-// Destroy the context and all listeners tied to it:
-server.destroyListenerContext( 'ctx' ) ;
 ```
 
 
