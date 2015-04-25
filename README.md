@@ -4,9 +4,9 @@
 
 Next generation of events handling for node.js
 
-**Early alpha, not ready for the show.**
-
-
+* License: MIT
+* Current status: beta
+* Platform: Node.js only (browser support is planned)
 
 
 
@@ -16,6 +16,7 @@ Next generation of events handling for node.js
    - [Next Gen feature: async emitting](#next-gen-feature-async-emitting)
    - [Next Gen feature: contexts](#next-gen-feature-contexts)
    - [Next Gen feature: contexts queue](#next-gen-feature-contexts-queue)
+   - [Next Gen feature: contexts serialization](#next-gen-feature-contexts-serialization)
 <a name=""></a>
  
 <a name="basic-synchronous-event-emitting-node-compatible"></a>
@@ -861,5 +862,242 @@ expect( stats.count ).to.eql( { foobar: 1 , foobaz: 1 , qbarbaz: 2 } ) ;
 
 bus.enableListenerContext( 'qux' ) ;
 expect( stats.count ).to.eql( { foobar: 4 , foobaz: 4 , qbarbaz: 2 } ) ;
+```
+
+<a name="next-gen-feature-contexts-serialization"></a>
+# Next Gen feature: contexts serialization
+3 async listeners for an event, tied to a serial context, each listener should be triggered one after the other.
+
+```js
+var bus = Object.create( NextGenEvents.prototype ) ;
+
+var stats = { count: {} , orders: [] } ;
+
+bus.on( 'foo' , {
+	id: 'foobar' ,
+	context: 'qux' ,
+	async: true ,
+	fn: genericListener.bind( undefined , 'foobar' , stats , function() {
+		var callback = arguments[ arguments.length - 1 ] ;
+		setTimeout( callback , 30 ) ;
+	} )
+} ) ;
+
+bus.on( 'foo' , {
+	id: 'foobaz' ,
+	context: 'qux' ,
+	async: true ,
+	fn: genericListener.bind( undefined , 'foobaz' , stats , function() {
+		expect( stats.count ).to.eql( { foobar: 1 , foobaz: 1 } ) ;
+		var callback = arguments[ arguments.length - 1 ] ;
+		setTimeout( callback , 30 ) ;
+	} )
+} ) ;
+
+bus.on( 'foo' , {
+	id: 'foobarbaz' ,
+	context: 'qux' ,
+	async: true ,
+	fn: genericListener.bind( undefined , 'foobarbaz' , stats , function() {
+		expect( stats.count ).to.eql( { foobar: 1 , foobaz: 1 , foobarbaz: 1 } ) ;
+		var callback = arguments[ arguments.length - 1 ] ;
+		setTimeout( function() {
+			callback() ;
+			done() ;
+		} , 30 ) ;
+	} )
+} ) ;
+
+bus.serializeListenerContext( 'qux' ) ;
+bus.emit( 'foo' ) ;
+expect( stats.count ).to.eql( { foobar: 1 } ) ;
+```
+
+3 async listeners for 3 events, tied to a serial context, each listener should be triggered one after the other.
+
+```js
+var bus = Object.create( NextGenEvents.prototype ) ;
+
+var stats = { count: {} , orders: [] } ;
+
+bus.on( 'bar' , {
+	id: 'foobar' ,
+	context: 'qux' ,
+	async: true ,
+	fn: genericListener.bind( undefined , 'foobar' , stats , function() {
+		var callback = arguments[ arguments.length - 1 ] ;
+		setTimeout( callback , 30 ) ;
+	} )
+} ) ;
+
+bus.on( 'baz' , {
+	id: 'foobaz' ,
+	context: 'qux' ,
+	async: true ,
+	fn: genericListener.bind( undefined , 'foobaz' , stats , function() {
+		expect( stats.count ).to.eql( { foobar: 1 , foobaz: 1 } ) ;
+		var callback = arguments[ arguments.length - 1 ] ;
+		setTimeout( callback , 30 ) ;
+	} )
+} ) ;
+
+bus.on( 'barbaz' , {
+	id: 'foobarbaz' ,
+	context: 'qux' ,
+	async: true ,
+	fn: genericListener.bind( undefined , 'foobarbaz' , stats , function() {
+		expect( stats.count ).to.eql( { foobar: 1 , foobaz: 1 , foobarbaz: 1 } ) ;
+		var callback = arguments[ arguments.length - 1 ] ;
+		setTimeout( function() {
+			callback() ;
+			done() ;
+		} , 30 ) ;
+	} )
+} ) ;
+
+bus.serializeListenerContext( 'qux' ) ;
+bus.emit( 'bar' ) ;
+bus.emit( 'baz' ) ;
+bus.emit( 'barbaz' ) ;
+expect( stats.count ).to.eql( { foobar: 1 } ) ;
+```
+
+mixing sync and async listeners tied to a serial context, sync event should not block (test 1).
+
+```js
+var bus = Object.create( NextGenEvents.prototype ) ;
+
+var stats = { count: {} , orders: [] } ;
+
+bus.on( 'bar' , {
+	id: 'foobar' ,
+	context: 'qux' ,
+	fn: genericListener.bind( undefined , 'foobar' , stats , function() {
+	} )
+} ) ;
+
+bus.on( 'baz' , {
+	id: 'foobaz' ,
+	context: 'qux' ,
+	fn: genericListener.bind( undefined , 'foobaz' , stats , function() {
+	} )
+} ) ;
+
+bus.on( 'barbaz' , {
+	id: 'foobarbaz' ,
+	context: 'qux' ,
+	async: true ,
+	fn: genericListener.bind( undefined , 'foobarbaz' , stats , function() {
+		expect( stats.count ).to.eql( { foobar: 1 , foobaz: 1 , foobarbaz: 1 } ) ;
+		var callback = arguments[ arguments.length - 1 ] ;
+		setTimeout( function() {
+			callback() ;
+			done() ;
+		} , 30 ) ;
+	} )
+} ) ;
+
+bus.serializeListenerContext( 'qux' ) ;
+bus.emit( 'bar' ) ;
+bus.emit( 'baz' ) ;
+bus.emit( 'barbaz' ) ;
+expect( stats.count ).to.eql( { foobar: 1 , foobaz: 1 , foobarbaz: 1 } ) ;
+```
+
+mixing sync and async listeners tied to a serial context, sync event should not block (test 2).
+
+```js
+var bus = Object.create( NextGenEvents.prototype ) ;
+
+var stats = { count: {} , orders: [] } ;
+
+bus.on( 'bar' , {
+	id: 'foobar' ,
+	context: 'qux' ,
+	fn: genericListener.bind( undefined , 'foobar' , stats , function() {
+	} )
+} ) ;
+
+bus.on( 'baz' , {
+	id: 'foobaz' ,
+	context: 'qux' ,
+	async: true ,
+	fn: genericListener.bind( undefined , 'foobaz' , stats , function() {
+		expect( stats.count ).to.eql( { foobar: 1 , foobaz: 1 } ) ;
+		var callback = arguments[ arguments.length - 1 ] ;
+		setTimeout( callback , 30 ) ;
+	} )
+} ) ;
+
+bus.on( 'barbaz' , {
+	id: 'foobarbaz' ,
+	context: 'qux' ,
+	async: true ,
+	fn: genericListener.bind( undefined , 'foobarbaz' , stats , function() {
+		expect( stats.count ).to.eql( { foobar: 1 , foobaz: 1 , foobarbaz: 1 } ) ;
+		var callback = arguments[ arguments.length - 1 ] ;
+		setTimeout( function() {
+			callback() ;
+			done() ;
+		} , 30 ) ;
+	} )
+} ) ;
+
+bus.serializeListenerContext( 'qux' ) ;
+bus.emit( 'bar' ) ;
+bus.emit( 'baz' ) ;
+bus.emit( 'barbaz' ) ;
+expect( stats.count ).to.eql( { foobar: 1 , foobaz: 1 } ) ;
+```
+
+mixing sync and async listeners tied to a serial context, sync event should not block (test 3).
+
+```js
+var bus = Object.create( NextGenEvents.prototype ) ;
+
+var stats = { count: {} , orders: [] } ;
+
+bus.on( 'bar' , {
+	id: 'foobar' ,
+	context: 'qux' ,
+	async: true ,
+	fn: genericListener.bind( undefined , 'foobar' , stats , function() {
+		var callback = arguments[ arguments.length - 1 ] ;
+		setTimeout( callback , 30 ) ;
+	} )
+} ) ;
+
+bus.on( 'baz' , {
+	id: 'foobaz' ,
+	context: 'qux' ,
+	fn: genericListener.bind( undefined , 'foobaz' , stats , function() {
+		expect( stats.count ).to.eql( { foobar: 1 , foobaz: 1 } ) ;
+		
+		// 'barbaz' should trigger immediately
+		process.nextTick( function() {
+			expect( stats.count ).to.eql( { foobar: 1 , foobaz: 1 , foobarbaz: 1 } ) ;
+		} ) ;
+	} )
+} ) ;
+
+bus.on( 'barbaz' , {
+	id: 'foobarbaz' ,
+	context: 'qux' ,
+	async: true ,
+	fn: genericListener.bind( undefined , 'foobarbaz' , stats , function() {
+		expect( stats.count ).to.eql( { foobar: 1 , foobaz: 1 , foobarbaz: 1 } ) ;
+		var callback = arguments[ arguments.length - 1 ] ;
+		setTimeout( function() {
+			callback() ;
+			done() ;
+		} , 30 ) ;
+	} )
+} ) ;
+
+bus.serializeListenerContext( 'qux' ) ;
+bus.emit( 'bar' ) ;
+bus.emit( 'baz' ) ;
+bus.emit( 'barbaz' ) ;
+expect( stats.count ).to.eql( { foobar: 1 } ) ;
 ```
 
