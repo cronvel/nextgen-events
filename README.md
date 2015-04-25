@@ -121,9 +121,49 @@ emitter.emit( 'message' , 'Hello world!' ) ;
 	  and [the constants section](#ref.constants) for more human readable symbols
 	* async `boolean` (default: false) set it to *true* if the listener is async by nature and a context serialization is wanted
 
+Node.js documentation:
+
 > Adds a listener to the end of the listeners array for the specified event.
 > No checks are made to see if the listener has already been added.
 > Multiple calls passing the same combination of event and listener will result in the listener being added multiple times.
+
+```js
+server.on( 'connection' , function( stream ) {
+	console.log( 'someone connected!' ) ;
+} ) ;
+```
+
+> Returns emitter, so calls can be chained.
+
+Example, creating implicitly a context the listeners will be tied to:
+
+```js
+server.on( 'connection' , {
+	context: 'ctx' ,
+	fn: function( stream ) {
+		console.log( 'someone connected!' ) ;
+	}
+} ) ;
+
+server.on( 'close' , {
+	context: 'ctx' ,
+	fn: function( stream ) {
+		console.log( 'connection closed!' ) ;
+	}
+} ) ;
+
+server.on( 'error' , {
+	context: 'ctx' ,
+	fn: function( stream ) {
+		// some error handling code
+	}
+} ) ;
+
+// Some code...
+
+// Destroy the context and all listeners tied to it:
+server.destroyListenerContext( 'ctx' ) ;
+```
 
 
 
