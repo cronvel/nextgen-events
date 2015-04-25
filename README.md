@@ -114,7 +114,7 @@ emitter.emit( 'message' , 'Hello world!' ) ;
 * eventName `string` the name of the event to bind to
 * listener `Function` or `Object` the listener that will listen to this event, it can be a function or an object where:
 	* fn `Function` (mandatory) the listener function
-	* id *any type* (default to the provided *fn* function) the identifier of the listener, useful if we have to remove it later
+	* id `any type` (default to the provided *fn* function) the identifier of the listener, useful if we have to remove it later
 	* once `boolean` (default: false) *true* if this is a one-time-listener
 	* context `string` (default: undefined - no context) a non-empty string identifying a context, if defined the listener
 	  will be tied to this context, if this context is unexistant, it will be implicitly defined with default behaviour
@@ -175,7 +175,7 @@ server.on( 'error' , {
 * eventName `string` the name of the event to bind to
 * listener `Function` or `Object` the listener that will listen to this event, it can be a function or an object where:
 	* fn `Function` (mandatory) the listener function
-	* id *any type* (default to the provided *fn* function) the identifier of the listener, useful if we have to remove it later
+	* id `any type` (default to the provided *fn* function) the identifier of the listener, useful if we have to remove it later
 	* context `string` (default: undefined - no context) a non-empty string identifying a context, if defined the listener
 	  will be tied to this context, if this context is unexistant, it will be implicitly defined with default behaviour
 	* nice `integer` (default: .SYNC - a constant set to -3) see [.setNice()](#ref.setNice) for details,
@@ -208,10 +208,12 @@ server.on( 'connection' , {
 ```
 
 
-### .removeListener( eventName , listenerID )
+
+<a name="ref.removeListener"></a>
+### .removeListener( eventName , listenerID )   *or*   .off( eventName , listenerID )
 
 * eventName `string` the name of the event the listener to remove is binded to
-* listenerID *any type* the identifier of the listener to remove
+* listenerID `any type` the identifier of the listener to remove
 
 Node.js documentation:
 
@@ -228,8 +230,7 @@ server.on( 'connection' , callback ) ;
 server.removeListener( 'connection' , callback ) ;
 ```
 
-**CAUTION: Unlike the built-in Node.js emitter**, `.removeListener()` will
-remove **\*ALL\*** listeners whose ID are matching
+**CAUTION: Unlike the built-in Node.js emitter**, `.removeListener()` will remove **ALL** listeners whose ID is matching
 the given *listenerID*.
 If any single listener has been added multiple times to the listener array for the specified event, then only one
 call to `.removeListener()` will remove them all.
@@ -259,10 +260,90 @@ Don't forget that by default, the ID is the callback function itself.
 
 
 
+<a name="ref.removeAllListeners"></a>
+### .removeAllListeners( [eventName] )
+
+* eventName `string` (optional) the name of the event the listeners to remove are binded to
+
+Node.js documentation:
+
+> Removes all listeners, or those of the specified event.
+> It's not a good idea to remove listeners that were added elsewhere in the code, especially when it's on an emitter
+> that you didn't create (e.g. sockets or file streams).
+
+> Returns emitter, so calls can be chained.
+
+
+
+<a name="ref.setMaxListeners"></a>
+### .setMaxListeners()
+
+Only available for compatibility with the built-in Node.js emitter, so it does not break the code for people that want
+to make the switch.
+
+But please note that **there is no such concept of max listener in NextGen Events**, this method does nothing
+(it's an empty function).
+
+
+
+<a name="ref.listeners"></a>
+### .listeners( eventName )
+
+* eventName `string` (optional) the name of the event the listeners to list are binded to
+
+Node.js documentation:
+
+> Returns an array of listeners for the specified event.
+
+```js
+server.on( 'connection' , function( stream ) {
+	console.log( 'someone connected!' ) ;
+} ) ;
+
+console.log( util.inspect( server.listeners( 'connection' ) ) ) ;
+// output:
+// [ { id: [Function], fn: [Function], nice: -3, event: 'connection' } ]
+```
+
+
+
+<a name="ref.emit"></a>
+### .emit( [nice] , eventName , [arg1] , [arg2] , [...] )
+
+* nice `integer` (default: .SYNC - a constant set to -3) see [.setNice()](#ref.setNice) for details,
+  and [the constants section](#ref.constants) for more human readable symbols
+* eventName `string` (optional) the name of the event to emit
+* arg1 `any type` (optional) first argument to transmit
+* arg2 `any type` (optional) second argument to transmit
+* ...
+
+Node.js documentation:
+
+> Execute each of the listeners in order with the supplied arguments.
+
+> Returns emitter, so calls can be chained.
+
+
+
+## Documentation in progress...
+
+### .addListenerContext( contextName , options )
+
+### .disableListenerContext( contextName )
+
+### .enableListenerContext( contextName )
+
+### .queueListenerContext( contextName )
+
+### .serializeListenerContext( contextName , [value] )
+
+### .destroyListenerContext( contextName )
+
 <a name="ref.setNice"></a>
 ### .setNice( nice )
 
 Globally set the *nice* value of the current emitter.
+
 
 
 
@@ -284,8 +365,8 @@ Constant used as *nice* values:
 
 NextGen events is most of time compatible with Node.js' EventEmitter, except for few things:
 
-* There is no such concept of *max listener* in NextGen Events, .setMaxListeners() function exists only to not break compatibility,
-  but it does nothing (it's an empty method).
+* There is no such concept of *max listener* in NextGen Events, .setMaxListeners() function exists only to not break compatibility
+  for people that want to make the switch, but it does nothing (it's an empty function).
 
 * .removeListener() will remove all matching listener, not only the first listener found
 
