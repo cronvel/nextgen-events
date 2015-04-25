@@ -168,6 +168,46 @@ server.on( 'error' , {
 
 
 
+### .once( eventName , listener )
+
+* eventName `string` the name of the event to bind to
+* listener `Function` or `Object` the listener that will listen to this event, it can be a function or an object where:
+	* fn `Function` (mandatory) the listener function
+	* id *any type* (default to the provided *fn* function) the identifier of the listener, useful if we have to remove it later
+	* once `boolean` (default: false) *true* if this is a one-time-listener
+	* context `string` (default: undefined - no context) a non-empty string identifying a context, if defined the listener
+	  will be tied to this context, if this context is unexistant, it will be implicitly defined with default behaviour
+	* nice `integer` (default: .SYNC - a constant set to -3) see [.setNice()](#ref.setNice) for details,
+	  and [the constants section](#ref.constants) for more human readable symbols
+	* async `boolean` (default: false) set it to *true* if the listener is async by nature and a context serialization is wanted
+
+Node.js documentation:
+
+> Adds a **one time** listener for the event.
+> This listener is invoked only the next time the event is fired, after which it is removed. 
+
+```js
+server.once( 'connection' , function( stream ) {
+	console.log( 'Ah, we have our first user!' ) ;
+} ) ;
+```
+
+> Returns emitter, so calls can be chained.
+
+Note that using once in *NextGen Events* lib is just a syntactic sugar (and it's also there for compatibility),
+the previous example can be rewritten using `.on()`:
+
+```js
+server.on( 'connection' , {
+	fn: function( stream ) {
+		console.log( 'Ah, we have our first user!' ) ;
+	} ,
+	once: true
+} ) ;
+```
+
+
+
 <a name="ref.setNice"></a>
 ### .setNice( nice )
 
@@ -176,10 +216,16 @@ Globally set the *nice* value of the current emitter.
 
 
 <a name="ref.constants"></a>
-### .setNice( nice )
+### Class constants
 
-Globally set the *nice* value of the current emitter.
+Given that `NextGenEvents = require( 'nextgen-events' )`, we have some constants available in the *NextGenEvents* class.
 
+Constant used as *nice* values:
+
+* NextGenEvents.SYNC (= -3): specify synchronous flow
+* NextGenEvents.NEXT_TICK (= -2): specify an asynchronous flow, using process.nextTick()
+* NextGenEvents.IMMEDIATE (= -1): specify an asynchronous flow, using setImmediate()
+* NextGenEvents.TIMEOUT (= 0): specify an asynchronous flow, using setTimeout() with a 0ms timeout
 
 
 
