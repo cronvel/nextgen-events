@@ -108,6 +108,7 @@ emitter.emit( 'message' , 'Hello world!' ) ;
 
 
 
+<a name="ref.addListener"></a>
 ### .addListener( eventName , listener )   *or*   .on( eventName , listener )
 
 * eventName `string` the name of the event to bind to
@@ -168,13 +169,13 @@ server.on( 'error' , {
 
 
 
+<a name="ref.once"></a>
 ### .once( eventName , listener )
 
 * eventName `string` the name of the event to bind to
 * listener `Function` or `Object` the listener that will listen to this event, it can be a function or an object where:
 	* fn `Function` (mandatory) the listener function
 	* id *any type* (default to the provided *fn* function) the identifier of the listener, useful if we have to remove it later
-	* once `boolean` (default: false) *true* if this is a one-time-listener
 	* context `string` (default: undefined - no context) a non-empty string identifying a context, if defined the listener
 	  will be tied to this context, if this context is unexistant, it will be implicitly defined with default behaviour
 	* nice `integer` (default: .SYNC - a constant set to -3) see [.setNice()](#ref.setNice) for details,
@@ -205,6 +206,55 @@ server.on( 'connection' , {
 	once: true
 } ) ;
 ```
+
+
+### .removeListener( eventName , listenerID )
+
+* eventName `string` the name of the event the listener to remove is binded to
+* listenerID *any type* the identifier of the listener to remove
+
+Node.js documentation:
+
+> Remove a listener from the listener array for the specified event.
+> **Caution**: changes array indices in the listener array behind the listener. 
+
+```js
+var callback = function( stream ) {
+	console.log( 'someone connected!' ) ;
+} ;
+
+server.on( 'connection' , callback ) ;
+// ...
+server.removeListener( 'connection' , callback ) ;
+```
+
+**CAUTION: Unlike the built-in Node.js emitter**, `.removeListener()` will remove **\*ALL\*** listeners whose ID
+are matching the given *listenerID*.
+If any single listener has been added multiple times to the listener array for the specified event, then only one
+call to `.removeListener()` will remove them all.
+
+> Returns emitter, so calls can be chained.
+
+Example using user-defined ID:
+
+```js
+var callback = function( stream ) {
+	console.log( 'someone connected!' ) ;
+} ;
+
+server.on( 'connection' , { id: 'foo' , fn: callback } ) ;
+server.on( 'connection' , { id: 'bar' , fn: callback } ) ;
+
+// ...
+
+// Does nothing! we have used custom IDs!
+server.removeListener( 'connection' , callback ) ;
+
+// Remove the first listener only, despite the fact they are sharing the same function
+server.removeListener( 'connection' , 'foo' ) ;
+```
+
+Don't forget that by default, the ID is the callback function itself.
 
 
 
