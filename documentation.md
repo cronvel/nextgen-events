@@ -104,8 +104,6 @@ emitter.emit( 'message' , 'Hello world!' ) ;
 
 # References
 
-**The documentation is still a work in progress!**
-
 
 
 <a name="ref.addListener"></a>
