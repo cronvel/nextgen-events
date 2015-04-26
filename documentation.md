@@ -16,7 +16,7 @@ Next generation of events handling for node.js
 * Support for asynchronous event-handling
 * Multiple listeners can be tied to a single context
 * A context can be temporarly *disabled*
-* A context can be in *queue* mode: events for its listener are stored, they will be *released* when the context is resumed
+* A context can be in *queue* mode: events for its listeners are stored, they will be *resumed* when the context is enabled again
 * Context serialization: async listeners can be run one after the other is fully completed
 
 Emitting events asynchronously or registering a listener that will be triggered asynchronously because it performs
