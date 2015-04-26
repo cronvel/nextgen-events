@@ -104,6 +104,39 @@ emitter.emit( 'message' , 'Hello world!' ) ;
 
 # References
 
+Node.js documentation:
+
+> When an EventEmitter instance experiences an error, the typical action is to emit an 'error' event.
+> Error events are treated as a special case in node. If there is no listener for it,
+> then the default action is to print a stack trace and exit the program.
+
+> All EventEmitters emit the event 'newListener' when new listeners are added and 'removeListener' when a listener is removed. 
+
+For the 'newListener' and 'removeListener' events, see the section about [incompatibilities](#incompatibilities), since there
+are few differences with the built-in Node.js EventEmitter.
+
+
+
+## Table of Content
+
+* [.addListener() / .on()](#ref.addListener)
+* [.once()](#ref.once)
+* [.removeListener() / .off()](#ref.removeListener)
+* [.removeAllListeners()](#ref.removeAllListeners)
+* [.setMaxListeners()](#ref.setMaxListeners)
+* [.listeners()](#ref.listeners)
+* [.setNice()](#ref.setNice)
+* [.emit()](#ref.emit)
+* [.addListenerContext()](#ref.addListenerContext)
+* [.disableListenerContext()](#ref.disableListenerContext)
+* [.queueListenerContext()](#ref.queueListenerContext)
+* [.enableListenerContext()](#ref.enableListenerContext)
+* [.setListenerContextNice()](#ref.setListenerContextNice)
+* [.serializeListenerContext()](#ref.serializeListenerContext)
+* [.destroyListenerContext()](#ref.destroyListenerContext)
+* [the *nice feature*](#ref.note.nice)
+* [incompatibilities](#incompatibilities)
+
 
 
 <a name="ref.addListener"></a>
@@ -195,7 +228,7 @@ server.once( 'connection' , function( stream ) {
 
 > Returns emitter, so calls can be chained.
 
-Note that using once in *NextGen Events* lib is just a syntactic sugar (and it's also there for compatibility),
+Note that using `.once()` in *NextGen Events* lib is just a syntactic sugar (and it's also there for compatibility),
 the previous example can be rewritten using `.on()`:
 
 ```js
