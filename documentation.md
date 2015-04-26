@@ -32,7 +32,7 @@ listeners will be stored in the context. When the context is resumed, all retain
 This allow one to postpone some operations, while performing some other high priority tasks, but be careful:
 depending on your application nature, the queue may grow fast and consumes a lot of memory very quickly.
 
-One of the top feature of this lib is the context serialization: it greatly ease the flow of the code!
+One of the top feature of this lib is the context serialization: it greatly eases the flow of the code!
 When differents events can fire at the same time, there are use cases when one does not want that async listener run concurrently.
 The context serialization feature will ensure you that no concurrency will happen for listeners tied to it.
 You do not have to code fancy or complicated tests to cover all cases anymore: just let *NextGen Events* do it for you!
@@ -118,9 +118,9 @@ emitter.emit( 'message' , 'Hello world!' ) ;
 	* once `boolean` (default: false) *true* if this is a one-time-listener
 	* context `string` (default: undefined - no context) a non-empty string identifying a context, if defined the listener
 	  will be tied to this context, if this context is unexistant, it will be implicitly defined with default behaviour
-	* nice `integer` (default: .SYNC - a constant set to -3) see [.setNice()](#ref.setNice) for details,
-	  and [the constants section](#ref.constants) for more human readable symbols
-	* async `boolean` (default: false) set it to *true* if the listener is async by nature and a context serialization is wanted
+	* nice `integer` (default: .SYNC - a constant set to -3) see [the nice feature](#ref.note.nice) for details
+	* async `boolean` (default: false) set it to *true* if the listener is async by nature and a context serialization is wanted,
+	  when *async* is set for a listener, it **MUST** accept a completion callback as its last argument.
 
 Node.js documentation:
 
@@ -148,7 +148,7 @@ server.on( 'connection' , {
 
 server.on( 'close' , {
 	context: 'ctx' ,
-	fn: function( stream ) {
+	fn: function() {
 		console.log( 'connection closed!' ) ;
 		
 		// Destroy the context and all listeners tied to it:
@@ -158,7 +158,7 @@ server.on( 'close' , {
 
 server.on( 'error' , {
 	context: 'ctx' ,
-	fn: function( stream ) {
+	fn: function() {
 		// some error handling code
 		
 		// Destroy the context and all listeners tied to it:
@@ -166,6 +166,9 @@ server.on( 'error' , {
 	}
 } ) ;
 ```
+
+When an async listener is defined, the completion callback is automatically added at the end of the [.emit()](#ref.emit)
+arguments for any listeners with *async = true*.
 
 
 
@@ -178,8 +181,7 @@ server.on( 'error' , {
 	* id `any type` (default to the provided *fn* function) the identifier of the listener, useful if we have to remove it later
 	* context `string` (default: undefined - no context) a non-empty string identifying a context, if defined the listener
 	  will be tied to this context, if this context is unexistant, it will be implicitly defined with default behaviour
-	* nice `integer` (default: .SYNC - a constant set to -3) see [.setNice()](#ref.setNice) for details,
-	  and [the constants section](#ref.constants) for more human readable symbols
+	* nice `integer` (default: .SYNC - a constant set to -3) see [the nice feature](#ref.note.nice) for details
 	* async `boolean` (default: false) set it to *true* if the listener is async by nature and a context serialization is wanted
 
 Node.js documentation:
@@ -307,11 +309,19 @@ console.log( util.inspect( server.listeners( 'connection' ) ) ) ;
 
 
 
+<a name="ref.setNice"></a>
+### .setNice( nice )
+
+* nice `integer` (default: .SYNC - a constant set to -3) see [the nice feature](#ref.note.nice) for details
+
+Set the default *nice value* of the current emitter.
+
+
+
 <a name="ref.emit"></a>
 ### .emit( [nice] , eventName , [arg1] , [arg2] , [...] )
 
-* nice `integer` (default: .SYNC - a constant set to -3) see [.setNice()](#ref.setNice) for details,
-  and [the constants section](#ref.constants) for more human readable symbols
+* nice `integer` (default: .SYNC - a constant set to -3) see [the nice feature](#ref.note.nice) for details
 * eventName `string` (optional) the name of the event to emit
 * arg1 `any type` (optional) first argument to transmit
 * arg2 `any type` (optional) second argument to transmit
@@ -325,51 +335,204 @@ Node.js documentation:
 
 
 
-## Documentation in progress...
+<a name="ref.note.nice"></a>
+### A note about the *nice feature*
+
+The *nice value* represent the *niceness* of the event-emitting processing.
+This concept is inspired by the UNIX *nice* concept for processus (see the man page for the *nice* and *renice* command).
+
+In this lib, this represents the asyncness of the event-emitting processing.
+
+Given that `NextGenEvents = require( 'nextgen-events' )`, we have those constants that can be used as *nice value*:
+
+* NextGenEvents.SYNC (= -3): specify synchronous flow, this is the default and works like built-in Node.js events,
+  listeners are called synchronously when *.emit()* is called
+* NextGenEvents.NEXT_TICK (= -2): specify an asynchronous flow using process.nextTick() to call the listeners
+* NextGenEvents.IMMEDIATE (= -1): specify an asynchronous flow using setImmediate() to call the listeners
+* NextGenEvents.TIMEOUT (= 0): specify an asynchronous flow using setTimeout() with a 0ms timeout to call the listeners
+* For any *N* value greater than 0: specify an asynchronous flow using setTimeout() with a `N * 10ms` timeout to call the listeners
+
+They are many elements that can define their own *nice value*.
+
+Here is how this is resolved:
+
+* First the *emit nice value* will be the one passed to the `.emit()` method if given, or the default *emitter nice value*
+  defined with [.setNice()](#ref.setNice).
+* For each listener to be called, the real *nice value* for the current listener will be the **HIGHEST** *nice value* of
+  the *emit nice value* (see above), the listener *nice value* (defined with [.addListener()](#ref.addListener)), and
+  if the listener is tied to a context, the context *nice value* (defined with [.addListenerContext()](#ref.addListenerContext)
+  or [.setListenerContextNice](#ref.setListenerContextNice))
+
+
 
 <a name="ref.addListenerContext"></a>
 ### .addListenerContext( contextName , options )
 
+* contextName `string` a non-empty string identifying the context to be created
+* options `Object` an object of options, where:
+	* nice `integer` (default: .SYNC - a constant set to -3) see [the nice feature](#ref.note.nice) for details
+	* serial `boolean` (default: false) if true, the async listeners tied to this context will run sequentially,
+	  one after the other is fully completed
+
+Create a context using the given *contextName*.
+
+Listeners can be tied to a context, enabling some grouping features like turning them on or off just by enabling/disabling
+the context, queuing them, resuming them, or forcing serialization of all async listeners.
+
+
+
 <a name="ref.disableListenerContext"></a>
 ### .disableListenerContext( contextName )
 
-<a name="ref.enableListenerContext"></a>
-### .enableListenerContext( contextName )
+* contextName `string` a non-empty string identifying the context to be created
+
+It disables a context: any listeners tied to it will not be triggered anymore.
+
+The context is not destroyed, the listeners are not removed, they are just inactive.
+They can be enabled again using [.enableListenerContext()](#ref.enableListenerContext).
+
+
 
 <a name="ref.queueListenerContext"></a>
 ### .queueListenerContext( contextName )
 
+* contextName `string` a non-empty string identifying the context to be created
+
+It switchs a context into *queue mode*: any listeners tied to it will not be triggered anymore, but every listener's call
+will be queued.
+
+When the context will be enabled again using [.enableListenerContext()](#ref.enableListenerContext), any queued listener's call
+will be processed.
+
+
+
+<a name="ref.enableListenerContext"></a>
+### .enableListenerContext( contextName )
+
+* contextName `string` a non-empty string identifying the context to be created
+
+This enables a context previously disabled using [.disableListenerContext()](#ref.disableListenerContext) or queued
+using [.disableListenerContext()](#ref.disableListenerContext).
+
+If the context was queued, any queued listener's call will be processed right now for synchronous emitter, or a bit later
+depending on the *nice value*. E.g. if a listener would have been called with a timeout of 50 ms (nice value = 5),
+and the call has been queued, the timeout will apply at resume time.
+
+
+
+<a name="ref.setListenerContextNice"></a>
+### .setListenerContextNice( contextName , nice )
+
+* contextName `string` a non-empty string identifying the context to be created
+* nice `integer` (default: .SYNC - a constant set to -3) see [the nice feature](#ref.note.nice) for details
+
+Set the *nice* value for the current context.
+
+
+
 <a name="ref.serializeListenerContext"></a>
 ### .serializeListenerContext( contextName , [value] )
+
+* contextName `string` a non-empty string identifying the context to be created
+* value `boolean` (optional, default is true) if *true* the context will enable serialization for async listeners.
+
+This is one of the top feature of this lib.
+
+If set to *true* it enables the context serialization.
+
+It has no effect on listeners defined without the *async* option (see [.addListener()](#ref.addListener)).
+Listeners defined with the async option will postpone any other listener's calls part of the same context.
+Those calls will be queued until the completion callback of the listener is triggered.
+
+Example:
+
+```js
+app.on( 'maintenance' , {
+	context: 'maintenanceHandlers' ,
+	async: true ,
+	fn: function( type , done ) {
+		performSomeCriticalAsyncStuff( function() {
+			console.log( 'Critical maintenance stuff finished' ) ;
+			done() ;
+		} ) ;
+	}
+} ) ;
+
+app.serializeListenerContext( maintenanceHandlers ) ;
+
+// ...
+
+app.emit( 'maintenance' , 'doBackup' ) ;
+
+// Despite the fact we emit synchronously, the listener will not be called now,
+// it will be queued and called later when the previous call will be finished
+app.emit( 'maintenance' , 'doUpgrade' ) ;
+```
+
+By the way, there is only one listener here that will queue itself, and only one event type is fired.
+But this would work the same with multiple listener and event type, if they share the same context.
+
+Same code with two listeners and two event type:
+
+```js
+app.on( 'doBackup' , {
+	context: 'maintenanceHandlers' ,
+	async: true ,
+	fn: function( done ) {
+		performBackup( function() {
+			console.log( 'Backup finished' ) ;
+			done() ;
+		} ) ;
+	}
+} ) ;
+
+app.on( 'doUpgrade' , {
+	context: 'maintenanceHandlers' ,
+	async: true ,
+	fn: function( done ) {
+		performUpgrade( function() {
+			console.log( 'Upgrade finished' ) ;
+			done() ;
+		} ) ;
+	}
+} ) ;
+
+app.on( 'whatever' , function() {
+	// Some actions...
+} ) ;
+
+app.serializeListenerContext( maintenanceHandlers ) ;
+
+// ...
+
+app.emit( 'doBackup' ) ;
+
+// Despite the fact we emit synchronously, the second listener will not be called now,
+// it will be queued and called later when the first listener will have finished its job
+app.emit( 'doUpgrade' ) ;
+
+// The third listener is not part of the 'maintenanceHandlers' context, so it will be called
+// right now, before the first listener finished, and before the second listener ever start
+app.emit( 'whatever' ) ;
+```
+
+
 
 <a name="ref.destroyListenerContext"></a>
 ### .destroyListenerContext( contextName )
 
-<a name="ref.setNice"></a>
-### .setNice( nice )
+* contextName `string` a non-empty string identifying the context to be created
 
-Globally set the *nice* value of the current emitter.
+This destroy a context and remove all listeners tied to it.
 
-
-
-
-<a name="ref.constants"></a>
-### Class constants
-
-Given that `NextGenEvents = require( 'nextgen-events' )`, we have some constants available in the *NextGenEvents* class.
-
-Constant used as *nice* values:
-
-* NextGenEvents.SYNC (= -3): specify synchronous flow
-* NextGenEvents.NEXT_TICK (= -2): specify an asynchronous flow, using process.nextTick()
-* NextGenEvents.IMMEDIATE (= -1): specify an asynchronous flow, using setImmediate()
-* NextGenEvents.TIMEOUT (= 0): specify an asynchronous flow, using setTimeout() with a 0ms timeout
+Any queued listener's calls will be lost.
 
 
 
-### Incompatibilities with the built-in Node.js EventEmitter
+<a name="incompatibilities"></a>
+## Incompatibilities with the built-in Node.js EventEmitter
 
-NextGen events is most of time compatible with Node.js' EventEmitter, except for few things:
+NextGen Events is almost compatible with Node.js' EventEmitter, except for few things:
 
 * There is no such concept of *max listener* in NextGen Events, .setMaxListeners() function exists only to not break compatibility
   for people that want to make the switch, but it does nothing (it's an empty function).
