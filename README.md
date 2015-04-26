@@ -343,11 +343,11 @@ In this lib, this represents the asyncness of the event-emitting processing.
 
 Given that `NextGenEvents = require( 'nextgen-events' )`, we have those constants that can be used as *nice value*:
 
-* NextGenEvents.SYNC (= -3): specify synchronous flow, this is the default and works like built-in Node.js events,
+* `NextGenEvents.SYNC` (= -3): specify synchronous flow, this is the default and works like built-in Node.js events,
   listeners are called synchronously when *.emit()* is called
-* NextGenEvents.NEXT_TICK (= -2): specify an asynchronous flow using process.nextTick() to call the listeners
-* NextGenEvents.IMMEDIATE (= -1): specify an asynchronous flow using setImmediate() to call the listeners
-* NextGenEvents.TIMEOUT (= 0): specify an asynchronous flow using setTimeout() with a 0ms timeout to call the listeners
+* `NextGenEvents.NEXT_TICK` (= -2): specify an asynchronous flow using process.nextTick() to call the listeners
+* `NextGenEvents.IMMEDIATE` (= -1): specify an asynchronous flow using setImmediate() to call the listeners
+* `NextGenEvents.TIMEOUT` (= 0): specify an asynchronous flow using setTimeout() with a 0ms timeout to call the listeners
 * For any *N* value greater than 0: specify an asynchronous flow using setTimeout() with a `N * 10ms` timeout to call the listeners
 
 They are many elements that can define their own *nice value*.
