@@ -1,0 +1,1 @@
+(A) NextGenEvents.upgrade(): upgrade a regulare node.js EventsEmitter to a NextGen emitter @code
