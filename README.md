@@ -149,7 +149,7 @@ are few differences with the built-in Node.js EventEmitter.
 	* once `boolean` (default: false) *true* if this is a one-time-listener
 	* context `string` (default: undefined - no context) a non-empty string identifying a context, if defined the listener
 	  will be tied to this context, if this context is unexistant, it will be implicitly defined with default behaviour
-	* nice `integer` (default: .SYNC - a constant set to -3) see [the nice feature](#ref.note.nice) for details
+	* nice `integer` (default: -Infinity) see [the nice feature](#ref.note.nice) for details
 	* async `boolean` (default: false) set it to *true* if the listener is async by nature and a context serialization is wanted,
 	  when *async* is set for a listener, it **MUST** accept a completion callback as its last argument.
 
@@ -212,7 +212,7 @@ arguments for any listeners with *async = true*.
 	* id `any type` (default to the provided *fn* function) the identifier of the listener, useful if we have to remove it later
 	* context `string` (default: undefined - no context) a non-empty string identifying a context, if defined the listener
 	  will be tied to this context, if this context is unexistant, it will be implicitly defined with default behaviour
-	* nice `integer` (default: .SYNC - a constant set to -3) see [the nice feature](#ref.note.nice) for details
+	* nice `integer` (default: -Infinity) see [the nice feature](#ref.note.nice) for details
 	* async `boolean` (default: false) set it to *true* if the listener is async by nature and a context serialization is wanted
 
 Node.js documentation:
@@ -335,7 +335,7 @@ server.on( 'connection' , function( stream ) {
 
 console.log( util.inspect( server.listeners( 'connection' ) ) ) ;
 // output:
-// [ { id: [Function], fn: [Function], nice: -3, event: 'connection' } ]
+// [ { id: [Function], fn: [Function], nice: -Infinity, event: 'connection' } ]
 ```
 
 
@@ -343,7 +343,7 @@ console.log( util.inspect( server.listeners( 'connection' ) ) ) ;
 <a name="ref.setNice"></a>
 ### .setNice( nice )
 
-* nice `integer` (default: .SYNC - a constant set to -3) see [the nice feature](#ref.note.nice) for details
+* nice `integer` (default: -Infinity) see [the nice feature](#ref.note.nice) for details
 
 Set the default *nice value* of the current emitter.
 
@@ -352,7 +352,7 @@ Set the default *nice value* of the current emitter.
 <a name="ref.emit"></a>
 ### .emit( [nice] , eventName , [arg1] , [arg2] , [...] )
 
-* nice `integer` (default: .SYNC - a constant set to -3) see [the nice feature](#ref.note.nice) for details
+* nice `integer` (default: -Infinity) see [the nice feature](#ref.note.nice) for details
 * eventName `string` (optional) the name of the event to emit
 * arg1 `any type` (optional) first argument to transmit
 * arg2 `any type` (optional) second argument to transmit
@@ -374,14 +374,15 @@ This concept is inspired by the UNIX *nice* concept for processus (see the man p
 
 In this lib, this represents the asyncness of the event-emitting processing.
 
-Given that `NextGenEvents = require( 'nextgen-events' )`, we have those constants that can be used as *nice value*:
+The constant `require( 'nextgen-events' ).SYNC` can be used to have synchronous event emitting, its value is `-Infinity`
+and it's the default value.
 
-* `NextGenEvents.SYNC` (= -3): specify synchronous flow, this is the default and works like built-in Node.js events,
-  listeners are called synchronously when *.emit()* is called
-* `NextGenEvents.NEXT_TICK` (= -2): specify an asynchronous flow using process.nextTick() to call the listeners
-* `NextGenEvents.IMMEDIATE` (= -1): specify an asynchronous flow using setImmediate() to call the listeners
-* `NextGenEvents.TIMEOUT` (= 0): specify an asynchronous flow using setTimeout() with a 0ms timeout to call the listeners
-* For any *N* value greater than 0: specify an asynchronous flow using setTimeout() with a `N * 10ms` timeout to call the listeners
+* any nice value *N* greater than or equals to 0 will be emitted asynchronously using setTimeout() with a *N* ms timeout
+  to call the listeners
+* any nice value *N* lesser than 0 will emit event synchronously until *-N* recursion is reached, after that, setImmediate()
+  will be used to call the listeners, the first event count as 1 recursion, so if nice=-1, all events will be asynchronous,
+  if nice=-2 the initial event will call the listener synchronously, but if the listener emits event on the same emitter,
+  the sub-listener will be called through setTimeout(), breaking the recursion.
 
 They are many elements that can define their own *nice value*.
 
@@ -401,7 +402,7 @@ Here is how this is resolved:
 
 * contextName `string` a non-empty string identifying the context to be created
 * options `Object` an object of options, where:
-	* nice `integer` (default: .SYNC - a constant set to -3) see [the nice feature](#ref.note.nice) for details
+	* nice `integer` (default: -Infinity) see [the nice feature](#ref.note.nice) for details
 	* serial `boolean` (default: false) if true, the async listeners tied to this context will run sequentially,
 	  one after the other is fully completed
 
@@ -455,7 +456,7 @@ and the call has been queued, the timeout will apply at resume time.
 ### .setListenerContextNice( contextName , nice )
 
 * contextName `string` a non-empty string identifying the context to be created
-* nice `integer` (default: .SYNC - a constant set to -3) see [the nice feature](#ref.note.nice) for details
+* nice `integer` (default: -Infinity) see [the nice feature](#ref.note.nice) for details
 
 Set the *nice* value for the current context.
 
