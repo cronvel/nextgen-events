@@ -1,0 +1,7 @@
+
+v0.4.0
+------
+
+.emit() does not return the emitter anymore, but instead an object representing the event. The method .setInterruptible() allow the emitter to be interruptible, i.e. when an event is emitted, a listener returning a truthy value will abort the emitting process, other emitters will not receive the event. Furthermore, an 'interrupt' event will be fired.
+
+

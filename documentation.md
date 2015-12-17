@@ -362,7 +362,9 @@ Node.js documentation:
 
 > Execute each of the listeners in order with the supplied arguments.
 
-> Returns emitter, so calls can be chained.
+**It does not returns the emitter!**
+It returns an object representing the current event.
+
 
 
 
@@ -565,6 +567,8 @@ Any queued listener's calls will be lost.
 ## Incompatibilities with the built-in Node.js EventEmitter
 
 NextGen Events is almost compatible with Node.js' EventEmitter, except for few things:
+
+* .emit() does not return the emitter, but an object representing the current event
 
 * There is no such concept of *max listener* in NextGen Events, .setMaxListeners() function exists only to not break compatibility
   for people that want to make the switch, but it does nothing (it's an empty function).
