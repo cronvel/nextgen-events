@@ -568,12 +568,14 @@ Any queued listener's calls will be lost.
 
 NextGen Events is almost compatible with Node.js' EventEmitter, except for few things:
 
-* .emit() does not return the emitter, but an object representing the current event
+* .emit() does not return the emitter, but an object representing the current event.
+
+* There is more reserved event name: 'interrupt', 'emitted'.
 
 * There is no such concept of *max listener* in NextGen Events, .setMaxListeners() function exists only to not break compatibility
   for people that want to make the switch, but it does nothing (it's an empty function).
 
-* .removeListener() will remove all matching listener, not only the first listener found
+* .removeListener() will remove all matching listener, not only the first listener found.
 
 * 'newListener'/'removeListener' event listener will receive an array of new/removed *listener object*, instead of only one
   *listener function*.
