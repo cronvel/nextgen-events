@@ -1,4 +1,10 @@
 
+v0.5.0
+------
+
+Breaking change: .emit() now accepts a final (optional) completion callback argument.
+
+
 v0.4.1
 ------
 

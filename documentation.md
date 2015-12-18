@@ -350,13 +350,15 @@ Set the default *nice value* of the current emitter.
 
 
 <a name="ref.emit"></a>
-### .emit( [nice] , eventName , [arg1] , [arg2] , [...] )
+### .emit( [nice] , eventName , [arg1] , [arg2] , [...] , [callback] )
 
 * nice `integer` (default: -Infinity) see [the nice feature](#ref.note.nice) for details
 * eventName `string` (optional) the name of the event to emit
 * arg1 `any type` (optional) first argument to transmit
 * arg2 `any type` (optional) second argument to transmit
 * ...
+* callback `function` (optional) a completion callback triggered when all listener have done, accepting one argument:
+	* interruption `any type` if truthy, then emit was interrupted with this interrupt value (provided by userland)
 
 Node.js documentation:
 
@@ -569,6 +571,10 @@ Any queued listener's calls will be lost.
 NextGen Events is almost compatible with Node.js' EventEmitter, except for few things:
 
 * .emit() does not return the emitter, but an object representing the current event.
+
+* If the last argument passed to .emit() is a function, it is not passed to listeners, instead it is a completion callback
+  triggered when all listeners have done there job. If one want to pass function to listener as the final argument, it is easy
+  to add an extra `null` or `undefined` argument.
 
 * There is more reserved event name: 'interrupt', 'emitted'.
 

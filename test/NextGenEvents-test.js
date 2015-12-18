@@ -82,15 +82,14 @@ function asyncEventTest( emitterNice , emitNice , listenerNice , contextNice , f
 	if ( emitNice ) { emitter.emit( emitNice , 'event' , 'one' , 'two' , 'three' ) ; }
 	else { emitter.emit( 'event' , 'one' , 'two' , 'three' ) ; }
 	
-	process.nextTick( function() { order.push( 'nextTick' ) ; } ) ;
 	setImmediate( function() { order.push( 'setImmediate' ) ; } ) ;
-	setTimeout( function() { order.push( 'setTimeout10' ) ; } , 10 ) ;
-	setTimeout( function() { order.push( 'setTimeout20' ) ; } , 20 ) ;
+	setTimeout( function() { order.push( 'setTimeout25' ) ; } , 25 ) ;
+	setTimeout( function() { order.push( 'setTimeout50' ) ; } , 50 ) ;
 	
 	// Finish
 	setTimeout( function() {
 		finish( order ) ;
-	} , 40 ) ;
+	} , 80 ) ;
 	
 	order.push( 'flow' ) ;
 }
@@ -734,14 +733,14 @@ describe( "Next Gen feature: async emitting" , function() {
 	
 	it( "should emit synchronously, with a synchronous flow (nice = NextGenEvents.SYNC)" , function( done ) {
 		asyncEventTest( NextGenEvents.SYNC , undefined , undefined , undefined , function( order ) {
-			expect( order ).to.eql( [ 'listener' , 'flow' , 'nextTick' , 'setImmediate' , 'setTimeout10' , 'setTimeout20' ] ) ;
+			expect( order ).to.eql( [ 'listener' , 'flow' , 'setImmediate' , 'setTimeout25' , 'setTimeout50' ] ) ;
 			done() ;
 		} ) ;
 	} ) ;
 	
 	it( "should emit asynchronously, with an asynchronous flow, almost as fast as possible (nice = -1)" , function( done ) {
 		asyncEventTest( -1 , undefined , undefined , undefined , function( order ) {
-			expect( order ).to.eql( [ 'flow' , 'nextTick' , 'listener' , 'setImmediate' , 'setTimeout10' , 'setTimeout20' ] ) ;
+			expect( order ).to.eql( [ 'flow' , 'listener' , 'setImmediate' , 'setTimeout25' , 'setTimeout50' ] ) ;
 			done() ;
 		} ) ;
 	} ) ;
@@ -749,38 +748,44 @@ describe( "Next Gen feature: async emitting" , function() {
 	it( "should emit asynchronously, with an asynchronous flow, with minimal delay (nice = 0)" , function( done ) {
 		asyncEventTest( 0 , undefined , undefined , undefined , function( order ) {
 			try {
-				expect( order ).to.eql( [ 'flow' , 'nextTick' , 'setImmediate' , 'listener' , 'setTimeout10' , 'setTimeout20' ] ) ;
+				expect( order ).to.eql( [ 'flow' , 'setImmediate' , 'listener' , 'setTimeout25' , 'setTimeout50' ] ) ;
 			}
 			catch( error ) {
 				// Sometime setImmediate() is unpredictable and is slower than setTimeout(fn,0)
 				// It is a bug of V8, not a bug of the async lib
-				expect( order ).to.eql( [ 'flow' , 'nextTick' , 'listener' , 'setImmediate' , 'setTimeout10' , 'setTimeout20' ] ) ;
+				try {
+					expect( order ).to.eql( [ 'flow' , 'listener' , 'setImmediate' , 'setTimeout25' , 'setTimeout50' ] ) ;
+				}
+				catch( error ) {
+					// Or even slower than setTimeout(fn,25)... -_-'
+					expect( order ).to.eql( [ 'flow' , 'listener' , 'setTimeout25' , 'setImmediate' , 'setTimeout50' ] ) ;
+				}
 			}
 			done() ;
 		} ) ;
 	} ) ;
 	
-	it( "should emit asynchronously, with an asynchronous flow, with a 15ms delay (nice = 15 -> setTimeout 15ms)" , function( done ) {
-		asyncEventTest( 15 , undefined , undefined , undefined , function( order ) {
-			expect( order ).to.eql( [ 'flow' , 'nextTick' , 'setImmediate' , 'setTimeout10' , 'listener' , 'setTimeout20' ] ) ;
+	it( "should emit asynchronously, with an asynchronous flow, with a 35ms delay (nice = 35 -> setTimeout 35ms)" , function( done ) {
+		asyncEventTest( 35 , undefined , undefined , undefined , function( order ) {
+			expect( order ).to.eql( [ 'flow' , 'setImmediate' , 'setTimeout25' , 'listener' , 'setTimeout50' ] ) ;
 			done() ;
 		} ) ;
 	} ) ;
 	
-	it( "should emit asynchronously, with an asynchronous flow, with a 30ms delay (nice = 30 -> setTimeout 30ms)" , function( done ) {
-		asyncEventTest( 30 , undefined , undefined , undefined , function( order ) {
-			expect( order ).to.eql( [ 'flow' , 'nextTick' , 'setImmediate' , 'setTimeout10' , 'setTimeout20' , 'listener' ] ) ;
+	it( "should emit asynchronously, with an asynchronous flow, with a 70ms delay (nice = 70 -> setTimeout 70ms)" , function( done ) {
+		asyncEventTest( 70 , undefined , undefined , undefined , function( order ) {
+			expect( order ).to.eql( [ 'flow' , 'setImmediate' , 'setTimeout25' , 'setTimeout50' , 'listener' ] ) ;
 			done() ;
 		} ) ;
 	} ) ;
 	
 	it( ".emit( nice , event , ... ) should overide emitter's nice value" , function( done ) {
-		asyncEventTest( undefined , 15 , undefined , undefined , function( order ) {
-			expect( order ).to.eql( [ 'flow' , 'nextTick' , 'setImmediate' , 'setTimeout10' , 'listener' , 'setTimeout20' ] ) ;
-			asyncEventTest( NextGenEvents.SYNC , 15 , undefined , undefined , function( order ) {
-				expect( order ).to.eql( [ 'flow' , 'nextTick' , 'setImmediate' , 'setTimeout10' , 'listener' , 'setTimeout20' ] ) ;
-				asyncEventTest( 100 , 15 , undefined , undefined , function( order ) {
-					expect( order ).to.eql( [ 'flow' , 'nextTick' , 'setImmediate' , 'setTimeout10' , 'listener' , 'setTimeout20' ] ) ;
+		asyncEventTest( undefined , 35 , undefined , undefined , function( order ) {
+			expect( order ).to.eql( [ 'flow' , 'setImmediate' , 'setTimeout25' , 'listener' , 'setTimeout50' ] ) ;
+			asyncEventTest( NextGenEvents.SYNC , 35 , undefined , undefined , function( order ) {
+				expect( order ).to.eql( [ 'flow' , 'setImmediate' , 'setTimeout25' , 'listener' , 'setTimeout50' ] ) ;
+				asyncEventTest( 100 , 35 , undefined , undefined , function( order ) {
+					expect( order ).to.eql( [ 'flow' , 'setImmediate' , 'setTimeout25' , 'listener' , 'setTimeout50' ] ) ;
 					done() ;
 				} ) ;
 			} ) ;
@@ -788,12 +793,12 @@ describe( "Next Gen feature: async emitting" , function() {
 	} ) ;
 	
 	it( "should use the highest nice value between the context's nice, the listener's nice and the emitter's nice" , function( done ) {
-		asyncEventTest( undefined , 15 , NextGenEvents.SYNC , NextGenEvents.SYNC , function( order ) {
-			expect( order ).to.eql( [ 'flow' , 'nextTick' , 'setImmediate' , 'setTimeout10' , 'listener' , 'setTimeout20' ] ) ;
-			asyncEventTest( undefined , NextGenEvents.SYNC , 15 , NextGenEvents.SYNC , function( order ) {
-				expect( order ).to.eql( [ 'flow' , 'nextTick' , 'setImmediate' , 'setTimeout10' , 'listener' , 'setTimeout20' ] ) ;
-				asyncEventTest( undefined , NextGenEvents.SYNC , NextGenEvents.SYNC , 15 , function( order ) {
-					expect( order ).to.eql( [ 'flow' , 'nextTick' , 'setImmediate' , 'setTimeout10' , 'listener' , 'setTimeout20' ] ) ;
+		asyncEventTest( undefined , 35 , NextGenEvents.SYNC , NextGenEvents.SYNC , function( order ) {
+			expect( order ).to.eql( [ 'flow' , 'setImmediate' , 'setTimeout25' , 'listener' , 'setTimeout50' ] ) ;
+			asyncEventTest( undefined , NextGenEvents.SYNC , 35 , NextGenEvents.SYNC , function( order ) {
+				expect( order ).to.eql( [ 'flow' , 'setImmediate' , 'setTimeout25' , 'listener' , 'setTimeout50' ] ) ;
+				asyncEventTest( undefined , NextGenEvents.SYNC , NextGenEvents.SYNC , 35 , function( order ) {
+					expect( order ).to.eql( [ 'flow' , 'setImmediate' , 'setTimeout25' , 'listener' , 'setTimeout50' ] ) ;
 					done() ;
 				} ) ;
 			} ) ;
@@ -1230,7 +1235,7 @@ describe( "Next Gen feature: contexts serialization" , function() {
 
 describe( "Next Gen feature: interupt event emitting, and 'interrupt' event" , function() {
 	
-	it( "should add many basic listeners for many events, and multiple emits should trigger only relevant listener" , function() {
+	it( "should fire an event, the first listener should interrupt it, thus firing an 'interrupt' event" , function() {
 		
 		var bus = Object.create( NextGenEvents.prototype ) ;
 		bus.setInterruptible( true ) ;
@@ -1257,7 +1262,7 @@ describe( "Next Gen feature: interupt event emitting, and 'interrupt' event" , f
 		expect( triggered ).to.eql( { foo1: 1 , foo2: 0 , foo3: 0 , interrupt1: 1 , interrupt2: 1 } ) ;
 	} ) ;
 	
-	it( "should add many basic listeners for many events, and multiple emits should trigger only relevant listener" , function( done ) {
+	it( "should fire asynchronously an event, the first listener should interrupt it, thus firing an 'interrupt' event" , function( done ) {
 		
 		var bus = Object.create( NextGenEvents.prototype ) ;
 		bus.setInterruptible( true ) ;
@@ -1285,13 +1290,46 @@ describe( "Next Gen feature: interupt event emitting, and 'interrupt' event" , f
 		
 		bus.emit( 20 , 'foo' ) ;
 	} ) ;
+	
+	it( "should fire asynchronously an event, the first listener should interrupt it using its callback, thus firing an 'interrupt' event" , function( done ) {
+		
+		var bus = Object.create( NextGenEvents.prototype ) ;
+		bus.setInterruptible( true ) ;
+		
+		var onFoo1 , onFoo2 , onFoo3 , onInterrupt1 , onInterrupt2 ;
+		var triggered = { foo1: 0 , foo2: 0 , foo3: 0 , interrupt1: 0 , interrupt2: 0 } ;
+		
+		// 3 listeners for 'foo'
+		onFoo1 = function( callback ) {
+			triggered.foo1 ++ ;
+			callback( { want: 'interruption' } ) ;
+		} ;
+		bus.on( 'foo' , onFoo1 , { async: true } ) ;
+		bus.on( 'foo' , onFoo2 = function() { triggered.foo2 ++ ; } ) ;
+		bus.on( 'foo' , onFoo3 = function() { triggered.foo3 ++ ; } ) ;
+		
+		bus.on( 'interrupt' , onInterrupt1 = function( object ) {
+			triggered.interrupt1 ++ ;
+			expect( object ).to.eql( { want: 'interruption' } ) ;
+		} ) ;
+		
+		bus.on( 'interrupt' , onInterrupt2 = function( object ) {
+			triggered.interrupt2 ++ ;
+			//console.error( ">>> object: " , object ) ;
+			expect( object ).to.eql( { want: 'interruption' } ) ;
+			expect( triggered ).to.eql( { foo1: 1 , foo2: 0 , foo3: 0 , interrupt1: 1 , interrupt2: 1 } ) ;
+			done() ;
+		} ) ;
+		
+		bus.emit( 20 , 'foo' ) ;
+	} ) ;
 } ) ;
 
 
 
-describe( "zzz Next Gen feature: finish callback" , function() {
+describe( "Next Gen feature: completion callback" , function() {
 	
-	it( "should add many basic listeners for many events, and multiple emits should trigger only relevant listener" , function( done ) {
+	it( "should emit an event with a completion callback, triggered when all synchronous listener have finished running" , function( done ) {
 		
 		var bus = Object.create( NextGenEvents.prototype ) ;
 		bus.setInterruptible( true ) ;
@@ -1321,7 +1359,7 @@ describe( "zzz Next Gen feature: finish callback" , function() {
 		} ) ;
 	} ) ;
 	
-	it( "should add many basic listeners for many events, and multiple emits should trigger only relevant listener" , function( done ) {
+	it( "if the event is interrupted, the completion callback should be triggered with the 'interrupt' value" , function( done ) {
 		
 		var bus = Object.create( NextGenEvents.prototype ) ;
 		bus.setInterruptible( true ) ;
@@ -1331,7 +1369,7 @@ describe( "zzz Next Gen feature: finish callback" , function() {
 		
 		// 3 listeners for 'foo'
 		bus.on( 'foo' , onFoo1 = function() { triggered.foo1 ++ ; } ) ;
-		bus.on( 'foo' , onFoo2 = function() { triggered.foo2 ++ ; return { want: 'interruption' } } ) ;
+		bus.on( 'foo' , onFoo2 = function() { triggered.foo2 ++ ; return { want: 'interruption' } ; } ) ;
 		bus.on( 'foo' , onFoo3 = function() { triggered.foo3 ++ ; } ) ;
 		
 		bus.emit( 'foo' , function( interruption ) {
@@ -1354,7 +1392,7 @@ describe( "zzz Next Gen feature: finish callback" , function() {
 		} ) ;
 	} ) ;
 	
-	it( "should add many basic listeners for many events, and multiple emits should trigger only relevant listener" , function( done ) {
+	it( "the completion callback should work with asynchronous listener" , function( done ) {
 		
 		var bus = Object.create( NextGenEvents.prototype ) ;
 		bus.setInterruptible( true ) ;
@@ -1363,7 +1401,13 @@ describe( "zzz Next Gen feature: finish callback" , function() {
 		var triggered = { foo1: 0 , foo2: 0 , foo3: 0 } ;
 		
 		// 3 listeners for 'foo'
-		bus.on( 'foo' , onFoo1 = function() { setTimeout( function() { triggered.foo1 ++ ; } ) ;
+		onFoo1 = function( callback ) {
+			setTimeout( function() {
+				triggered.foo1 ++ ;
+				callback() ;
+			} , 10 ) ;
+		} ;
+		bus.on( 'foo' , onFoo1 , { async: true } ) ;
 		bus.on( 'foo' , onFoo2 = function() { triggered.foo2 ++ ; } ) ;
 		bus.on( 'foo' , onFoo3 = function() { triggered.foo3 ++ ; } ) ;
 		
@@ -1378,6 +1422,123 @@ describe( "zzz Next Gen feature: finish callback" , function() {
 				bus.emit( 10 , 'foo' , function() {
 					expect( arguments.length ).to.be( 0 ) ;
 					expect( triggered ).to.eql( { foo1: 3 , foo2: 3 , foo3: 3 } ) ;
+					done() ;
+				} ) ;
+			} ) ;
+		} ) ;
+	} ) ;
+	
+	it( "the completion callback should work with listeners asynchronously interrupting the event" , function( done ) {
+		
+		var bus = Object.create( NextGenEvents.prototype ) ;
+		bus.setInterruptible( true ) ;
+		
+		var onFoo1 , onFoo2 , onFoo3 ;
+		var triggered = { foo1: 0 , foo2: 0 , foo3: 0 } ;
+		
+		// 3 listeners for 'foo'
+		onFoo1 = function( callback ) {
+			setTimeout( function() {
+				triggered.foo1 ++ ;
+				callback( { want: 'interruption' } ) ;
+			} , 10 ) ;
+		} ;
+		bus.on( 'foo' , onFoo1 , { async: true } ) ;
+		bus.on( 'foo' , onFoo2 = function() { triggered.foo2 ++ ; } ) ;
+		bus.on( 'foo' , onFoo3 = function() { triggered.foo3 ++ ; } ) ;
+		
+		bus.emit( 'foo' , function( interruption ) {
+			expect( arguments.length ).to.be( 1 ) ;
+			expect( interruption ).to.eql( { want: 'interruption' } ) ;
+			expect( triggered ).to.eql( { foo1: 1 , foo2: 1 , foo3: 1 } ) ;
+			
+			bus.emit( -1 , 'foo' , function( interruption ) {
+				expect( arguments.length ).to.be( 1 ) ;
+				expect( interruption ).to.eql( { want: 'interruption' } ) ;
+				expect( triggered ).to.eql( { foo1: 2 , foo2: 2 , foo3: 2 } ) ;
+				
+				bus.emit( 10 , 'foo' , function( interruption ) {
+					expect( arguments.length ).to.be( 1 ) ;
+					expect( interruption ).to.eql( { want: 'interruption' } ) ;
+					expect( triggered ).to.eql( { foo1: 3 , foo2: 3 , foo3: 3 } ) ;
+					done() ;
+				} ) ;
+			} ) ;
+		} ) ;
+	} ) ;
+	
+	it( "the completion callback should work with an async listeners synchronously interrupting the event with its callback" , function( done ) {
+		
+		var bus = Object.create( NextGenEvents.prototype ) ;
+		bus.setInterruptible( true ) ;
+		
+		var onFoo1 , onFoo2 , onFoo3 ;
+		var triggered = { foo1: 0 , foo2: 0 , foo3: 0 } ;
+		
+		// 3 listeners for 'foo'
+		onFoo1 = function( callback ) {
+			triggered.foo1 ++ ;
+			callback( { want: 'interruption' } ) ;
+		} ;
+		bus.on( 'foo' , onFoo1 , { async: true } ) ;
+		bus.on( 'foo' , onFoo2 = function() { triggered.foo2 ++ ; } ) ;
+		bus.on( 'foo' , onFoo3 = function() { triggered.foo3 ++ ; } ) ;
+		
+		bus.emit( 'foo' , function( interruption ) {
+			expect( arguments.length ).to.be( 1 ) ;
+			expect( interruption ).to.eql( { want: 'interruption' } ) ;
+			expect( triggered ).to.eql( { foo1: 1 , foo2: 0 , foo3: 0 } ) ;
+			
+			bus.emit( -1 , 'foo' , function( interruption ) {
+				expect( arguments.length ).to.be( 1 ) ;
+				expect( interruption ).to.eql( { want: 'interruption' } ) ;
+				expect( triggered ).to.eql( { foo1: 2 , foo2: 0 , foo3: 0 } ) ;
+				
+				bus.emit( 10 , 'foo' , function( interruption ) {
+					expect( arguments.length ).to.be( 1 ) ;
+					expect( interruption ).to.eql( { want: 'interruption' } ) ;
+					expect( triggered ).to.eql( { foo1: 3 , foo2: 0 , foo3: 0 } ) ;
+					done() ;
+				} ) ;
+			} ) ;
+		} ) ;
+	} ) ;
+	
+	it( "the completion callback should work with an async listeners synchronously interrupting the event using return" , function( done ) {
+		
+		var bus = Object.create( NextGenEvents.prototype ) ;
+		bus.setInterruptible( true ) ;
+		
+		var onFoo1 , onFoo2 , onFoo3 ;
+		var triggered = { foo1: 0 , foo2: 0 , foo3: 0 } ;
+		
+		// 3 listeners for 'foo'
+		onFoo1 = function( callback ) {
+			triggered.foo1 ++ ;
+			return { want: 'interruption' } ;
+			setTimeout( function() {
+				triggered.foo1 ++ ;
+				callback() ;
+			} , 10 ) ;
+		} ;
+		bus.on( 'foo' , onFoo1 , { async: true } ) ;
+		bus.on( 'foo' , onFoo2 = function() { triggered.foo2 ++ ; } ) ;
+		bus.on( 'foo' , onFoo3 = function() { triggered.foo3 ++ ; } ) ;
+		
+		bus.emit( 'foo' , function( interruption ) {
+			expect( arguments.length ).to.be( 1 ) ;
+			expect( interruption ).to.eql( { want: 'interruption' } ) ;
+			expect( triggered ).to.eql( { foo1: 1 , foo2: 0 , foo3: 0 } ) ;
+			
+			bus.emit( -1 , 'foo' , function( interruption ) {
+				expect( arguments.length ).to.be( 1 ) ;
+				expect( interruption ).to.eql( { want: 'interruption' } ) ;
+				expect( triggered ).to.eql( { foo1: 2 , foo2: 0 , foo3: 0 } ) ;
+				
+				bus.emit( 10 , 'foo' , function( interruption ) {
+					expect( arguments.length ).to.be( 1 ) ;
+					expect( interruption ).to.eql( { want: 'interruption' } ) ;
+					expect( triggered ).to.eql( { foo1: 3 , foo2: 0 , foo3: 0 } ) ;
 					done() ;
 				} ) ;
 			} ) ;
