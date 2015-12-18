@@ -1,4 +1,10 @@
 
+v0.5.3
+------
+
+.emit()'s completion callback now has the event object passed as argument #1
+
+
 v0.5.2
 ------
 

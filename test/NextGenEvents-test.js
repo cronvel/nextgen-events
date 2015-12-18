@@ -1353,15 +1353,15 @@ describe( "Next Gen feature: completion callback" , function() {
 		bus.on( 'foo' , onFoo3 = function() { triggered.foo3 ++ ; } ) ;
 		
 		bus.emit( 'foo' , function() {
-			expect( arguments.length ).to.be( 0 ) ;
+			expect( arguments.length ).to.be( 2 ) ;
 			expect( triggered ).to.eql( { foo1: 1 , foo2: 1 , foo3: 1 } ) ;
 			
 			bus.emit( -1 , 'foo' , function() {
-				expect( arguments.length ).to.be( 0 ) ;
+				expect( arguments.length ).to.be( 2 ) ;
 				expect( triggered ).to.eql( { foo1: 2 , foo2: 2 , foo3: 2 } ) ;
 				
 				bus.emit( 10 , 'foo' , function() {
-					expect( arguments.length ).to.be( 0 ) ;
+					expect( arguments.length ).to.be( 2 ) ;
 					expect( triggered ).to.eql( { foo1: 3 , foo2: 3 , foo3: 3 } ) ;
 					done() ;
 				} ) ;
@@ -1383,17 +1383,17 @@ describe( "Next Gen feature: completion callback" , function() {
 		bus.on( 'foo' , onFoo3 = function() { triggered.foo3 ++ ; } ) ;
 		
 		bus.emit( 'foo' , function( interruption ) {
-			expect( arguments.length ).to.be( 1 ) ;
+			expect( arguments.length ).to.be( 2 ) ;
 			expect( interruption ).to.eql( { want: 'interruption' } ) ;
 			expect( triggered ).to.eql( { foo1: 1 , foo2: 1 , foo3: 0 } ) ;
 			
 			bus.emit( -1 , 'foo' , function( interruption ) {
-				expect( arguments.length ).to.be( 1 ) ;
+				expect( arguments.length ).to.be( 2 ) ;
 				expect( interruption ).to.eql( { want: 'interruption' } ) ;
 				expect( triggered ).to.eql( { foo1: 2 , foo2: 2 , foo3: 0 } ) ;
 				
 				bus.emit( 10 , 'foo' , function( interruption ) {
-					expect( arguments.length ).to.be( 1 ) ;
+					expect( arguments.length ).to.be( 2 ) ;
 					expect( interruption ).to.eql( { want: 'interruption' } ) ;
 					expect( triggered ).to.eql( { foo1: 3 , foo2: 3 , foo3: 0 } ) ;
 					done() ;
@@ -1422,15 +1422,15 @@ describe( "Next Gen feature: completion callback" , function() {
 		bus.on( 'foo' , onFoo3 = function() { triggered.foo3 ++ ; } ) ;
 		
 		bus.emit( 'foo' , function() {
-			expect( arguments.length ).to.be( 0 ) ;
+			expect( arguments.length ).to.be( 2 ) ;
 			expect( triggered ).to.eql( { foo1: 1 , foo2: 1 , foo3: 1 } ) ;
 			
 			bus.emit( -1 , 'foo' , function() {
-				expect( arguments.length ).to.be( 0 ) ;
+				expect( arguments.length ).to.be( 2 ) ;
 				expect( triggered ).to.eql( { foo1: 2 , foo2: 2 , foo3: 2 } ) ;
 				
 				bus.emit( 10 , 'foo' , function() {
-					expect( arguments.length ).to.be( 0 ) ;
+					expect( arguments.length ).to.be( 2 ) ;
 					expect( triggered ).to.eql( { foo1: 3 , foo2: 3 , foo3: 3 } ) ;
 					done() ;
 				} ) ;
@@ -1458,17 +1458,17 @@ describe( "Next Gen feature: completion callback" , function() {
 		bus.on( 'foo' , onFoo3 = function() { triggered.foo3 ++ ; } ) ;
 		
 		bus.emit( 'foo' , function( interruption ) {
-			expect( arguments.length ).to.be( 1 ) ;
+			expect( arguments.length ).to.be( 2 ) ;
 			expect( interruption ).to.eql( { want: 'interruption' } ) ;
 			expect( triggered ).to.eql( { foo1: 1 , foo2: 1 , foo3: 1 } ) ;
 			
 			bus.emit( -1 , 'foo' , function( interruption ) {
-				expect( arguments.length ).to.be( 1 ) ;
+				expect( arguments.length ).to.be( 2 ) ;
 				expect( interruption ).to.eql( { want: 'interruption' } ) ;
 				expect( triggered ).to.eql( { foo1: 2 , foo2: 2 , foo3: 2 } ) ;
 				
 				bus.emit( 10 , 'foo' , function( interruption ) {
-					expect( arguments.length ).to.be( 1 ) ;
+					expect( arguments.length ).to.be( 2 ) ;
 					expect( interruption ).to.eql( { want: 'interruption' } ) ;
 					expect( triggered ).to.eql( { foo1: 3 , foo2: 3 , foo3: 3 } ) ;
 					done() ;
@@ -1495,17 +1495,17 @@ describe( "Next Gen feature: completion callback" , function() {
 		bus.on( 'foo' , onFoo3 = function() { triggered.foo3 ++ ; } ) ;
 		
 		bus.emit( 'foo' , function( interruption ) {
-			expect( arguments.length ).to.be( 1 ) ;
+			expect( arguments.length ).to.be( 2 ) ;
 			expect( interruption ).to.eql( { want: 'interruption' } ) ;
 			expect( triggered ).to.eql( { foo1: 1 , foo2: 0 , foo3: 0 } ) ;
 			
 			bus.emit( -1 , 'foo' , function( interruption ) {
-				expect( arguments.length ).to.be( 1 ) ;
+				expect( arguments.length ).to.be( 2 ) ;
 				expect( interruption ).to.eql( { want: 'interruption' } ) ;
 				expect( triggered ).to.eql( { foo1: 2 , foo2: 0 , foo3: 0 } ) ;
 				
 				bus.emit( 10 , 'foo' , function( interruption ) {
-					expect( arguments.length ).to.be( 1 ) ;
+					expect( arguments.length ).to.be( 2 ) ;
 					expect( interruption ).to.eql( { want: 'interruption' } ) ;
 					expect( triggered ).to.eql( { foo1: 3 , foo2: 0 , foo3: 0 } ) ;
 					done() ;
@@ -1536,17 +1536,17 @@ describe( "Next Gen feature: completion callback" , function() {
 		bus.on( 'foo' , onFoo3 = function() { triggered.foo3 ++ ; } ) ;
 		
 		bus.emit( 'foo' , function( interruption ) {
-			expect( arguments.length ).to.be( 1 ) ;
+			expect( arguments.length ).to.be( 2 ) ;
 			expect( interruption ).to.eql( { want: 'interruption' } ) ;
 			expect( triggered ).to.eql( { foo1: 1 , foo2: 0 , foo3: 0 } ) ;
 			
 			bus.emit( -1 , 'foo' , function( interruption ) {
-				expect( arguments.length ).to.be( 1 ) ;
+				expect( arguments.length ).to.be( 2 ) ;
 				expect( interruption ).to.eql( { want: 'interruption' } ) ;
 				expect( triggered ).to.eql( { foo1: 2 , foo2: 0 , foo3: 0 } ) ;
 				
 				bus.emit( 10 , 'foo' , function( interruption ) {
-					expect( arguments.length ).to.be( 1 ) ;
+					expect( arguments.length ).to.be( 2 ) ;
 					expect( interruption ).to.eql( { want: 'interruption' } ) ;
 					expect( triggered ).to.eql( { foo1: 3 , foo2: 0 , foo3: 0 } ) ;
 					done() ;

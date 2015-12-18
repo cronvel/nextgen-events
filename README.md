@@ -369,15 +369,17 @@ Set the default *nice value* of the current emitter.
 * arg1 `any type` (optional) first argument to transmit
 * arg2 `any type` (optional) second argument to transmit
 * ...
-* callback `function` (optional) a completion callback triggered when all listener have done, accepting one argument:
+* callback `function` (optional) a completion callback triggered when all listener have done, accepting arguments:
 	* interruption `any type` if truthy, then emit was interrupted with this interrupt value (provided by userland)
+	* event `Object` representing the current event
+
+It returns an object representing the current event.
 
 Node.js documentation:
 
 > Execute each of the listeners in order with the supplied arguments.
 
 **It does not returns the emitter!**
-It returns an object representing the current event.
 
 
 
