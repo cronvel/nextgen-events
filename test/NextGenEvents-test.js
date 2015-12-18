@@ -658,7 +658,7 @@ describe( "Basic synchronous event-emitting (NOT compatible with node)" , functi
 		expect( stats.count ).to.eql( { rm1: 2 } ) ;
 		expect( stats.orders ).to.eql( [ 'rm1' , 'rm1' ] ) ;
 		
-		bus.emit( 'foo' , onFoo ) ;
+		bus.emit( 'foo' ) ;
 		expect( stats.count ).to.eql( { rm1: 3 , foo: 1 } ) ;
 		expect( stats.orders ).to.eql( [ 'rm1' , 'rm1' , 'foo' , 'rm1' ] ) ;
 		
@@ -1284,6 +1284,104 @@ describe( "Next Gen feature: interupt event emitting, and 'interrupt' event" , f
 		} ) ;
 		
 		bus.emit( 20 , 'foo' ) ;
+	} ) ;
+} ) ;
+
+
+
+describe( "zzz Next Gen feature: finish callback" , function() {
+	
+	it( "should add many basic listeners for many events, and multiple emits should trigger only relevant listener" , function( done ) {
+		
+		var bus = Object.create( NextGenEvents.prototype ) ;
+		bus.setInterruptible( true ) ;
+		
+		var onFoo1 , onFoo2 , onFoo3 ;
+		var triggered = { foo1: 0 , foo2: 0 , foo3: 0 } ;
+		
+		// 3 listeners for 'foo'
+		bus.on( 'foo' , onFoo1 = function() { triggered.foo1 ++ ; } ) ;
+		bus.on( 'foo' , onFoo2 = function() { triggered.foo2 ++ ; } ) ;
+		bus.on( 'foo' , onFoo3 = function() { triggered.foo3 ++ ; } ) ;
+		
+		bus.emit( 'foo' , function() {
+			expect( arguments.length ).to.be( 0 ) ;
+			expect( triggered ).to.eql( { foo1: 1 , foo2: 1 , foo3: 1 } ) ;
+			
+			bus.emit( -1 , 'foo' , function() {
+				expect( arguments.length ).to.be( 0 ) ;
+				expect( triggered ).to.eql( { foo1: 2 , foo2: 2 , foo3: 2 } ) ;
+				
+				bus.emit( 10 , 'foo' , function() {
+					expect( arguments.length ).to.be( 0 ) ;
+					expect( triggered ).to.eql( { foo1: 3 , foo2: 3 , foo3: 3 } ) ;
+					done() ;
+				} ) ;
+			} ) ;
+		} ) ;
+	} ) ;
+	
+	it( "should add many basic listeners for many events, and multiple emits should trigger only relevant listener" , function( done ) {
+		
+		var bus = Object.create( NextGenEvents.prototype ) ;
+		bus.setInterruptible( true ) ;
+		
+		var onFoo1 , onFoo2 , onFoo3 ;
+		var triggered = { foo1: 0 , foo2: 0 , foo3: 0 } ;
+		
+		// 3 listeners for 'foo'
+		bus.on( 'foo' , onFoo1 = function() { triggered.foo1 ++ ; } ) ;
+		bus.on( 'foo' , onFoo2 = function() { triggered.foo2 ++ ; return { want: 'interruption' } } ) ;
+		bus.on( 'foo' , onFoo3 = function() { triggered.foo3 ++ ; } ) ;
+		
+		bus.emit( 'foo' , function( interruption ) {
+			expect( arguments.length ).to.be( 1 ) ;
+			expect( interruption ).to.eql( { want: 'interruption' } ) ;
+			expect( triggered ).to.eql( { foo1: 1 , foo2: 1 , foo3: 0 } ) ;
+			
+			bus.emit( -1 , 'foo' , function( interruption ) {
+				expect( arguments.length ).to.be( 1 ) ;
+				expect( interruption ).to.eql( { want: 'interruption' } ) ;
+				expect( triggered ).to.eql( { foo1: 2 , foo2: 2 , foo3: 0 } ) ;
+				
+				bus.emit( 10 , 'foo' , function( interruption ) {
+					expect( arguments.length ).to.be( 1 ) ;
+					expect( interruption ).to.eql( { want: 'interruption' } ) ;
+					expect( triggered ).to.eql( { foo1: 3 , foo2: 3 , foo3: 0 } ) ;
+					done() ;
+				} ) ;
+			} ) ;
+		} ) ;
+	} ) ;
+	
+	it( "should add many basic listeners for many events, and multiple emits should trigger only relevant listener" , function( done ) {
+		
+		var bus = Object.create( NextGenEvents.prototype ) ;
+		bus.setInterruptible( true ) ;
+		
+		var onFoo1 , onFoo2 , onFoo3 ;
+		var triggered = { foo1: 0 , foo2: 0 , foo3: 0 } ;
+		
+		// 3 listeners for 'foo'
+		bus.on( 'foo' , onFoo1 = function() { setTimeout( function() { triggered.foo1 ++ ; } ) ;
+		bus.on( 'foo' , onFoo2 = function() { triggered.foo2 ++ ; } ) ;
+		bus.on( 'foo' , onFoo3 = function() { triggered.foo3 ++ ; } ) ;
+		
+		bus.emit( 'foo' , function() {
+			expect( arguments.length ).to.be( 0 ) ;
+			expect( triggered ).to.eql( { foo1: 1 , foo2: 1 , foo3: 1 } ) ;
+			
+			bus.emit( -1 , 'foo' , function() {
+				expect( arguments.length ).to.be( 0 ) ;
+				expect( triggered ).to.eql( { foo1: 2 , foo2: 2 , foo3: 2 } ) ;
+				
+				bus.emit( 10 , 'foo' , function() {
+					expect( arguments.length ).to.be( 0 ) ;
+					expect( triggered ).to.eql( { foo1: 3 , foo2: 3 , foo3: 3 } ) ;
+					done() ;
+				} ) ;
+			} ) ;
+		} ) ;
 	} ) ;
 } ) ;
 
