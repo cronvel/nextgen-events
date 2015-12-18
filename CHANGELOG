@@ -1,4 +1,10 @@
 
+v0.5.2
+------
+
+New function .listenerCount() to be up to date with Node.js built-in events
+
+
 v0.5.1
 ------
 

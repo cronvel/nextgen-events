@@ -442,7 +442,7 @@ describe( "Basic synchronous event-emitting (node-compatible)" , function() {
 		expect( throwed ).to.be( 2 ) ;
 	} ) ;
 	
-	it( "NextGenEvents.listenerCount() should count listeners for an event" , function() {
+	it( "NextGenEvents.listenerCount() and .listenerCount() should count listeners for an event" , function() {
 		
 		var bus = Object.create( NextGenEvents.prototype ) ;
 		
@@ -451,25 +451,35 @@ describe( "Basic synchronous event-emitting (node-compatible)" , function() {
 		onFoo1 = function() {} ;
 		
 		bus.on( 'foo' , onFoo1 ) ;
+		expect( bus.listenerCount( 'foo' ) ).to.be( 1 ) ;
+		expect( bus.listenerCount( 'bar' ) ).to.be( 0 ) ;
 		expect( NextGenEvents.listenerCount( bus , 'foo' ) ).to.be( 1 ) ;
 		expect( NextGenEvents.listenerCount( bus , 'bar' ) ).to.be( 0 ) ;
 		
 		bus.on( 'foo' , onFoo1 ) ;
 		bus.on( 'foo' , onFoo1 ) ;
 		
+		expect( bus.listenerCount( 'foo' ) ).to.be( 3 ) ;
+		expect( bus.listenerCount( 'bar' ) ).to.be( 0 ) ;
 		expect( NextGenEvents.listenerCount( bus , 'foo' ) ).to.be( 3 ) ;
 		expect( NextGenEvents.listenerCount( bus , 'bar' ) ).to.be( 0 ) ;
 		
 		bus.removeListener( 'foo' , onFoo1 ) ;
 		
+		expect( bus.listenerCount( 'foo' ) ).to.be( 0 ) ;
+		expect( bus.listenerCount( 'bar' ) ).to.be( 0 ) ;
 		expect( NextGenEvents.listenerCount( bus , 'foo' ) ).to.be( 0 ) ;
 		expect( NextGenEvents.listenerCount( bus , 'bar' ) ).to.be( 0 ) ;
 		
 		bus.once( 'foo' , onFoo1 ) ;
+		expect( bus.listenerCount( 'foo' ) ).to.be( 1 ) ;
+		expect( bus.listenerCount( 'bar' ) ).to.be( 0 ) ;
 		expect( NextGenEvents.listenerCount( bus , 'foo' ) ).to.be( 1 ) ;
 		expect( NextGenEvents.listenerCount( bus , 'bar' ) ).to.be( 0 ) ;
 		
 		bus.emit( 'foo' ) ;
+		expect( bus.listenerCount( 'foo' ) ).to.be( 0 ) ;
+		expect( bus.listenerCount( 'bar' ) ).to.be( 0 ) ;
 		expect( NextGenEvents.listenerCount( bus , 'foo' ) ).to.be( 0 ) ;
 		expect( NextGenEvents.listenerCount( bus , 'bar' ) ).to.be( 0 ) ;
 		

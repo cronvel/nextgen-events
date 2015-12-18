@@ -125,6 +125,7 @@ are few differences with the built-in Node.js EventEmitter.
 * [.removeAllListeners()](#ref.removeAllListeners)
 * [.setMaxListeners()](#ref.setMaxListeners)
 * [.listeners()](#ref.listeners)
+* [.listenerCount()](#ref.listenerCount)
 * [.setNice()](#ref.setNice)
 * [.emit()](#ref.emit)
 * [.addListenerContext()](#ref.addListenerContext)
@@ -337,6 +338,17 @@ console.log( util.inspect( server.listeners( 'connection' ) ) ) ;
 // output:
 // [ { id: [Function], fn: [Function], nice: -Infinity, event: 'connection' } ]
 ```
+
+
+
+<a name="ref.listenerCount"></a>
+### .listenerCount( eventName )
+
+* eventName `string` the name of the event
+
+Node.js documentation:
+
+> Returns the number of listeners listening to the type of event.
 
 
 
