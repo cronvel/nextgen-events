@@ -1,4 +1,10 @@
 
+v0.5.5
+------
+
+Bugfix completion handler when no listener for an event
+
+
 v0.5.4
 ------
 
