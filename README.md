@@ -573,8 +573,8 @@ NextGen Events is almost compatible with Node.js' EventEmitter, except for few t
 * .emit() does not return the emitter, but an object representing the current event.
 
 * If the last argument passed to .emit() is a function, it is not passed to listeners, instead it is a completion callback
-  triggered when all listeners have done there job. If one want to pass function to listener as the final argument, it is easy
-  to add an extra `null` or `undefined` argument.
+  triggered when all listeners have done their job. If one want to pass function to listeners as the final argument, it is easy
+  to add an extra `null` or `undefined` argument to .emit().
 
 * There is more reserved event name: 'interrupt', 'emitted'.
 
