@@ -13,6 +13,7 @@ Next generation of events handling for node.js
 ## Feature highlights:
 
 * Standard event-handling almost compatible with Node.js built-in events
+* .emit() support a completion callback
 * Support for asynchronous event-handling
 * Multiple listeners can be tied to a single context
 * A context can be temporarly *disabled*
