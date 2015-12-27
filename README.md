@@ -5,8 +5,8 @@
 Next generation of events handling for node.js
 
 * License: MIT
-* Current status: beta
-* Platform: Node.js only (browser support is planned)
+* Current status: close to release
+* Platform: Node.js and browsers
 
 *NextGen Events* solves common trouble that one may encounter when dealing with events and listeners.
 

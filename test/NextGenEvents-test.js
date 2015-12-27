@@ -29,7 +29,21 @@
 
 
 
-var NextGenEvents = require( '../lib/NextGenEvents.js' ) ;
+var NextGenEvents ;
+
+if ( process.argv.length )   
+{
+	// We are running in Node.js
+	NextGenEvents = require( '../lib/NextGenEvents.js' ) ;
+}
+else
+{
+	// We are running in a browser
+	//console.log( 'Running browser version' ) ;
+	NextGenEvents = require( '../lib/browser.js' ) ;
+}
+
+
 
 var expect = require( 'expect.js' ) ;
 
