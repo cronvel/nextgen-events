@@ -1257,7 +1257,7 @@ describe( "Next Gen feature: contexts serialization" , function() {
 
 
 
-describe( "Next Gen feature: interupt event emitting, and 'interrupt' event" , function() {
+describe( "Next Gen feature: interrupt event emitting, and 'interrupt' event" , function() {
 	
 	it( "should fire an event, the first listener should interrupt it, thus firing an 'interrupt' event" , function() {
 		
