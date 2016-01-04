@@ -1,4 +1,10 @@
 
+v0.5.10
+-------
+
+fixed recursive emit issue when a listener modify the current listener array in the emit loop
+
+
 v0.5.9
 ------
 
