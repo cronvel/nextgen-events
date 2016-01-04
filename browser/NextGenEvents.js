@@ -62,6 +62,11 @@ NextGenEvents.init = function init()
 
 
 
+// Use it with .bind()
+NextGenEvents.filterOutCallback = function( what , currentElement ) { return what !== currentElement ; } ;
+
+
+
 // .addListener( eventName , [fn] , [options] )
 NextGenEvents.prototype.addListener = function addListener( eventName , fn , options )
 {
@@ -301,7 +306,7 @@ NextGenEvents.prototype.emit = function emit()
 {
 	var i , iMax , count = 0 ,
 		event , listener , context , currentNice ,
-		newListeners , removedListeners = [] ;
+		listeners , removedListeners = [] ;
 	
 	event = {
 		emitter: this ,
@@ -359,11 +364,14 @@ NextGenEvents.prototype.emit = function emit()
 	event.listeners = this.__ngev.events[ event.name ].length ;
 	this.__ngev.recursion ++ ;
 	
+	// Trouble arise when a listener is removed from another listener, while we are still in the loop.
+	// So we have to COPY the listener array right now!
+	listeners = this.__ngev.events[ event.name ].slice() ;
 	
-	for ( i = 0 , iMax = this.__ngev.events[ event.name ].length ; i < iMax ; i ++ )
+	for ( i = 0 , iMax = listeners.length ; i < iMax ; i ++ )
 	{
 		count ++ ;
-		listener = this.__ngev.events[ event.name ][ i ] ;
+		listener = listeners[ i ] ;
 		context = listener.context && this.__ngev.contexts[ listener.context ] ;
 		
 		// If the listener context is disabled...
@@ -376,17 +384,13 @@ NextGenEvents.prototype.emit = function emit()
 		
 		if ( listener.once )
 		{
-			if ( ! newListeners )
-			{
-				// So create a newListeners array containing all registered listener before this index
-				newListeners = this.__ngev.events[ event.name ].slice( 0 , i ) ;
-			}
+			// We should remove the current listener RIGHT NOW because of recursive .emit() issues:
+			// one listener may eventually fire this very same event synchronously during the current loop.
+			this.__ngev.events[ event.name ] = this.__ngev.events[ event.name ].filter(
+				NextGenEvents.filterOutCallback.bind( undefined , listener )
+			) ;
 			
 			removedListeners.push( listener ) ;
-		}
-		else if ( newListeners )
-		{
-			newListeners.push( listener ) ;
 		}
 		
 		if ( context && ( context.status === NextGenEvents.CONTEXT_QUEUED || ! context.ready ) )
@@ -423,12 +427,6 @@ NextGenEvents.prototype.emit = function emit()
 	
 	// Decrement recursion
 	this.__ngev.recursion -- ;
-	
-	// If some one time listener where triggered, we should replace the old listener array by the new
-	if ( newListeners )
-	{
-		this.__ngev.events[ event.name ] = newListeners ;
-	}
 	
 	// Emit 'removeListener' after calling listeners
 	if ( removedListeners.length && this.__ngev.events.removeListener.length )
