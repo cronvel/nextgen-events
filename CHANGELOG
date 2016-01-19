@@ -1,4 +1,10 @@
 
+v0.5.12
+-------
+
+The __ngev property is not enumerable anymore
+
+
 v0.5.11
 -------
 

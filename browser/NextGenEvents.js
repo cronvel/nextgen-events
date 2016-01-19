@@ -45,7 +45,7 @@ NextGenEvents.SYNC = -Infinity ;
 // It has an eventEmitter as 'this' anyway (always called using call()).
 NextGenEvents.init = function init()
 {
-	this.__ngev = {
+	Object.defineProperty( this , '__ngev' , { value: {
 		nice: NextGenEvents.SYNC ,
 		interruptible: false ,
 		recursion: 0 ,
@@ -57,7 +57,7 @@ NextGenEvents.init = function init()
 			newListener: [] ,
 			removeListener: []
 		}
-	} ;
+	} } ) ;
 } ;
 
 
