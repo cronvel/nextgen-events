@@ -25,6 +25,8 @@
 	SOFTWARE.
 */
 
+"use strict" ;
+
 
 
 // Create the object && export it
@@ -748,7 +750,10 @@ NextGenEvents.processQueue = function processQueue( contextName , isCompletionCa
 	SOFTWARE.
 */
 
+"use strict" ;
+
 /* global window */
+
 
 
 if ( typeof window.setImmediate !== 'function' )

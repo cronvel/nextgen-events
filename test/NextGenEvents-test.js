@@ -31,16 +31,13 @@
 
 var NextGenEvents ;
 
-if ( process.argv.length )   
+if ( process.browser )   
 {
-	// We are running in Node.js
-	NextGenEvents = require( '../lib/NextGenEvents.js' ) ;
+	NextGenEvents = require( '../lib/browser.js' ) ;
 }
 else
 {
-	// We are running in a browser
-	//console.log( 'Running browser version' ) ;
-	NextGenEvents = require( '../lib/browser.js' ) ;
+	NextGenEvents = require( '../lib/NextGenEvents.js' ) ;
 }
 
 
