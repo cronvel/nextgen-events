@@ -29,7 +29,9 @@
 
 
 
-var atc = require( '../lib/AsyncTryCatch.js' ) ;
+var AsyncTryCatch = require( '../lib/AsyncTryCatch.js' ) ;
+var asyncTry = AsyncTryCatch.try ;
+
 var expect = require( 'expect.js' ) ;
 
 
@@ -40,11 +42,11 @@ var expect = require( 'expect.js' ) ;
 
 
 
-describe( "..." , function() {
+describe( "Async Try Catch" , function() {
 	
 	it( "Sync" , function() {
 		
-		atc.try( function() {
+		asyncTry( function() {
 			throw new Error( 'sync error' ) ;
 		} )
 		.catch( function( error ) {
@@ -54,7 +56,7 @@ describe( "..." , function() {
 	
 	it( "Async: setTimeout" , function( done ) {
 		
-		atc.try( function() {
+		asyncTry( function() {
 			setTimeout( function() {
 				throw new Error( 'setTimeout error' ) ;
 			} , 0 ) ;
@@ -67,7 +69,7 @@ describe( "..." , function() {
 	
 	it( "Async: double setTimeout" , function( done ) {
 		
-		atc.try( function() {
+		asyncTry( function() {
 			setTimeout( function() {
 				setTimeout( function() {
 					throw new Error( 'double setTimeout error' ) ;
@@ -82,7 +84,7 @@ describe( "..." , function() {
 	
 	it( "Async: quintuple setTimeout" , function( done ) {
 		
-		atc.try( function() {
+		asyncTry( function() {
 			setTimeout( function() {
 				setTimeout( function() {
 					setTimeout( function() {
@@ -97,6 +99,32 @@ describe( "..." , function() {
 		} )
 		.catch( function( error ) {
 			expect( error.message ).to.be( 'quintuple setTimeout error' ) ;
+			done() ;
+		} ) ;
+	} ) ;
+	
+	it( "Async: double setTimeout, double async try catch, throw from the inner catch should bubble up to the outer catch" , function( done ) {
+		
+		asyncTry( function outerTry() {
+			
+			setTimeout( function outerTimeout() {
+				
+				asyncTry( function innerTry() {
+					
+					setTimeout( function innerTimeout() {
+						throw new Error( 'inner setTimeout error' ) ;
+					} , 0 ) ;
+				} )
+				.catch( function innerCatch( error ) {
+					expect( error.message ).to.be( 'inner setTimeout error' ) ;
+					//console.log( 'inner' , AsyncTryCatch.stack , "\n" ) ;
+					throw new Error( 'outer setTimeout error' ) ;
+				} ) ;
+			} , 0 ) ;
+		} )
+		.catch( function outerCatch( error ) {
+			expect( error.message ).to.be( 'outer setTimeout error' ) ;
+			//console.log( 'outer' , AsyncTryCatch.stack ) ;
 			done() ;
 		} ) ;
 	} ) ;
