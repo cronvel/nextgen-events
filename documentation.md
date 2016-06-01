@@ -401,7 +401,7 @@ and it's the default value.
 * any nice value *N* lesser than 0 will emit event synchronously until *-N* recursion is reached, after that, setImmediate()
   will be used to call the listeners, the first event count as 1 recursion, so if nice=-1, all events will be asynchronously emitted,
   if nice=-2 the initial event will call the listener synchronously, but if the listener emits events on the same emitter object,
-  the sub-listener will be called through setTimeout(), breaking the recursion... and so on...
+  the sub-listener will be called through setImmediate(), breaking the recursion... and so on...
 
 They are many elements that can define their own *nice value*.
 
