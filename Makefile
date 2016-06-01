@@ -29,7 +29,7 @@ lint: log/jshint.log
 unit: log/mocha.log
 
 # Performs the browser tests
-browser-test: log/testling.log
+#browser-test: log/_.log
 
 # This build the doc and README.md
 doc: README.md
@@ -48,7 +48,6 @@ MOCHA=./node_modules/.bin/mocha -c
 JSHINT=./node_modules/.bin/jshint --verbose
 BROWSERIFY=./node_modules/.bin/browserify
 UGLIFY=./node_modules/.bin/uglifyjs
-TESTLING=./node_modules/.bin/testling
 
 
 
@@ -69,13 +68,6 @@ log/jshint.log: log/npm-dev-install.log lib/*.js test/*.js
 # Mocha BDD STDOUT test
 log/mocha.log: log/npm-dev-install.log lib/*.js test/*.js
 	${MOCHA} test/*.js -R spec | tee log/mocha.log ; exit $${PIPESTATUS[0]}
-
-# Testling: Browser-side Mocha
-#log/testling.log: log/npm-dev-install.log log/browser.log browser/*.js test/*.js
-log/testling.log: lib/*.js test/*.js
-	@echo -ne "\x1b[33mReminder: On linux, Xvfb should be installed!\x1b[0m\n"
-	killall Xvfb ; sleep 1
-	${TESTLING} | tee log/testling.log ; exit $${PIPESTATUS[0]}
 
 # README
 README.md: documentation.md

@@ -125,7 +125,8 @@ NextGenEvents.prototype.addListener = function addListener( eventName , fn , opt
 
 
 
-NextGenEvents.prototype.on = NextGenEvents.prototype.addListener ;
+// NextGenEvents.addListener() is a backup, since the AsyncTryCatch module may overwrite both prototyped method
+NextGenEvents.addListener = NextGenEvents.prototype.on = NextGenEvents.prototype.addListener ;
 
 
 
