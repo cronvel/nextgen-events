@@ -123,10 +123,7 @@ NextGenEvents.prototype.addListener = function addListener( eventName , fn , opt
 	return this ;
 } ;
 
-
-
-// NextGenEvents.addListener() is a backup, since the AsyncTryCatch module may overwrite both prototyped method
-NextGenEvents.addListener = NextGenEvents.prototype.on = NextGenEvents.prototype.addListener ;
+NextGenEvents.prototype.on = NextGenEvents.prototype.addListener ;
 
 
 
@@ -184,8 +181,6 @@ NextGenEvents.prototype.removeListener = function removeListener( eventName , id
 	
 	return this ;
 } ;
-
-
 
 NextGenEvents.prototype.off = NextGenEvents.prototype.removeListener ;
 
@@ -723,6 +718,12 @@ NextGenEvents.processQueue = function processQueue( contextName , isCompletionCa
 	this.__ngev.recursion -- ;
 } ;
 
+
+
+// Backup for the AsyncTryCatch
+NextGenEvents.on = NextGenEvents.prototype.on ;
+NextGenEvents.once = NextGenEvents.prototype.once ;
+NextGenEvents.off = NextGenEvents.prototype.off ;
 
 
 
