@@ -5,28 +5,22 @@ v0.5.16
 .once() arguments management bugfixed (rare)
 
 
-v0.5.15
--------
+v0.5.14 - v0.5.15
+-----------------
 
-async-try-catch compatibility
-
-
-v0.5.14
--------
-
-Async-try-catch module compatibility
+Async-try-catch module compatibility.
 
 
 v0.5.13
 -------
 
-Browser tests
+Browser tests.
 
 
 v0.5.12
 -------
 
-The __ngev property is not enumerable anymore
+The __ngev property is not enumerable anymore.
 
 
 v0.5.11
