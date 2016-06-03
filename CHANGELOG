@@ -1,4 +1,10 @@
 
+v0.5.16
+-------
+
+.once() arguments management bugfixed (rare)
+
+
 v0.5.15
 -------
 

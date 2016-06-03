@@ -128,22 +128,13 @@ NextGenEvents.prototype.on = NextGenEvents.prototype.addListener ;
 
 
 // Shortcut
-NextGenEvents.prototype.once = function once( eventName , options )
+NextGenEvents.prototype.once = function once( eventName , fn , options )
 {
-	if ( ! eventName || typeof eventName !== 'string' ) { throw new TypeError( ".once(): argument #0 should be a non-empty string" ) ; }
+	if ( fn && typeof fn === 'object' ) { fn.once = true ; }
+	else if ( options && typeof options === 'object' ) { options.once = true ; }
+	else { options = { once: true } ; }
 	
-	if ( typeof options === 'function' )
-	{
-		options = { id: options , fn: options } ;
-	}
-	else if ( ! options || typeof options !== 'object' || typeof options.fn !== 'function' )
-	{
-		throw new TypeError( ".once(): argument #1 should be a function or an object with a 'fn' property which value is a function" ) ;
-	}
-	
-	options.once = true ;
-	
-	return this.addListener( eventName , options ) ;
+	return this.addListener( eventName , fn , options ) ;
 } ;
 
 
