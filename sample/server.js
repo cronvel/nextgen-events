@@ -22,7 +22,7 @@ server.on( 'connection' , function connection( ws ) {
 	var proxy = new NGEvents.Proxy() ;
 	
 	// Add the local service and provide all right to it to remote
-	proxy.addLocalService( 'awesomeService' , awesomeEmitter , { listen: true , emit: true , async: true } ) ;
+	proxy.addLocalService( 'awesomeService' , awesomeEmitter , { listen: true , emit: true , ack: true } ) ;
 	
 	// Only provide 'listen' to this service
 	proxy.addLocalService( 'clockService' , clockEmitter , { listen: true } ) ;
@@ -37,10 +37,10 @@ server.on( 'connection' , function connection( ws ) {
 			return ;
 		}
 		
-		ws.emit( 'objectMessage' , message ) ;
+		ws.emit( 'messageObject' , message ) ;
 	} ) ;
 	
-	ws.on( 'objectMessage' , function objectIncoming( message ) {
+	ws.on( 'messageObject' , function objectIncoming( message ) {
 		console.log( 'received: ' , message ) ;
 		// Do something with message
 		proxy.receive( message ) ;

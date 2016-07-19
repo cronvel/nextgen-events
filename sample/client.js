@@ -43,10 +43,10 @@ ws.on( 'message' , function( message ) {
 		return ;
 	}
 	
-	ws.emit( 'objectMessage' , message ) ;
+	ws.emit( 'messageObject' , message ) ;
 } ) ;
 
-ws.on( 'objectMessage' , function incoming( message ) {
+ws.on( 'messageObject' , function incoming( message ) {
 	console.log( 'received: ' , message ) ;
 	// Do something with message
 	proxy.receive( message ) ;
