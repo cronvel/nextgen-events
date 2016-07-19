@@ -35,8 +35,6 @@ module.exports = NextGenEvents ;
 
 
 
-
-
 			/* Basic features, more or less compatible with Node.js */
 
 
@@ -128,6 +126,7 @@ NextGenEvents.prototype.on = NextGenEvents.prototype.addListener ;
 
 
 // Shortcut
+// .once( eventName , [fn] , [options] )
 NextGenEvents.prototype.once = function once( eventName , fn , options )
 {
 	if ( fn && typeof fn === 'object' ) { fn.once = true ; }
@@ -293,23 +292,9 @@ var nextEventId = 0 ;
 */
 NextGenEvents.prototype.emit = function emit()
 {
-	var i , iMax , count = 0 ,
-		event , listener , context , currentNice ,
-		listeners , removedListeners = [] ;
+	var event ;
 	
-	event = {
-		emitter: this ,
-		id: nextEventId ++ ,
-		name: null ,
-		args: null ,
-		nice: null ,
-		interrupt: null ,
-		listeners: null ,
-		listenersDone: 0 ,
-		callback: null ,
-	} ;
-	
-	if ( ! this.__ngev ) { NextGenEvents.init.call( this ) ; }
+	event = { emitter: this } ;
 	
 	// Arguments handling
 	if ( typeof arguments[ 0 ] === 'number' )
@@ -330,7 +315,7 @@ NextGenEvents.prototype.emit = function emit()
 	}
 	else
 	{
-		event.nice = this.__ngev.nice ;
+		//event.nice = this.__ngev.nice ;
 		event.name = arguments[ 0 ] ;
 		if ( ! event.name || typeof event.name !== 'string' ) { throw new TypeError( ".emit(): argument #0 should be an number or a non-empty string" ) ; }
 		event.args = Array.prototype.slice.call( arguments , 1 ) ;
@@ -346,22 +331,49 @@ NextGenEvents.prototype.emit = function emit()
 		}
 	}
 	
+	return NextGenEvents.emitEvent( event ) ;
+} ;
+
 	
-	if ( ! this.__ngev.events[ event.name ] ) { this.__ngev.events[ event.name ] = [] ; }
+
+/*
+	At this stage, event should have properties:
 	
-	// Increment this.__ngev.recursion
-	event.listeners = this.__ngev.events[ event.name ].length ;
-	this.__ngev.recursion ++ ;
+	* emitter: the event emitter
+	* name: the event name
+	* args: array, the arguments of the event
+	* nice: (optional) nice value
+	* callback: (optional) a callback for emit
+*/	
+NextGenEvents.emitEvent = function emitEvent( event )
+{
+	var self = event.emitter ,
+		i , iMax , count = 0 ,
+		listener , context , currentNice ,
+		listeners , removedListeners = [] ;
+	
+	if ( ! self.__ngev ) { NextGenEvents.init.call( self ) ; }
+	
+	if ( ! self.__ngev.events[ event.name ] ) { self.__ngev.events[ event.name ] = [] ; }
+	
+	event.id = nextEventId ++ ;
+	event.listenersDone = 0 ;
+	
+	if ( event.nice === undefined || event.nice === null ) { event.nice = self.__ngev.nice ; }
+	
+	// Increment self.__ngev.recursion
+	event.listeners = self.__ngev.events[ event.name ].length ;
+	self.__ngev.recursion ++ ;
 	
 	// Trouble arise when a listener is removed from another listener, while we are still in the loop.
 	// So we have to COPY the listener array right now!
-	listeners = this.__ngev.events[ event.name ].slice() ;
+	listeners = self.__ngev.events[ event.name ].slice() ;
 	
 	for ( i = 0 , iMax = listeners.length ; i < iMax ; i ++ )
 	{
 		count ++ ;
 		listener = listeners[ i ] ;
-		context = listener.context && this.__ngev.contexts[ listener.context ] ;
+		context = listener.context && self.__ngev.contexts[ listener.context ] ;
 		
 		// If the listener context is disabled...
 		if ( context && context.status === NextGenEvents.CONTEXT_DISABLED ) { continue ; }
@@ -375,7 +387,7 @@ NextGenEvents.prototype.emit = function emit()
 		{
 			// We should remove the current listener RIGHT NOW because of recursive .emit() issues:
 			// one listener may eventually fire this very same event synchronously during the current loop.
-			this.__ngev.events[ event.name ] = this.__ngev.events[ event.name ].filter(
+			self.__ngev.events[ event.name ] = self.__ngev.events[ event.name ].filter(
 				NextGenEvents.filterOutCallback.bind( undefined , listener )
 			) ;
 			
@@ -392,35 +404,35 @@ NextGenEvents.prototype.emit = function emit()
 			try {
 				if ( currentNice < 0 )
 				{
-					if ( this.__ngev.recursion >= - currentNice )
+					if ( self.__ngev.recursion >= - currentNice )
 					{
-						setImmediate( NextGenEvents.listenerWrapper.bind( this , listener , event , context ) ) ;
+						setImmediate( NextGenEvents.listenerWrapper.bind( self , listener , event , context ) ) ;
 					}
 					else
 					{
-						NextGenEvents.listenerWrapper.call( this , listener , event , context ) ;
+						NextGenEvents.listenerWrapper.call( self , listener , event , context ) ;
 					}
 				}
 				else
 				{
-					setTimeout( NextGenEvents.listenerWrapper.bind( this , listener , event , context ) , currentNice ) ;
+					setTimeout( NextGenEvents.listenerWrapper.bind( self , listener , event , context ) , currentNice ) ;
 				}
 			}
 			catch ( error ) {
-				// Catch error, just to decrement this.__ngev.recursion, re-throw after that...
-				this.__ngev.recursion -- ;
+				// Catch error, just to decrement self.__ngev.recursion, re-throw after that...
+				self.__ngev.recursion -- ;
 				throw error ;
 			}
 		}
 	}
 	
 	// Decrement recursion
-	this.__ngev.recursion -- ;
+	self.__ngev.recursion -- ;
 	
 	// Emit 'removeListener' after calling listeners
-	if ( removedListeners.length && this.__ngev.events.removeListener.length )
+	if ( removedListeners.length && self.__ngev.events.removeListener.length )
 	{
-		this.emit( 'removeListener' , removedListeners ) ;
+		self.emit( 'removeListener' , removedListeners ) ;
 	}
 	
 	
@@ -429,7 +441,7 @@ NextGenEvents.prototype.emit = function emit()
 	{
 		if ( event.name === 'error' )
 		{
-			if ( arguments[ 1 ] ) { throw arguments[ 1 ] ; }
+			if ( event.args[ 0 ] ) { throw event.args[ 0 ] ; }
 			else { throw Error( "Uncaught, unspecified 'error' event." ) ; }
 		}
 		
@@ -718,7 +730,399 @@ NextGenEvents.off = NextGenEvents.prototype.off ;
 
 
 
-},{}],2:[function(require,module,exports){
+// Load Proxy AT THE END (circular require)
+NextGenEvents.Proxy = require( './Proxy.js' ) ;
+
+
+},{"./Proxy.js":2}],2:[function(require,module,exports){
+/*
+	Next Gen Events
+	
+	Copyright (c) 2015 - 2016 Cédric Ronvel
+	
+	The MIT License (MIT)
+	
+	Permission is hereby granted, free of charge, to any person obtaining a copy
+	of this software and associated documentation files (the "Software"), to deal
+	in the Software without restriction, including without limitation the rights
+	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+	copies of the Software, and to permit persons to whom the Software is
+	furnished to do so, subject to the following conditions:
+	
+	The above copyright notice and this permission notice shall be included in all
+	copies or substantial portions of the Software.
+	
+	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+	SOFTWARE.
+*/
+
+"use strict" ;
+
+
+
+// Create the object && export it
+function Proxy() { return Proxy.create() ; }
+module.exports = Proxy ;
+
+var NextGenEvents = require( './NextGenEvents.js' ) ;
+var MESSAGE_TYPE = 'NextGenEvents/message' ;
+
+function noop() {}
+
+
+
+Proxy.create = function create()
+{
+	var self = Object.create( Proxy.prototype , {
+		localServices: { value: {} , enumerable: true } ,
+		remoteServices: { value: {} , enumerable: true } ,
+	} ) ;
+	
+	return self ;
+} ;
+
+
+
+// Add a local service accessible remotely
+Proxy.prototype.addLocalService = function addLocalService( id , emitter , options )
+{
+	this.localServices[ id ] = LocalService.create( this , id , emitter , options ) ;
+	return this.localServices[ id ] ;
+} ;
+
+
+
+// Add a remote service accessible locally
+Proxy.prototype.addRemoteService = function addRemoteService( id )
+{
+	this.remoteServices[ id ] = RemoteService.create( this , id ) ;
+	return this.remoteServices[ id ] ;
+} ;
+
+
+
+// Destroy the proxy
+Proxy.prototype.destroy = function destroy()
+{
+	var self = this ;
+	
+	Object.keys( this.localServices ).forEach( function( id ) {
+		self.localServices[ id ].destroy() ;
+		delete self.localServices[ id ] ;
+	} ) ;
+	
+	Object.keys( this.remoteServices ).forEach( function( id ) {
+		self.remoteServices[ id ].destroy() ;
+		delete self.remoteServices[ id ] ;
+	} ) ;
+	
+	this.receive = this.send = noop ;
+} ;
+
+
+
+// Push an event message.
+Proxy.prototype.push = function push( message )
+{
+	if (
+		message.type !== MESSAGE_TYPE ||
+		! message.service || typeof message.service !== 'string' ||
+		! message.event || typeof message.event !== 'string' ||
+		! message.method
+	)
+	{
+		return ;
+	}
+	
+	switch ( message.method )
+	{
+		// Those methods target a remote service
+		case 'event' :
+			return this.remoteServices[ message.service ] && this.remoteServices[ message.service ].event( message ) ;
+		
+		// Those methods target a local service
+		case 'emit' :
+			return this.localServices[ message.service ] && this.localServices[ message.service ].emit( message ) ;
+		case 'listen' :
+			return this.localServices[ message.service ] && this.localServices[ message.service ].listen( message ) ;
+		case 'ignore' :
+			return this.localServices[ message.service ] && this.localServices[ message.service ].ignore( message ) ;
+			
+		default:
+		 	return ;
+	}
+} ;
+
+
+
+// This is the method to receive and decode data from the other side of the communication channel, most of time another proxy.
+// In most case, this should be overwritten.
+Proxy.prototype.receive = function receive( raw )
+{
+	this.push( raw ) ;
+} ;
+
+
+
+// This is the method used to send data to the other side of the communication channel, most of time another proxy.
+// This MUST be overwritten in any case.
+Proxy.prototype.send = function send()
+{
+	throw new Error( 'The send() method of the Proxy MUST be extended/overwritten' ) ;
+} ;
+
+
+
+			/* Local Service */
+
+
+
+function LocalService( proxy , id , emitter , options ) { return LocalService.create( proxy , id , emitter , options ) ; }
+Proxy.LocalService = LocalService ;
+
+
+
+LocalService.create = function create( proxy , id , emitter , options )
+{
+	var self = Object.create( LocalService.prototype , {
+		proxy: { value: proxy , enumerable: true } ,
+		id: { value: id , enumerable: true } ,
+		emitter: { value: emitter , writable: true , enumerable: true } ,
+		events: { value: {} , enumerable: true } ,
+		canListen: { value: !! options.listen , writable: true , enumerable: true } ,
+		canEmit: { value: !! options.emit , writable: true , enumerable: true } ,
+		canAsync: { value: !! options.async , writable: true , enumerable: true } ,
+		destroyed: { value: false , writable: true , enumerable: true } ,
+	} ) ;
+	
+	Object.defineProperties( self , {
+		forward: { value: LocalService.forward.bind( self ) , enumerable: true }
+	} ) ;
+	
+	return self ;
+} ;
+
+
+
+// Destroy a service
+LocalService.prototype.destroy = function destroy()
+{
+	var self = this ;
+	
+	Object.keys( this.events ).forEach( function( eventName ) {
+		self.emitter.off( eventName , self.events[ eventName ] ) ;
+		delete self.events[ eventName ] ;
+	} ) ;
+	
+	this.emitter = null ;
+	this.destroyed = true ;
+} ;
+
+
+
+// Remote want to emit on the local service
+LocalService.prototype.emit = function emit( message )
+{
+	if ( this.destroyed || ! this.canEmit ) { return ; }
+	
+	var event = {
+		emitter: this.emitter ,
+		name: message.event ,
+		args: message.args || [] 
+	} ;
+	
+	NextGenEvents.emitEvent( event ) ;
+} ;
+
+
+
+// Remote want to listen to an event of the local service
+LocalService.prototype.listen = function listen( message )
+{
+	if ( this.destroyed || ! this.canListen || this.events[ message.event ] ) { return ; }
+	this.events[ message.event ] = this.forward.bind( this , message.event ) ;
+	this.emitter.on( message.event , this.events[ message.event ] ) ;
+} ;
+
+
+
+// Remote do not want to listen to that event of the local service anymore
+LocalService.prototype.ignore = function ignore( message )
+{
+	if ( this.destroyed || ! this.canListen || ! this.events[ message.event ] ) { return ; }
+	this.emitter.off( message.event , this.events[ message.event ] ) ;
+	this.events[ message.event ] = null ;
+} ;
+
+
+
+// Send an event from the local service to remote
+LocalService.forward = function forward( event )
+{
+	if ( this.destroyed ) { return ; }
+	
+	this.proxy.send( {
+		type: MESSAGE_TYPE ,
+		service: this.id ,
+		method: 'event' ,
+		event: event ,
+		args: Array.prototype.slice.call( arguments , 1 )
+	} ) ;
+} ;
+
+
+
+			/* Remote Service */
+
+
+
+function RemoteService( proxy , id ) { return RemoteService.create( proxy , id ) ; }
+//RemoteService.prototype = Object.create( NextGenEvents.prototype ) ;
+//RemoteService.prototype.constructor = RemoteService ;
+Proxy.RemoteService = RemoteService ;
+
+
+
+RemoteService.create = function create( proxy , id )
+{
+	var self = Object.create( RemoteService.prototype , {
+		proxy: { value: proxy , enumerable: true } ,
+		id: { value: id , enumerable: true } ,
+		// This is the emitter where everything is routed to
+		emitter: { value: Object.create( NextGenEvents.prototype ) , writable: true , enumerable: true } ,
+		events: { value: {} , enumerable: true } ,
+		destroyed: { value: false , writable: true , enumerable: true } ,
+		
+		/*	Useless for instance, unless some kind of handshake can discover service capabilities
+		canListen: { value: !! options.listen , writable: true , enumerable: true } ,
+		canEmit: { value: !! options.emit , writable: true , enumerable: true } ,
+		canAsync: { value: !! options.async , writable: true , enumerable: true } ,
+		*/
+	} ) ;
+	
+	return self ;
+} ;
+
+
+
+// Destroy a service
+RemoteService.prototype.destroy = function destroy()
+{
+	var self = this ;
+	this.emitter.removeAllListeners() ;
+	this.emitter = null ;
+	Object.keys( this.events ).forEach( function( eventName ) { delete self.events[ eventName ] ; } ) ;
+	this.destroyed = true ;
+} ;
+
+
+
+// Local code want to emit to remote service
+RemoteService.prototype.emit = function emit( eventName )
+{
+	if ( this.destroyed ) { return ; }
+	
+	this.proxy.send( {
+		type: MESSAGE_TYPE ,
+		service: this.id ,
+		method: 'emit' ,
+		event: eventName ,
+		args: Array.prototype.slice.call( arguments , 1 )
+	} ) ;
+} ;
+
+
+
+// Local code want to listen to an event of remote service
+RemoteService.prototype.addListener = function addListener( eventName , fn , options )
+{
+	if ( this.destroyed ) { return ; }
+	
+	this.emitter.addListener( eventName , fn , options ) ;
+	
+	// If the event is successfully listened to and was not remotely listened...
+	if ( ! this.events[ eventName ] && this.emitter.__ngev.events[ eventName ] && this.emitter.__ngev.events[ eventName ].length )
+	{
+		this.events[ eventName ] = true ;
+		
+		this.proxy.send( {
+			type: MESSAGE_TYPE ,
+			service: this.id ,
+			method: 'listen' ,
+			event: eventName
+		} ) ;
+	}
+} ;
+
+RemoteService.prototype.on = RemoteService.prototype.addListener ;
+
+// This is a shortcut to this.addListener()
+RemoteService.prototype.once = NextGenEvents.prototype.once ;
+
+
+
+// Local code want to ignore an event of remote service
+RemoteService.prototype.removeListener = function removeListener( eventName , id )
+{
+	if ( this.destroyed ) { return ; }
+	
+	this.emitter.removeListener( eventName , id ) ;
+	
+	// If no more listener are locally tied to with event and the event was remotely listened...
+	if ( this.events[ eventName ] && ( ! this.emitter.__ngev.events[ eventName ] || ! this.emitter.__ngev.events[ eventName ].length ) )
+	{
+		this.events[ eventName ] = false ;
+		
+		this.proxy.send( {
+			type: MESSAGE_TYPE ,
+			service: this.id ,
+			method: 'ignore' ,
+			event: eventName
+		} ) ;
+	}
+} ;
+
+RemoteService.prototype.off = RemoteService.prototype.removeListener ;
+
+
+
+// A remote service sent an event we are listening to, emit on the service representing the remote
+RemoteService.prototype.event = function event( message )
+{
+	if ( this.destroyed || ! this.events[ message.event ] ) { return ; }
+	
+	var event = {
+		emitter: this.emitter ,
+		name: message.event ,
+		args: message.args || [] 
+	} ;
+	
+	NextGenEvents.emitEvent( event ) ;
+	
+	var eventName = event.name ;
+	
+	// Here we should catch if the event is still listened to ('once' type listeners)
+	if ( ! this.emitter.__ngev.events[ eventName ] || ! this.emitter.__ngev.events[ eventName ].length )
+	{
+		this.events[ eventName ] = false ;
+		
+		this.proxy.send( {
+			type: MESSAGE_TYPE ,
+			service: this.id ,
+			method: 'ignore' ,
+			event: eventName
+		} ) ;
+	}
+	
+} ;
+
+
+},{"./NextGenEvents.js":1}],3:[function(require,module,exports){
 /*
 	Next Gen Events
 	
@@ -761,5 +1165,5 @@ if ( typeof window.setImmediate !== 'function' )
 module.exports = require( './NextGenEvents.js' ) ;
 module.exports.isBrowser = true ;
 
-},{"./NextGenEvents.js":1}]},{},[2])(2)
+},{"./NextGenEvents.js":1}]},{},[3])(3)
 });
