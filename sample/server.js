@@ -7,7 +7,12 @@ var awesomeEmitter = new NGEvents() ;
 var clockEmitter = new NGEvents() ;
 
 // Emit one 'heartBeat' event per second
-setInterval( function() { awesomeEmitter.emit( 'heartBeat' ) ; } , 1000 ) ;
+setInterval( function() {
+	awesomeEmitter.emit( 'heartBeat' , function() {
+		console.log( 'heartBeat callback' ) ;
+	} ) ;
+} , 1000 ) ;
+
 setInterval( function() { clockEmitter.emit( 'time' , new Date() ) ; } , 5150 ) ;
 
 
