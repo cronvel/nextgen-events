@@ -203,8 +203,8 @@ server.on( 'error' , {
 } ) ;
 ```
 
-When an async listener is defined, the completion callback is automatically added at the end of the [.emit()](#ref.emit)
-arguments for any listeners with *async = true*.
+When an async listener is defined, the completion callback is automatically added at the end of the arguments 
+supplied to [.emit()](#ref.emit) for any listeners with *async = true*.
 
 
 

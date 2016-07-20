@@ -76,19 +76,14 @@ NextGenEvents.prototype.addListener = function addListener( eventName , fn , opt
 	if ( ! this.__ngev.events[ eventName ] ) { this.__ngev.events[ eventName ] = [] ; }
 	
 	if ( ! eventName || typeof eventName !== 'string' ) { throw new TypeError( ".addListener(): argument #0 should be a non-empty string" ) ; }
-	
-	if ( typeof fn !== 'function' )
-	{
-		options = fn ;
-		fn = undefined ;
-	}
-	
+	if ( typeof fn !== 'function' ) { options = fn ; fn = undefined ; }
 	if ( ! options || typeof options !== 'object' ) { options = {} ; }
 	
 	listener.fn = fn || options.fn ;
 	listener.id = typeof options.id === 'string' ? options.id : listener.fn ;
 	listener.once = !! options.once ;
 	listener.async = !! options.async ;
+	listener.eventObject = !! options.eventObject ;
 	listener.nice = options.nice !== undefined ? Math.floor( options.nice ) : NextGenEvents.SYNC ;
 	listener.context = typeof options.context === 'string' ? options.context : null ;
 	
@@ -212,7 +207,7 @@ NextGenEvents.prototype.removeAllListeners = function removeAllListeners( eventN
 
 NextGenEvents.listenerWrapper = function listenerWrapper( listener , event , context )
 {
-	var returnValue , serial ;
+	var returnValue , serial , listenerCallback ;
 	
 	if ( event.interrupt ) { return ; }
 	
@@ -225,7 +220,7 @@ NextGenEvents.listenerWrapper = function listenerWrapper( listener , event , con
 			context.ready = ! serial ;
 		}
 		
-		returnValue = listener.fn.apply( undefined , event.args.concat( function( arg ) {
+		listenerCallback = function( arg ) {
 			
 			event.listenersDone ++ ;
 			
@@ -251,11 +246,16 @@ NextGenEvents.listenerWrapper = function listenerWrapper( listener , event , con
 			// Process the queue if serialized
 			if ( serial ) { NextGenEvents.processQueue.call( event.emitter , listener.context , true ) ; }
 			
-		} ) ) ;
+		} ;
+		
+		if ( listener.eventObject ) { listener.fn( event , listenerCallback ) ; }
+		else { returnValue = listener.fn.apply( undefined , event.args.concat( listenerCallback ) ) ; }
 	}
 	else
 	{
-		returnValue = listener.fn.apply( undefined , event.args ) ;
+		if ( listener.eventObject ) { listener.fn( event ) ; }
+		else { returnValue = listener.fn.apply( undefined , event.args ) ; }
+		
 		event.listenersDone ++ ;
 	}
 	
@@ -344,7 +344,7 @@ NextGenEvents.prototype.emit = function emit()
 	* args: array, the arguments of the event
 	* nice: (optional) nice value
 	* callback: (optional) a callback for emit
-*/	
+*/
 NextGenEvents.emitEvent = function emitEvent( event )
 {
 	var self = event.emitter ,
@@ -781,6 +781,7 @@ Proxy.create = function create()
 	var self = Object.create( Proxy.prototype , {
 		localServices: { value: {} , enumerable: true } ,
 		remoteServices: { value: {} , enumerable: true } ,
+		ackId: { value: 1 , writable: true , enumerable: true } ,
 	} ) ;
 	
 	return self ;
@@ -843,15 +844,18 @@ Proxy.prototype.push = function push( message )
 	{
 		// Those methods target a remote service
 		case 'event' :
-			return this.remoteServices[ message.service ] && this.remoteServices[ message.service ].event( message ) ;
+			return this.remoteServices[ message.service ] && this.remoteServices[ message.service ].receiveEvent( message ) ;
 		
 		// Those methods target a local service
 		case 'emit' :
-			return this.localServices[ message.service ] && this.localServices[ message.service ].emit( message ) ;
+			return this.localServices[ message.service ] && this.localServices[ message.service ].receiveEmit( message ) ;
 		case 'listen' :
-			return this.localServices[ message.service ] && this.localServices[ message.service ].listen( message ) ;
+			return this.localServices[ message.service ] && this.localServices[ message.service ].receiveListen( message ) ;
 		case 'ignore' :
-			return this.localServices[ message.service ] && this.localServices[ message.service ].ignore( message ) ;
+			return this.localServices[ message.service ] && this.localServices[ message.service ].receiveIgnore( message ) ;
+			
+		case 'ackEvent' :
+			return this.localServices[ message.service ] && this.localServices[ message.service ].receiveAckEvent( message ) ;
 			
 		default:
 		 	return ;
@@ -893,15 +897,13 @@ LocalService.create = function create( proxy , id , emitter , options )
 		proxy: { value: proxy , enumerable: true } ,
 		id: { value: id , enumerable: true } ,
 		emitter: { value: emitter , writable: true , enumerable: true } ,
+		internalEvents: { value: Object.create( NextGenEvents.prototype ) , writable: true , enumerable: true } ,
 		events: { value: {} , enumerable: true } ,
 		canListen: { value: !! options.listen , writable: true , enumerable: true } ,
 		canEmit: { value: !! options.emit , writable: true , enumerable: true } ,
-		canAsync: { value: !! options.async , writable: true , enumerable: true } ,
+		canAck: { value: !! options.ack , writable: true , enumerable: true } ,
+		canRpc: { value: !! options.rpc , writable: true , enumerable: true } ,
 		destroyed: { value: false , writable: true , enumerable: true } ,
-	} ) ;
-	
-	Object.defineProperties( self , {
-		forward: { value: LocalService.forward.bind( self ) , enumerable: true }
 	} ) ;
 	
 	return self ;
@@ -926,7 +928,7 @@ LocalService.prototype.destroy = function destroy()
 
 
 // Remote want to emit on the local service
-LocalService.prototype.emit = function emit( message )
+LocalService.prototype.receiveEmit = function receiveEmit( message )
 {
 	if ( this.destroyed || ! this.canEmit ) { return ; }
 	
@@ -942,21 +944,55 @@ LocalService.prototype.emit = function emit( message )
 
 
 // Remote want to listen to an event of the local service
-LocalService.prototype.listen = function listen( message )
+LocalService.prototype.receiveListen = function receiveListen( message )
 {
-	if ( this.destroyed || ! this.canListen || this.events[ message.event ] ) { return ; }
-	this.events[ message.event ] = this.forward.bind( this , message.event ) ;
-	this.emitter.on( message.event , this.events[ message.event ] ) ;
+	if ( this.destroyed || ! this.canListen ) { return ; }
+	
+	if ( message.ack )
+	{
+		if ( ! this.canAck || ( this.events[ message.event ] && this.events[ message.event ].ack ) ) { return ; }
+		
+		this.events[ message.event ] = LocalService.forwardWithAck.bind( this , message.event ) ;
+		this.events[ message.event ].ack = true ;
+		this.emitter.on( message.event , this.events[ message.event ] , { async: true } ) ;
+	}
+	else
+	{
+		if ( this.events[ message.event ] && ! this.events[ message.event ].ack ) { return ; }
+		
+		this.events[ message.event ] = LocalService.forward.bind( this , message.event ) ;
+		this.events[ message.event ].ack = false ;
+		this.emitter.on( message.event , this.events[ message.event ] ) ;
+	}
 } ;
 
 
 
 // Remote do not want to listen to that event of the local service anymore
-LocalService.prototype.ignore = function ignore( message )
+LocalService.prototype.receiveIgnore = function receiveIgnore( message )
 {
-	if ( this.destroyed || ! this.canListen || ! this.events[ message.event ] ) { return ; }
+	if ( this.destroyed || ! this.canListen ) { return ; }
+	
+	if ( ! this.events[ message.event ] ) { return ; }
+	
 	this.emitter.off( message.event , this.events[ message.event ] ) ;
 	this.events[ message.event ] = null ;
+} ;
+
+
+
+// 
+LocalService.prototype.receiveAckEvent = function receiveAckEvent( message )
+{
+	if (
+		this.destroyed || ! this.canListen || ! this.canAck || ! message.ack ||
+		! this.events[ message.event ] || ! this.events[ message.event ].ack
+	)
+	{
+		return ;
+	}
+	
+	this.internalEvents.emit( 'ack' , message ) ;
 } ;
 
 
@@ -972,6 +1008,39 @@ LocalService.forward = function forward( event )
 		method: 'event' ,
 		event: event ,
 		args: Array.prototype.slice.call( arguments , 1 )
+	} ) ;
+} ;
+
+
+
+// Send an event from the local service to remote, with ACK
+LocalService.forwardWithAck = function forwardWithAck( event )
+{
+	var self = this ;
+	
+	if ( this.destroyed ) { return ; }
+	
+	var callback = arguments[ arguments.length - 1 ] ;
+	var triggered = false ;
+	var ackId = this.proxy.ackId ++ ;
+	
+	var onAck = function onAck( message ) {
+		if ( triggered || message.ack !== ackId ) { return ; }	// Not our ack...
+		//if ( message.event !== event ) { return ; }	// Do we care?
+		triggered = true ;
+		self.internalEvents.off( 'ack' , onAck ) ;
+		callback() ;
+	} ;
+	
+	this.internalEvents.on( 'ack' , onAck ) ;
+	
+	this.proxy.send( {
+		type: MESSAGE_TYPE ,
+		service: this.id ,
+		method: 'event' ,
+		event: event ,
+		ack: ackId ++ ,
+		args: Array.prototype.slice.call( arguments , 1 , -1 )	// Remove the last argument: this is our callback!
 	} ) ;
 } ;
 
@@ -1001,7 +1070,8 @@ RemoteService.create = function create( proxy , id )
 		/*	Useless for instance, unless some kind of handshake can discover service capabilities
 		canListen: { value: !! options.listen , writable: true , enumerable: true } ,
 		canEmit: { value: !! options.emit , writable: true , enumerable: true } ,
-		canAsync: { value: !! options.async , writable: true , enumerable: true } ,
+		canAck: { value: !! options.ack , writable: true , enumerable: true } ,
+		canRpc: { value: !! options.rpc , writable: true , enumerable: true } ,
 		*/
 	} ) ;
 	
@@ -1043,19 +1113,42 @@ RemoteService.prototype.addListener = function addListener( eventName , fn , opt
 {
 	if ( this.destroyed ) { return ; }
 	
-	this.emitter.addListener( eventName , fn , options ) ;
+	// Manage arguments the same way NextGenEvents#addListener() does
+	if ( typeof fn !== 'function' ) { options = fn ; fn = undefined ; }
+	if ( ! options || typeof options !== 'object' ) { options = {} ; }
+	options.fn = fn || options.fn ;
+	
+	this.emitter.addListener( eventName , options ) ;
 	
 	// If the event is successfully listened to and was not remotely listened...
-	if ( ! this.events[ eventName ] && this.emitter.__ngev.events[ eventName ] && this.emitter.__ngev.events[ eventName ].length )
+	if ( options.async )
 	{
-		this.events[ eventName ] = true ;
-		
-		this.proxy.send( {
-			type: MESSAGE_TYPE ,
-			service: this.id ,
-			method: 'listen' ,
-			event: eventName
-		} ) ;
+		if ( ! this.ackEvents[ eventName ] && this.emitter.__ngev.events[ eventName ] && this.emitter.__ngev.events[ eventName ].length )
+		{
+			this.ackEvents[ eventName ] = true ;
+			
+			this.proxy.send( {
+				type: MESSAGE_TYPE ,
+				service: this.id ,
+				method: 'listen' ,
+				ack: true ,
+				event: eventName
+			} ) ;
+		}
+	}
+	else
+	{
+		if ( ! this.events[ eventName ] && this.emitter.__ngev.events[ eventName ] && this.emitter.__ngev.events[ eventName ].length )
+		{
+			this.events[ eventName ] = true ;
+			
+			this.proxy.send( {
+				type: MESSAGE_TYPE ,
+				service: this.id ,
+				method: 'listen' ,
+				event: eventName
+			} ) ;
+		}
 	}
 } ;
 
@@ -1074,16 +1167,32 @@ RemoteService.prototype.removeListener = function removeListener( eventName , id
 	this.emitter.removeListener( eventName , id ) ;
 	
 	// If no more listener are locally tied to with event and the event was remotely listened...
-	if ( this.events[ eventName ] && ( ! this.emitter.__ngev.events[ eventName ] || ! this.emitter.__ngev.events[ eventName ].length ) )
+	if ( ! this.emitter.__ngev.events[ eventName ] || ! this.emitter.__ngev.events[ eventName ].length )
 	{
-		this.events[ eventName ] = false ;
+		if ( this.events[ eventName ] )
+		{
+			this.events[ eventName ] = false ;
+			
+			this.proxy.send( {
+				type: MESSAGE_TYPE ,
+				service: this.id ,
+				method: 'ignore' ,
+				event: eventName
+			} ) ;
+		}
 		
-		this.proxy.send( {
-			type: MESSAGE_TYPE ,
-			service: this.id ,
-			method: 'ignore' ,
-			event: eventName
-		} ) ;
+		if ( this.ackEvents[ eventName ] )
+		{
+			this.ackEvents[ eventName ] = false ;
+			
+			this.proxy.send( {
+				type: MESSAGE_TYPE ,
+				service: this.id ,
+				method: 'ignore' ,
+				ack: true ,
+				event: eventName
+			} ) ;
+		}
 	}
 } ;
 
@@ -1092,15 +1201,35 @@ RemoteService.prototype.off = RemoteService.prototype.removeListener ;
 
 
 // A remote service sent an event we are listening to, emit on the service representing the remote
-RemoteService.prototype.event = function event( message )
+RemoteService.prototype.receiveEvent = function receiveEvent( message )
 {
-	if ( this.destroyed || ! this.events[ message.event ] ) { return ; }
+	var self = this ;
+	
+	if ( this.destroyed ) { return ; }
 	
 	var event = {
 		emitter: this.emitter ,
 		name: message.event ,
 		args: message.args || [] 
 	} ;
+	
+	if ( message.ack )
+	{
+		if ( ! this.events[ message.event ] && ! this.ackEvents[ message.event ] ) { return ; }
+		
+		console.log( '####### ?' ) ;
+		event.callback = function ack() {
+			console.log( '####### !' ) ;
+			self.proxy.send( {
+				type: MESSAGE_TYPE ,
+				service: self.id ,
+				method: 'ackEvent' ,
+				ack: message.ack ,
+				event: message.event
+			} ) ;
+		} ;
+	}
+	else if ( ! this.events[ message.event ] ) { return ; }
 	
 	NextGenEvents.emitEvent( event ) ;
 	
@@ -1109,16 +1238,31 @@ RemoteService.prototype.event = function event( message )
 	// Here we should catch if the event is still listened to ('once' type listeners)
 	if ( ! this.emitter.__ngev.events[ eventName ] || ! this.emitter.__ngev.events[ eventName ].length )
 	{
-		this.events[ eventName ] = false ;
+		if ( this.events[ eventName ] )
+		{
+			this.events[ eventName ] = false ;
+			
+			this.proxy.send( {
+				type: MESSAGE_TYPE ,
+				service: this.id ,
+				method: 'ignore' ,
+				event: eventName
+			} ) ;
+		}
 		
-		this.proxy.send( {
-			type: MESSAGE_TYPE ,
-			service: this.id ,
-			method: 'ignore' ,
-			event: eventName
-		} ) ;
+		if ( this.ackEvents[ eventName ] )
+		{
+			this.ackEvents[ eventName ] = false ;
+			
+			this.proxy.send( {
+				type: MESSAGE_TYPE ,
+				service: this.id ,
+				method: 'ignore' ,
+				ack: true ,
+				event: eventName
+			} ) ;
+		}
 	}
-	
 } ;
 
 

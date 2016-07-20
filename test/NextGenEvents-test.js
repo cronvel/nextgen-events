@@ -517,23 +517,6 @@ describe( "Basic synchronous event-emitting (node-compatible)" , function() {
 
 describe( "Basic synchronous event-emitting (NOT compatible with node)" , function() {
 	
-	it( "zzz listener using 'eventObject' option" , function() {
-		
-		var bus = Object.create( NextGenEvents.prototype ) ;
-		
-		var triggered = 0 ;
-		
-		bus.on( 'hello' , function( event ) {
-			triggered ++ ;
-			expect( event.args[ 0 ] ).to.be( 'world' ) ;
-			expect( event.args[ 1 ] ).to.be( '!' ) ;
-		} , { eventObject: true } ) ;
-		
-		bus.emit( 'hello' , 'world' , '!' ) ;
-		
-		expect( triggered ).to.be( 1 ) ;
-	} ) ;
-	
 	it( "should remove every occurences of a listener for one event" , function() {
 		
 		var bus = Object.create( NextGenEvents.prototype ) ;
@@ -781,6 +764,85 @@ describe( "Basic synchronous event-emitting (NOT compatible with node)" , functi
 	} ) ;
 } ) ;
 
+
+
+describe( "Next Gen feature: listener in 'eventObject' mode" , function() {
+	
+	it( "listener using 'eventObject' option" , function() {
+		
+		var triggered = 0 ,
+			bus = Object.create( NextGenEvents.prototype ) ;
+		
+		bus.once( 'hello' , function( event ) {
+			triggered ++ ;
+			expect( event.args.length ).to.be( 2 ) ;
+			expect( event.args[ 0 ] ).to.be( 'world' ) ;
+			expect( event.args[ 1 ] ).to.be( '!' ) ;
+			
+			expect( event.emitter ).to.be( bus ) ;
+			expect( event.name ).to.be( 'hello' ) ;
+			expect( event.callback ).not.to.be.ok() ;
+		} , { eventObject: true } ) ;
+		
+		bus.emit( 'hello' , 'world' , '!' ) ;
+		
+		expect( triggered ).to.be( 1 ) ;
+	} ) ;
+	
+	it( "listener using 'eventObject' option and emit() with completion callback" , function() {
+		
+		var triggered = 0 , emitCallbackTriggered = 0 ,
+			bus = Object.create( NextGenEvents.prototype ) ;
+		
+		var emitCallback = function() {
+			emitCallbackTriggered ++ ;
+		} ;
+		
+		bus.once( 'hello' , function( event ) {
+			triggered ++ ;
+			expect( event.args.length ).to.be( 0 ) ;
+			
+			expect( event.emitter ).to.be( bus ) ;
+			expect( event.name ).to.be( 'hello' ) ;
+			expect( event.callback ).to.be( emitCallback ) ;
+		} , { eventObject: true } ) ;
+		
+		bus.emit( 'hello' , emitCallback ) ;
+		
+		expect( triggered ).to.be( 1 ) ;
+		expect( emitCallbackTriggered ).to.be( 1 ) ;
+	} ) ;
+	
+	it( "listener using 'eventObject' and 'async' options, and emit() with completion callback" , function( done ) {
+		
+		var triggered = 0 , emitCallbackTriggered = 0 ,
+			bus = Object.create( NextGenEvents.prototype ) ;
+		
+		var emitCallback = function() {
+			emitCallbackTriggered ++ ;
+			expect( triggered ).to.be( 1 ) ;
+			expect( emitCallbackTriggered ).to.be( 1 ) ;
+			done() ;
+		} ;
+		
+		bus.once( 'hello' , function( event , callback ) {
+			triggered ++ ;
+			expect( event.args.length ).to.be( 0 ) ;
+			
+			expect( event.emitter ).to.be( bus ) ;
+			expect( event.name ).to.be( 'hello' ) ;
+			expect( event.callback ).to.be( emitCallback ) ;
+			
+			setTimeout( function() {
+				callback() ;
+			} , 20 ) ;
+			
+		} , { async: true , eventObject: true } ) ;
+		
+		bus.emit( 'hello' , emitCallback ) ;
+	} ) ;
+} ) ;
+	
 
 
 describe( "Next Gen feature: async emitting" , function() {
