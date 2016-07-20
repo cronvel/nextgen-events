@@ -643,6 +643,8 @@ It's totally protocol agnostic, you just define two methods for your proxy: one 
 
 The code below set up a server and a client written in Node.js.
 The server expose the *heartBeatService* which simply emit an *heartBeat* event once in a while with the beat count as data.
+Most of this code is websocket boiler-plate, the actual proxy code involves only few lines.
+The client code could be easily rewritten for the browser.
 
 **Server:**
 
