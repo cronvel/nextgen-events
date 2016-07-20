@@ -40,7 +40,7 @@ The context serialization feature will ensure you that no concurrency will happe
 You do not have to code fancy or complicated tests to cover all cases anymore: just let *NextGen Events* do it for you!
 
 **Proxy services are awesome.** They abstract away the network so we can emit and listen to emitter on the other side of the plug!
-Both side of the channel create a Proxy, and add to it local and remote *services*, i.e. event emitter, and that's all.
+Both side of the channel create a Proxy, and add to it local and remote *services*, i.e. event emitters, and that's all.
 A remote service looks like a normal (i.e. local) emitter, and share the same API (with few limitations).
 It's totally protocol agnostic, you just define two methods for your proxy: one to read from the network and one to send to it
 (e.g. for Web Socket, this is a one-liner).
@@ -631,7 +631,7 @@ NextGen Events is almost compatible with Node.js' EventEmitter, except for few t
 **This part of the doc is still a work in progress!**
 
 **Proxy services are awesome.** They abstract away the network so we can emit and listen to emitter on the other side of the plug!
-Both side of the channel create a Proxy, and add to it local and remote *services*, i.e. event emitter, and that's all.
+Both side of the channel create a Proxy, and add to it local and remote *services*, i.e. event emitters, and that's all.
 A remote service looks like a normal (i.e. local) emitter, and share the same API (with few limitations).
 
 It's totally protocol agnostic, you just define two methods for your proxy: one to read from the network and one to send to it
@@ -640,6 +640,9 @@ It's totally protocol agnostic, you just define two methods for your proxy: one 
 
 
 #### Example, using the Web Socket *ws* node module
+
+The code below set up a server and a client written in Node.js.
+The server expose the *heartBeatService* which simply emit an *heartBeat* event once in a while with the beat count as data.
 
 **Server:**
 
@@ -764,3 +767,5 @@ Features that are unlikely to be supported:
 
 * Remote emit with a nice value (does not make sense at all through a network)
 * Contexts cannot be shared, think of it as if they were namespaced behind the proxy
+
+
