@@ -1,8 +1,14 @@
 
+v0.5.19
+-------
+
+Proxy services features: ack/callback on emit and listen!
+
+
 v0.5.18
 -------
 
-New features: listener in 'eventObject' mode
+New feature: listener in 'eventObject' mode.
 
 
 v0.5.17
@@ -14,7 +20,7 @@ Proxy services: basic features ok!
 v0.5.16
 -------
 
-.once() arguments management bugfixed (rare)
+.once() arguments management bugfixed (rare).
 
 
 v0.5.14 - v0.5.15
@@ -44,7 +50,7 @@ Browser build was missing...
 v0.5.10
 -------
 
-fixed recursive emit issue when a listener modify the current listener array in the emit loop
+Fixed recursive emit issue when a listener modify the current listener array in the emit loop.
 
 
 v0.5.9
@@ -68,37 +74,37 @@ Browser support: ok!
 v0.5.6
 ------
 
-Exception message clean up
+Exception message clean up.
 
 
 v0.5.5
 ------
 
-Bugfix completion handler when no listener for an event
+Bugfix completion handler when there is no listener for an event.
 
 
 v0.5.4
 ------
 
-Internal event object changes
+Internal event object changes.
 
 
 v0.5.3
 ------
 
-.emit()'s completion callback now has the event object passed as argument #1
+.emit()'s completion callback now has the event object passed as argument #1.
 
 
 v0.5.2
 ------
 
-New function .listenerCount() to be up to date with Node.js built-in events
+New method .listenerCount() to be up to date with Node.js built-in events.
 
 
 v0.5.1
 ------
 
-Documentation: spelling
+Documentation: spelling.
 
 
 v0.5.0
@@ -117,6 +123,7 @@ v0.4.0
 ------
 
 .emit() does not return the emitter anymore, but instead an object representing the event.
+
 The method .setInterruptible() allow the emitter to be interruptible, i.e. when an event is emitted, a listener returning
 a truthy value will abort the emitting process, other emitters will not receive the event.
 Furthermore, an 'interrupt' event will be fired.

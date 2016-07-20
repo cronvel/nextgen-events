@@ -6,11 +6,18 @@ var NGEvents = require( '../lib/NextGenEvents.js' ) ;
 var awesomeEmitter = new NGEvents() ;
 var clockEmitter = new NGEvents() ;
 
+var nextBeat = 1 ;
+
 // Emit one 'heartBeat' event every few seconds
 setInterval( function() {
-	awesomeEmitter.emit( 'heartBeat' , function() {
-		console.log( 'heartBeat callback' ) ;
+	var beat = nextBeat ++ ;
+	
+	awesomeEmitter.emit( 'heartBeat' , beat , function() {
+		console.log( 'heartBeat (%d) callback' , beat ) ;
 	} ) ;
+	
+	console.log( 'heartBeat (%d) emitted' , beat ) ;
+	
 } , 2000 ) ;
 
 setInterval( function() { clockEmitter.emit( 'time' , new Date() ) ; } , 5150 ) ;
