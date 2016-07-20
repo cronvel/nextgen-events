@@ -3,7 +3,7 @@
 
 
 var NGEvents = require( '../lib/NextGenEvents.js' ) ;
-var emitter = new NGEvents() ;
+//var emitter = new NGEvents() ;
 
 
 
@@ -53,7 +53,7 @@ ws.on( 'open' , function open() {
 		proxy.remoteServices.awesomeService.emit( 'hello' , 'Hello world!' , function() {
 			console.log( '\n\n\n\t\t\t>>> hello callback! <<<\n\n\n' ) ;
 		} ) ;
-	} )
+	} ) ;
 } ) ;
 
 ws.on( 'message' , function( message ) {

@@ -19,6 +19,7 @@ Next generation of events handling for node.js
 * A context can be temporarly *disabled*
 * A context can be in *queue* mode: events for its listeners are stored, they will be *resumed* when the context is enabled again
 * Context serialization: async listeners can be run one after the other is fully completed
+* **NEW: proxy services!** Abstract away your network: emit and listen to emitter on the other side of the plug!
 
 Emitting events asynchronously or registering a listener that will be triggered asynchronously because it performs
 non-critical tasks has some virtues: it gives some breath to the event-loop, so important I/O can be processed as soon as possible.
@@ -37,6 +38,12 @@ One of the top feature of this lib is the context serialization: it greatly ease
 When differents events can fire at the same time, there are use cases when one does not want that async listener run concurrently.
 The context serialization feature will ensure you that no concurrency will happen for listeners tied to it.
 You do not have to code fancy or complicated tests to cover all cases anymore: just let *NextGen Events* do it for you!
+
+**Proxy services are awesome.** They abstract away the network so we can emit and listen to emitter on the other side of the plug!
+Both side of the channel create a Proxy, and add to it local and remote *services*, i.e. event emitter, and that's all.
+A remote service looks like a normal (i.e. local) emitter, and share the same API (with few limitations).
+It's totally protocol agnostic, you just define two methods for your proxy: one to read from the network and one to send to it
+(e.g. for Web Socket, this is a one-liner).
 
 
 
@@ -120,28 +127,33 @@ are few differences with the built-in Node.js EventEmitter.
 
 ## Table of Content
 
-* [.addListener() / .on()](#ref.addListener)
-* [.once()](#ref.once)
-* [.removeListener() / .off()](#ref.removeListener)
-* [.removeAllListeners()](#ref.removeAllListeners)
-* [.setMaxListeners()](#ref.setMaxListeners)
-* [.listeners()](#ref.listeners)
-* [.listenerCount()](#ref.listenerCount)
-* [.setNice()](#ref.setNice)
-* [.emit()](#ref.emit)
-* [.addListenerContext()](#ref.addListenerContext)
-* [.disableListenerContext()](#ref.disableListenerContext)
-* [.queueListenerContext()](#ref.queueListenerContext)
-* [.enableListenerContext()](#ref.enableListenerContext)
-* [.setListenerContextNice()](#ref.setListenerContextNice)
-* [.serializeListenerContext()](#ref.serializeListenerContext)
-* [.destroyListenerContext()](#ref.destroyListenerContext)
-* [the *nice feature*](#ref.note.nice)
-* [incompatibilities](#incompatibilities)
+* [Events](#ref.events)
+	* [.addListener() / .on()](#ref.events.addListener)
+	* [.once()](#ref.events.once)
+	* [.removeListener() / .off()](#ref.events.removeListener)
+	* [.removeAllListeners()](#ref.events.removeAllListeners)
+	* [.setMaxListeners()](#ref.events.setMaxListeners)
+	* [.listeners()](#ref.events.listeners)
+	* [.listenerCount()](#ref.events.listenerCount)
+	* [.setNice()](#ref.events.setNice)
+	* [.emit()](#ref.events.emit)
+	* [.addListenerContext()](#ref.events.addListenerContext)
+	* [.disableListenerContext()](#ref.events.disableListenerContext)
+	* [.queueListenerContext()](#ref.events.queueListenerContext)
+	* [.enableListenerContext()](#ref.events.enableListenerContext)
+	* [.setListenerContextNice()](#ref.events.setListenerContextNice)
+	* [.serializeListenerContext()](#ref.events.serializeListenerContext)
+	* [.destroyListenerContext()](#ref.events.destroyListenerContext)
+	* [the *nice feature*](#ref.note.nice)
+	* [incompatibilities](#incompatibilities)
+* [Proxy Services](#ref.proxy)
 
 
 
-<a name="ref.addListener"></a>
+<a name="ref.events"></a>
+## Events
+
+<a name="ref.events.addListener"></a>
 ### .addListener( eventName , [fn] , [options] )   *or*   .on( eventName , [fn] , [options] )
 
 * eventName `string` the name of the event to bind to
@@ -204,11 +216,11 @@ server.on( 'error' , {
 ```
 
 When an async listener is defined, the completion callback is automatically added at the end of the arguments 
-supplied to [.emit()](#ref.emit) for any listeners with *async = true*.
+supplied to [.emit()](#ref.events.emit) for any listeners with *async = true*.
 
 
 
-<a name="ref.once"></a>
+<a name="ref.events.once"></a>
 ### .once( eventName , listener )
 
 * eventName `string` the name of the event to bind to
@@ -247,7 +259,7 @@ server.on( 'connection' , {
 
 
 
-<a name="ref.removeListener"></a>
+<a name="ref.events.removeListener"></a>
 ### .removeListener( eventName , listenerID )   *or*   .off( eventName , listenerID )
 
 * eventName `string` the name of the event the listener to remove is binded to
@@ -298,7 +310,7 @@ Don't forget that by default, the ID is the callback function itself.
 
 
 
-<a name="ref.removeAllListeners"></a>
+<a name="ref.events.removeAllListeners"></a>
 ### .removeAllListeners( [eventName] )
 
 * eventName `string` (optional) the name of the event the listeners to remove are binded to
@@ -313,7 +325,7 @@ Node.js documentation:
 
 
 
-<a name="ref.setMaxListeners"></a>
+<a name="ref.events.setMaxListeners"></a>
 ### .setMaxListeners()
 
 Only available for compatibility with the built-in Node.js emitter, so it does not break the code for people that want
@@ -324,7 +336,7 @@ But please note that **there is no such concept of max listener in NextGen Event
 
 
 
-<a name="ref.listeners"></a>
+<a name="ref.events.listeners"></a>
 ### .listeners( eventName )
 
 * eventName `string` (optional) the name of the event the listeners to list are binded to
@@ -345,7 +357,7 @@ console.log( util.inspect( server.listeners( 'connection' ) ) ) ;
 
 
 
-<a name="ref.listenerCount"></a>
+<a name="ref.events.listenerCount"></a>
 ### .listenerCount( eventName )
 
 * eventName `string` the name of the event
@@ -356,7 +368,7 @@ Node.js documentation:
 
 
 
-<a name="ref.setNice"></a>
+<a name="ref.events.setNice"></a>
 ### .setNice( nice )
 
 * nice `integer` (default: -Infinity) see [the nice feature](#ref.note.nice) for details
@@ -365,7 +377,7 @@ Set the default *nice value* of the current emitter.
 
 
 
-<a name="ref.emit"></a>
+<a name="ref.events.emit"></a>
 ### .emit( [nice] , eventName , [arg1] , [arg2] , [...] , [callback] )
 
 * nice `integer` (default: -Infinity) see [the nice feature](#ref.note.nice) for details
@@ -411,15 +423,15 @@ They are many elements that can define their own *nice value*.
 Here is how this is resolved:
 
 * First the *emit nice value* will be the one passed to the `.emit()` method if given, or the default *emitter nice value*
-  defined with [.setNice()](#ref.setNice).
+  defined with [.setNice()](#ref.events.setNice).
 * For each listener to be called, the real *nice value* for the current listener will be the **HIGHEST** *nice value* of
-  the *emit nice value* (see above), the listener *nice value* (defined with [.addListener()](#ref.addListener)), and
-  if the listener is tied to a context, the context *nice value* (defined with [.addListenerContext()](#ref.addListenerContext)
-  or [.setListenerContextNice](#ref.setListenerContextNice))
+  the *emit nice value* (see above), the listener *nice value* (defined with [.addListener()](#ref.events.addListener)), and
+  if the listener is tied to a context, the context *nice value* (defined with [.addListenerContext()](#ref.events.addListenerContext)
+  or [.setListenerContextNice](#ref.events.setListenerContextNice))
 
 
 
-<a name="ref.addListenerContext"></a>
+<a name="ref.events.addListenerContext"></a>
 ### .addListenerContext( contextName , options )
 
 * contextName `string` a non-empty string identifying the context to be created
@@ -435,7 +447,7 @@ the context, queuing them, resuming them, or forcing serialization of all async 
 
 
 
-<a name="ref.disableListenerContext"></a>
+<a name="ref.events.disableListenerContext"></a>
 ### .disableListenerContext( contextName )
 
 * contextName `string` a non-empty string identifying the context to be created
@@ -443,11 +455,11 @@ the context, queuing them, resuming them, or forcing serialization of all async 
 It disables a context: any listeners tied to it will not be triggered anymore.
 
 The context is not destroyed, the listeners are not removed, they are just inactive.
-They can be enabled again using [.enableListenerContext()](#ref.enableListenerContext).
+They can be enabled again using [.enableListenerContext()](#ref.events.enableListenerContext).
 
 
 
-<a name="ref.queueListenerContext"></a>
+<a name="ref.events.queueListenerContext"></a>
 ### .queueListenerContext( contextName )
 
 * contextName `string` a non-empty string identifying the context to be created
@@ -455,18 +467,18 @@ They can be enabled again using [.enableListenerContext()](#ref.enableListenerCo
 It switchs a context into *queue mode*: any listeners tied to it will not be triggered anymore, but every listener's call
 will be queued.
 
-When the context will be enabled again using [.enableListenerContext()](#ref.enableListenerContext), any queued listener's call
+When the context will be enabled again using [.enableListenerContext()](#ref.events.enableListenerContext), any queued listener's call
 will be processed.
 
 
 
-<a name="ref.enableListenerContext"></a>
+<a name="ref.events.enableListenerContext"></a>
 ### .enableListenerContext( contextName )
 
 * contextName `string` a non-empty string identifying the context to be created
 
-This enables a context previously disabled using [.disableListenerContext()](#ref.disableListenerContext) or queued
-using [.disableListenerContext()](#ref.disableListenerContext).
+This enables a context previously disabled using [.disableListenerContext()](#ref.events.disableListenerContext) or queued
+using [.disableListenerContext()](#ref.events.disableListenerContext).
 
 If the context was queued, any queued listener's call will be processed right now for synchronous emitter, or a bit later
 depending on the *nice value*. E.g. if a listener would have been called with a timeout of 50 ms (nice value = 5),
@@ -474,7 +486,7 @@ and the call has been queued, the timeout will apply at resume time.
 
 
 
-<a name="ref.setListenerContextNice"></a>
+<a name="ref.events.setListenerContextNice"></a>
 ### .setListenerContextNice( contextName , nice )
 
 * contextName `string` a non-empty string identifying the context to be created
@@ -484,7 +496,7 @@ Set the *nice* value for the current context.
 
 
 
-<a name="ref.serializeListenerContext"></a>
+<a name="ref.events.serializeListenerContext"></a>
 ### .serializeListenerContext( contextName , [value] )
 
 * contextName `string` a non-empty string identifying the context to be created
@@ -494,7 +506,7 @@ This is one of the top feature of this lib.
 
 If set to *true* it enables the context serialization.
 
-It has no effect on listeners defined without the *async* option (see [.addListener()](#ref.addListener)).
+It has no effect on listeners defined without the *async* option (see [.addListener()](#ref.events.addListener)).
 Listeners defined with the async option will postpone any other listener's calls part of the same context.
 Those calls will be queued until the completion callback of the listener is triggered.
 
@@ -572,7 +584,7 @@ app.emit( 'whatever' ) ;
 
 
 
-<a name="ref.destroyListenerContext"></a>
+<a name="ref.events.destroyListenerContext"></a>
 ### .destroyListenerContext( contextName )
 
 * contextName `string` a non-empty string identifying the context to be created
@@ -613,3 +625,142 @@ NextGen Events is almost compatible with Node.js' EventEmitter, except for few t
 
 
 
+<a name="ref.proxy"></a>
+## Proxy Services
+
+**This part of the doc is still a work in progress!**
+
+**Proxy services are awesome.** They abstract away the network so we can emit and listen to emitter on the other side of the plug!
+Both side of the channel create a Proxy, and add to it local and remote *services*, i.e. event emitter, and that's all.
+A remote service looks like a normal (i.e. local) emitter, and share the same API (with few limitations).
+
+It's totally protocol agnostic, you just define two methods for your proxy: one to read from the network and one to send to it
+(e.g. for Web Socket, this is a one-liner).
+
+
+
+#### Example, using the Web Socket *ws* node module
+
+**Server:**
+
+```js
+var NGEvents = require( 'nextgen-events' ) ;
+var WebSocket = require( 'ws' ) ;
+var ws = new WebSocket( 'ws://127.0.0.1:12345' ) ;
+
+// Create a proxy
+var proxy = new NGEvents.Proxy() ;
+
+// Once the connection is established...
+ws.on( 'open' , function open() {
+    
+    // Add the remote service we want to access
+    proxy.addRemoteService( 'heartBeatService' ) ;
+    
+    // Listen to the event 'heartBeat' on this service
+    proxy.remoteServices.heartBeatService.on( 'heartBeat' , function( beat ) {
+        console.log( '>>> Heart Beat (%d) received!' , beat ) ;
+    } ) ;
+} ) ;
+
+// message received: just hook to proxy.receive()
+ws.on( 'message' , function( message ) {
+    proxy.receive( message ) ;
+} ) ;
+
+// Define the receive method: should call proxy.push() after decoding the raw message
+proxy.receive = function receive( raw ) {
+    try { proxy.push( JSON.parse( raw ) ) ; } catch ( error ) {}
+} ;
+
+// Define the send method
+proxy.send = function send( message ) {
+    ws.send( JSON.stringify( message ) ) ;
+} ;
+
+// Clean up after everything is done
+ws.on( 'close' , function close() {
+    proxy.destroy() ;
+} ) ;
+```
+
+
+**Client:**
+
+```js
+var NGEvents = require( 'nextgen-events' ) ;
+
+// Create our service/emitter
+var heartBeatEmitter = new NGEvents() ;
+var nextBeat = 1 ;
+
+// Emit one 'heartBeat' event every few seconds
+setInterval( function() {
+    var beat = nextBeat ++ ;
+    heartBeatEmitter.emit( 'heartBeat' , beat ) ;
+} , 2000 ) ;
+
+// Create our server
+var WebSocket = require( 'ws' ) ;
+var server = new WebSocket.Server( { port: 12345 } ) ;
+
+// On new connection... 
+server.on( 'connection' , function connection( ws ) {
+    
+    // Create a proxy for this client
+    var proxy = new NGEvents.Proxy() ;
+    
+    // Add the local service exposed to this client and grant it all right
+    proxy.addLocalService( 'heartBeatService' , heartBeatEmitter , { listen: true , emit: true , ack: true } ) ;
+    
+    // message received: just hook to proxy.receive()
+    ws.on( 'message' , function incoming( message ) {
+        proxy.receive( message ) ;
+    } ) ;
+    
+    // Define the receive method: should call proxy.push() after decoding the raw message
+    proxy.receive = function receive( raw ) {
+        try { proxy.push( JSON.parse( raw ) ) ; } catch ( error ) {}
+    } ;
+    
+    // Define the send method
+    proxy.send = function send( message ) {
+        ws.send( JSON.stringify( message ) ) ;
+    } ;
+    
+    // Clean up after everything is done
+    ws.on( 'close' , function close() {
+        proxy.destroy() ;
+    } ) ;
+} ) ;
+```
+
+
+
+Options passed to `.addLocalService()`:
+
+* listen `boolean` if set, the remote client can listen (addListener()/on()) to the local emitter
+* emit `boolean` if set, the remote client can emit on the local emitter
+* ack `boolean` if set, the remote client can acknowledge or ask for acknowledge, enabling **async listeners**
+  and .emit()'s **completion callback**
+
+
+
+NextGen Events features available in proxy services:
+
+* All the basic API is supported (the node-compatible API)
+* Emit completion callback supported
+* Async listeners supported
+
+
+
+Features that could be supported in the future:
+
+* Emit interruption and retrieving the interruption value
+
+
+
+Features that are unlikely to be supported:
+
+* Remote emit with a nice value (does not make sense at all through a network)
+* Contexts cannot be shared, think of it as if they were namespaced behind the proxy

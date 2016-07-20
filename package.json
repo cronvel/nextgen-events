@@ -1,7 +1,7 @@
 {
   "name": "nextgen-events",
   "version": "0.5.19",
-  "description": "Next generation of events handling for javascript.",
+  "description": "The next generation of events handling for javascript! New: abstract away the network!",
   "main": "lib/NextGenEvents.js",
   "directories": {
     "test": "test"
@@ -30,7 +30,9 @@
     "context",
     "series",
     "serialize",
-    "namespace"
+    "namespace",
+    "proxy",
+    "network"
   ],
   "author": "Cédric Ronvel",
   "license": "MIT",
