@@ -142,11 +142,12 @@ are few differences with the built-in Node.js EventEmitter.
 
 
 <a name="ref.addListener"></a>
-### .addListener( eventName , listener )   *or*   .on( eventName , listener )
+### .addListener( eventName , [fn] , [options] )   *or*   .on( eventName , [fn] , [options] )
 
 * eventName `string` the name of the event to bind to
-* listener `Function` or `Object` the listener that will listen to this event, it can be a function or an object where:
-	* fn `Function` (mandatory) the listener function
+* fn `Function` the callback function for this event, this argument is optional: it can be passed to the `fn` property of `options`
+* options `Object` where:
+	* fn `Function` (mandatory if no `fn` argument provided) the listener function
 	* id `any type` (default to the provided *fn* function) the identifier of the listener, useful if we have to remove it later
 	* once `boolean` (default: false) *true* if this is a one-time-listener
 	* context `string` (default: undefined - no context) a non-empty string identifying a context, if defined the listener
@@ -154,6 +155,8 @@ are few differences with the built-in Node.js EventEmitter.
 	* nice `integer` (default: -Infinity) see [the nice feature](#ref.note.nice) for details
 	* async `boolean` (default: false) set it to *true* if the listener is async by nature and a context serialization is wanted,
 	  when *async* is set for a listener, it **MUST** accept a completion callback as its last argument.
+	* eventObject `boolean` (default: false) if set, the listener will be passed an unique argument: the very same event object
+	  that is returned by `.emit()`, if the listener is async, a second argument is passed as the callback
 
 Node.js documentation:
 

@@ -143,6 +143,22 @@ describe( "Basic synchronous event-emitting (node-compatible)" , function() {
 		expect( triggered ).to.be( 1 ) ;
 	} ) ;
 	
+	it( "should emit without argument" , function() {
+		
+		var bus = Object.create( NextGenEvents.prototype ) ;
+		
+		var triggered = 0 ;
+		
+		bus.on( 'hello' , function() {
+			triggered ++ ;
+			expect( arguments.length ).to.be( 0 ) ;
+		} ) ;
+		
+		bus.emit( 'hello' ) ;
+		
+		expect( triggered ).to.be( 1 ) ;
+	} ) ;
+	
 	it( "should emit with argument" , function() {
 		
 		var bus = Object.create( NextGenEvents.prototype ) ;
@@ -347,7 +363,7 @@ describe( "Basic synchronous event-emitting (node-compatible)" , function() {
 		expect( triggered ).to.eql( { foo1: 3 , bar1: 1 , bar2: 1 , baz1: 1 , baz2: 1 , baz3: 1 , qux: 0 } ) ;
 	} ) ;
 	
-	it( ".removeAllListeners() without argument should all listeners for all events" , function() {
+	it( ".removeAllListeners() without argument should remove all listeners for all events" , function() {
 		
 		var bus = Object.create( NextGenEvents.prototype ) ;
 		
@@ -500,6 +516,23 @@ describe( "Basic synchronous event-emitting (node-compatible)" , function() {
 
 
 describe( "Basic synchronous event-emitting (NOT compatible with node)" , function() {
+	
+	it( "zzz listener using 'eventObject' option" , function() {
+		
+		var bus = Object.create( NextGenEvents.prototype ) ;
+		
+		var triggered = 0 ;
+		
+		bus.on( 'hello' , function( event ) {
+			triggered ++ ;
+			expect( event.args[ 0 ] ).to.be( 'world' ) ;
+			expect( event.args[ 1 ] ).to.be( '!' ) ;
+		} , { eventObject: true } ) ;
+		
+		bus.emit( 'hello' , 'world' , '!' ) ;
+		
+		expect( triggered ).to.be( 1 ) ;
+	} ) ;
 	
 	it( "should remove every occurences of a listener for one event" , function() {
 		
