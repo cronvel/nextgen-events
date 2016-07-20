@@ -748,7 +748,7 @@ Options passed to `.addLocalService()`:
 
 * listen `boolean` if set, the remote client can listen (addListener()/on()) to the local emitter
 * emit `boolean` if set, the remote client can emit on the local emitter
-* ack `boolean` if set, the remote client can acknowledge or ask for acknowledge, enabling **async listeners**
+* ack `boolean` if set, the remote client can acknowledge or ask for acknowledgement, enabling **async listeners**
   and .emit()'s **completion callback**
 
 
@@ -770,6 +770,6 @@ Features that could be supported in the future:
 Features that are unlikely to be supported:
 
 * Remote emit with a nice value (does not make sense at all through a network)
-* Contexts cannot be shared, think of it as if they were namespaced behind the proxy
+* Contexts cannot be shared across different proxies/client, think of it as if they were namespaced behind their proxy
 
 
