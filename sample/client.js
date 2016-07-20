@@ -20,8 +20,16 @@ ws.on( 'open' , function open() {
 	proxy.addRemoteService( 'awesomeService' ) ;
 	
 	// Listen to the event 'heartBeat' on this service
-	proxy.remoteServices.awesomeService.on( 'heartBeat' , function() { console.log( '\n>>> Heart Beat received!\n' ) ; } )
-	proxy.remoteServices.awesomeService.on( 'hello' , function( text ) { console.log( '\n>>> Hello received: %s\n' , text ) ; } )
+	proxy.remoteServices.awesomeService.on( 'hello' , function( text ) { console.log( '\n>>> Hello received: %s\n' , text ) ; } ) ;
+	
+	proxy.remoteServices.awesomeService.on( 'heartBeat' , function() { console.log( '\n>>> Heart Beat received! (sync listener)\n' ) ; } ) ;
+	
+	proxy.remoteServices.awesomeService.on( 'heartBeat' , function( callback ) {
+		setTimeout( function() {
+			console.log( '\n>>> Heart Beat received! (async listener)\n' ) ;
+			callback() ;
+		} , 0 ) ;
+	} , { async: true } ) ;
 	
 	// Add the remote service we want to access
 	proxy.addRemoteService( 'clockService' ) ;
