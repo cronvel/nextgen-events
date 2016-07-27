@@ -1,4 +1,10 @@
 
+v0.5.23
+-------
+
+Bugfixed: inside a 'newListener' listener, the .listenerCount() should report correctly
+
+
 v0.5.22
 -------
 

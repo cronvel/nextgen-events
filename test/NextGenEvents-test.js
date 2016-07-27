@@ -766,6 +766,29 @@ describe( "Basic synchronous event-emitting (NOT compatible with node)" , functi
 
 
 
+describe( "Edge cases" , function() {
+	
+	it( "inside a 'newListener' listener, the .listenerCount() should report correctly" , function() {
+		
+		var triggered = 0 ,
+			bus = Object.create( NextGenEvents.prototype ) ;
+		
+		bus.on( 'newListener' , function( listeners ) {
+			triggered ++ ;
+			expect( listeners.length ).to.be( 1 ) ;
+			expect( listeners[ 0 ].event ).to.be( 'ready' ) ;
+			
+			// This is the tricky condition
+			expect( bus.listenerCount( 'ready' ) ).to.be( 1 ) ;
+		} ) ;
+		
+		bus.on( 'ready' , function() {} ) ;
+		expect( triggered ).to.be( 1 ) ;
+	} ) ;
+} ) ;
+
+
+		
 describe( "Next Gen feature: listener in 'eventObject' mode" , function() {
 	
 	it( "listener using 'eventObject' option" , function() {

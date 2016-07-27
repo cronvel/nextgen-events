@@ -70,7 +70,7 @@ NextGenEvents.filterOutCallback = function( what , currentElement ) { return wha
 // .addListener( eventName , [fn] , [options] )
 NextGenEvents.prototype.addListener = function addListener( eventName , fn , options )
 {
-	var listener = {} ;
+	var listener = {} , newListenerListeners ;
 	
 	if ( ! this.__ngev ) { NextGenEvents.init.call( this ) ; }
 	if ( ! this.__ngev.events[ eventName ] ) { this.__ngev.events[ eventName ] = [] ; }
@@ -102,13 +102,25 @@ NextGenEvents.prototype.addListener = function addListener( eventName , fn , opt
 	// So the event's name can be retrieved in the listener itself.
 	listener.event = eventName ;
 	
-	// We should emit 'newListener' first, before adding it to the listeners,
-	// to avoid recursion in the case that eventName === 'newListener'
 	if ( this.__ngev.events.newListener.length )
 	{
-		// Return an array, because .addListener() may support multiple event addition at once
+		// Extra care should be taken with the 'newListener' event, we should avoid recursion
+		// in the case that eventName === 'newListener', but inside a 'nexListener' listener,
+		// .listenerCount() should report correctly
+		newListenerListeners = this.__ngev.events.newListener.slice() ;
+		
+		this.__ngev.events[ eventName ].push( listener ) ;
+		
+		// Return an array, because one day, .addListener() may support multiple event addition at once,
 		// e.g.: .addListener( { request: onRequest, close: onClose, error: onError } ) ;
-		this.emit( 'newListener' , [ listener ] ) ;
+		NextGenEvents.emitEvent( {
+			emitter: this ,
+			name: 'newListener' ,
+			args: [ [ listener ] ] ,
+			listeners: newListenerListeners
+		} ) ;
+		
+		return this ;
 	}
 	
 	this.__ngev.events[ eventName ].push( listener ) ;
@@ -237,7 +249,7 @@ NextGenEvents.listenerWrapper = function listenerWrapper( listener , event , con
 				
 				event.emitter.emit( 'interrupt' , event.interrupt ) ;
 			}
-			else if ( event.listenersDone >= event.listeners && event.callback )
+			else if ( event.listenersDone >= event.listeners.length && event.callback )
 			{
 				event.callback( undefined , event ) ;
 				delete event.callback ;
@@ -273,7 +285,7 @@ NextGenEvents.listenerWrapper = function listenerWrapper( listener , event , con
 		
 		event.emitter.emit( 'interrupt' , event.interrupt ) ;
 	}
-	else if ( event.listenersDone >= event.listeners && event.callback )
+	else if ( event.listenersDone >= event.listeners.length && event.callback )
 	{
 		event.callback( undefined , event ) ;
 		delete event.callback ;
@@ -337,20 +349,20 @@ NextGenEvents.prototype.emit = function emit()
 	
 
 /*
-	At this stage, event should have properties:
-	
-	* emitter: the event emitter
-	* name: the event name
-	* args: array, the arguments of the event
-	* nice: (optional) nice value
-	* callback: (optional) a callback for emit
+	At this stage, event should have properties for the event:
+		* emitter: the event emitter
+		* name: the event name
+		* args: array, the arguments of the event
+		* nice: (optional) nice value
+		* callback: (optional) a callback for emit
+		* listeners: (optional) override the listeners array stored in __ngev
 */
 NextGenEvents.emitEvent = function emitEvent( event )
 {
 	var self = event.emitter ,
 		i , iMax , count = 0 ,
 		listener , context , currentNice ,
-		listeners , removedListeners = [] ;
+		removedListeners = [] ;
 	
 	if ( ! self.__ngev ) { NextGenEvents.init.call( self ) ; }
 	
@@ -362,17 +374,16 @@ NextGenEvents.emitEvent = function emitEvent( event )
 	if ( event.nice === undefined || event.nice === null ) { event.nice = self.__ngev.nice ; }
 	
 	// Increment self.__ngev.recursion
-	event.listeners = self.__ngev.events[ event.name ].length ;
 	self.__ngev.recursion ++ ;
 	
 	// Trouble arise when a listener is removed from another listener, while we are still in the loop.
 	// So we have to COPY the listener array right now!
-	listeners = self.__ngev.events[ event.name ].slice() ;
+	if ( ! event.listeners ) { event.listeners = self.__ngev.events[ event.name ].slice() ; }
 	
-	for ( i = 0 , iMax = listeners.length ; i < iMax ; i ++ )
+	for ( i = 0 , iMax = event.listeners.length ; i < iMax ; i ++ )
 	{
 		count ++ ;
-		listener = listeners[ i ] ;
+		listener = event.listeners[ i ] ;
 		context = listener.context && self.__ngev.contexts[ listener.context ] ;
 		
 		// If the listener context is disabled...
