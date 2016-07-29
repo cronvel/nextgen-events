@@ -868,6 +868,146 @@ describe( "Next Gen feature: listener in 'eventObject' mode" , function() {
 	
 
 
+describe( "Next Gen feature: group emitters" , function() {
+	
+	it( "should emit on a group of emitters" , function() {
+		
+		var busList = [
+			Object.create( NextGenEvents.prototype ) ,
+			Object.create( NextGenEvents.prototype ) ,
+			Object.create( NextGenEvents.prototype )
+		] ;
+		
+		var triggered = 0 ;
+		
+		busList[ 0 ].on( 'hello' , function( arg1 , arg2 ) {
+			triggered ++ ;
+			expect( arg1 ).to.be( 'world' ) ;
+			expect( arg2 ).to.be( '!' ) ;
+		} ) ;
+		
+		busList[ 1 ].on( 'hello' , function( arg1 , arg2 ) {
+			triggered ++ ;
+			expect( arg1 ).to.be( 'world' ) ;
+			expect( arg2 ).to.be( '!' ) ;
+		} ) ;
+		
+		busList[ 2 ].on( 'hello' , function( arg1 , arg2 ) {
+			triggered ++ ;
+			expect( arg1 ).to.be( 'world' ) ;
+			expect( arg2 ).to.be( '!' ) ;
+		} ) ;
+		
+		NextGenEvents.groupEmit( busList , 'hello' , 'world' , '!' ) ;
+		
+		expect( triggered ).to.be( 3 ) ;
+	} ) ;
+	
+	it( "should listen to a group of emitters" , function() {
+		
+		var busList = [
+			Object.create( NextGenEvents.prototype ) ,
+			Object.create( NextGenEvents.prototype ) ,
+			Object.create( NextGenEvents.prototype )
+		] ;
+		
+		var triggered = 0 ;
+		
+		NextGenEvents.groupOn( busList , 'hello' , function( emitter , arg1 , arg2 ) {
+			triggered ++ ;
+			emitter.triggered = ( emitter.triggered || 0 ) + 1 ;
+			expect( arg1 ).to.be( 'world' ) ;
+			expect( arg2 ).to.be( '!' ) ;
+			expect( emitter.triggered ).to.be.within( 1 , 2 ) ;
+		} ) ;
+		
+		NextGenEvents.groupEmit( busList , 'hello' , 'world' , '!' ) ;
+		expect( triggered ).to.be( 3 ) ;
+		
+		NextGenEvents.groupEmit( busList , 'hello' , 'world' , '!' ) ;
+		expect( triggered ).to.be( 6 ) ;
+	} ) ;
+	
+	it( "should listen to a group of emitters then stop listening" , function() {
+		
+		var busList = [
+			Object.create( NextGenEvents.prototype ) ,
+			Object.create( NextGenEvents.prototype ) ,
+			Object.create( NextGenEvents.prototype )
+		] ;
+		
+		var triggered = 0 ;
+		
+		var fn = function( emitter , arg1 , arg2 ) {
+			triggered ++ ;
+			emitter.triggered = ( emitter.triggered || 0 ) + 1 ;
+			expect( arg1 ).to.be( 'world' ) ;
+			expect( arg2 ).to.be( '!' ) ;
+			expect( emitter.triggered ).to.be( 1 ) ;
+		} ;
+		
+		NextGenEvents.groupOn( busList , 'hello' , fn ) ;
+		NextGenEvents.groupEmit( busList , 'hello' , 'world' , '!' ) ;
+		expect( triggered ).to.be( 3 ) ;
+		
+		NextGenEvents.groupOff( busList , 'hello' , fn ) ;
+		NextGenEvents.groupEmit( busList , 'hello' , 'world' , '!' ) ;
+		expect( triggered ).to.be( 3 ) ;
+	} ) ;
+	
+	it( "should listen once to each emitters of a group" , function() {
+		
+		var busList = [
+			Object.create( NextGenEvents.prototype ) ,
+			Object.create( NextGenEvents.prototype ) ,
+			Object.create( NextGenEvents.prototype )
+		] ;
+		
+		var triggered = 0 ;
+		
+		NextGenEvents.groupOnce( busList , 'hello' , function( emitter , arg1 , arg2 ) {
+			triggered ++ ;
+			emitter.triggered = ( emitter.triggered || 0 ) + 1 ;
+			expect( arg1 ).to.be( 'world' ) ;
+			expect( arg2 ).to.be( '!' ) ;
+			expect( emitter.triggered ).to.be( 1 ) ;
+		} ) ;
+		
+		NextGenEvents.groupEmit( busList , 'hello' , 'world' , '!' ) ;
+		expect( triggered ).to.be( 3 ) ;
+		
+		NextGenEvents.groupEmit( busList , 'hello' , 'world' , '!' ) ;
+		expect( triggered ).to.be( 3 ) ;
+	} ) ;
+	
+	it( "should listen once to a whole group of emitters" , function() {
+		
+		var busList = [
+			Object.create( NextGenEvents.prototype ) ,
+			Object.create( NextGenEvents.prototype ) ,
+			Object.create( NextGenEvents.prototype )
+		] ;
+		
+		var triggered = 0 ;
+		
+		NextGenEvents.groupGlobalOnce( busList , 'hello' , function( emitter , arg1 , arg2 ) {
+			triggered ++ ;
+			emitter.triggered = ( emitter.triggered || 0 ) + 1 ;
+			expect( arg1 ).to.be( 'world' ) ;
+			expect( arg2 ).to.be( '!' ) ;
+			expect( emitter.triggered ).to.be( 1 ) ;
+		} ) ;
+		
+		NextGenEvents.groupEmit( busList , 'hello' , 'world' , '!' ) ;
+		expect( triggered ).to.be( 1 ) ;
+		
+		NextGenEvents.groupEmit( busList , 'hello' , 'world' , '!' ) ;
+		expect( triggered ).to.be( 1 ) ;
+	} ) ;
+} ) ;
+	
+
+
 describe( "Next Gen feature: async emitting" , function() {
 	
 	it( "should emit synchronously, with a synchronous flow (nice = NextGenEvents.SYNC)" , function( done ) {

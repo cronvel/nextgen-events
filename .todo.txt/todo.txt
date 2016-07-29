@@ -1,3 +1,4 @@
 (A) Document all the 'interrupt' feature @doc
 (C) NextGenEvents.upgrade(): upgrade a regular node.js EventsEmitter to a NextGen emitter @code
 (B) implement .setMaxListener()?
+(A) Document groupEmit(), groupOn(), groupOff(), groupOnce() , ... @doc
