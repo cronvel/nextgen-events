@@ -842,7 +842,7 @@ Proxy.prototype.destroy = function destroy()
 Proxy.prototype.push = function push( message )
 {
 	if (
-		message.type !== MESSAGE_TYPE ||
+		message.__type !== MESSAGE_TYPE ||
 		! message.service || typeof message.service !== 'string' ||
 		! message.event || typeof message.event !== 'string' ||
 		! message.method
@@ -957,7 +957,7 @@ LocalService.prototype.receiveEmit = function receiveEmit( message )
 		event.callback = function ack( interruption ) {
 			
 			self.proxy.send( {
-				type: MESSAGE_TYPE ,
+				__type: MESSAGE_TYPE ,
 				service: self.id ,
 				method: 'ackEmit' ,
 				ack: message.ack ,
@@ -1045,7 +1045,7 @@ LocalService.forward = function forward( event )
 	if ( this.destroyed ) { return ; }
 	
 	this.proxy.send( {
-		type: MESSAGE_TYPE ,
+		__type: MESSAGE_TYPE ,
 		service: this.id ,
 		method: 'event' ,
 		event: event.name ,
@@ -1068,7 +1068,7 @@ LocalService.forwardWithAck = function forwardWithAck( event , callback )
 	{
 		// There is no emit callback, no need to ack this one
 		this.proxy.send( {
-			type: MESSAGE_TYPE ,
+			__type: MESSAGE_TYPE ,
 			service: this.id ,
 			method: 'event' ,
 			event: event.name ,
@@ -1093,7 +1093,7 @@ LocalService.forwardWithAck = function forwardWithAck( event , callback )
 	this.internalEvents.on( 'ack' , onAck ) ;
 	
 	this.proxy.send( {
-		type: MESSAGE_TYPE ,
+		__type: MESSAGE_TYPE ,
 		service: this.id ,
 		method: 'event' ,
 		event: event.name ,
@@ -1172,7 +1172,7 @@ RemoteService.prototype.emit = function emit( eventName )
 		args = Array.prototype.slice.call( arguments , 1 ) ;
 		
 		this.proxy.send( {
-			type: MESSAGE_TYPE ,
+			__type: MESSAGE_TYPE ,
 			service: this.id ,
 			method: 'emit' ,
 			event: eventName ,
@@ -1198,7 +1198,7 @@ RemoteService.prototype.emit = function emit( eventName )
 	this.internalEvents.on( 'ack' , onAck ) ;
 	
 	this.proxy.send( {
-		type: MESSAGE_TYPE ,
+		__type: MESSAGE_TYPE ,
 		service: this.id ,
 		method: 'emit' ,
 		ack: ackId ,
@@ -1231,7 +1231,7 @@ RemoteService.prototype.addListener = function addListener( eventName , fn , opt
 		this.events[ eventName ] = EVENT_ACK ;
 		
 		this.proxy.send( {
-			type: MESSAGE_TYPE ,
+			__type: MESSAGE_TYPE ,
 			service: this.id ,
 			method: 'listen' ,
 			ack: true ,
@@ -1244,7 +1244,7 @@ RemoteService.prototype.addListener = function addListener( eventName , fn , opt
 		this.events[ eventName ] = EVENT_NO_ACK ;
 		
 		this.proxy.send( {
-			type: MESSAGE_TYPE ,
+			__type: MESSAGE_TYPE ,
 			service: this.id ,
 			method: 'listen' ,
 			event: eventName
@@ -1275,7 +1275,7 @@ RemoteService.prototype.removeListener = function removeListener( eventName , id
 		this.events[ eventName ] = 0 ;
 		
 		this.proxy.send( {
-			type: MESSAGE_TYPE ,
+			__type: MESSAGE_TYPE ,
 			service: this.id ,
 			method: 'ignore' ,
 			event: eventName
@@ -1305,7 +1305,7 @@ RemoteService.prototype.receiveEvent = function receiveEvent( message )
 		event.callback = function ack() {
 			
 			self.proxy.send( {
-				type: MESSAGE_TYPE ,
+				__type: MESSAGE_TYPE ,
 				service: self.id ,
 				method: 'ackEvent' ,
 				ack: message.ack ,
@@ -1325,7 +1325,7 @@ RemoteService.prototype.receiveEvent = function receiveEvent( message )
 		this.events[ eventName ] = 0 ;
 		
 		this.proxy.send( {
-			type: MESSAGE_TYPE ,
+			__type: MESSAGE_TYPE ,
 			service: this.id ,
 			method: 'ignore' ,
 			event: eventName

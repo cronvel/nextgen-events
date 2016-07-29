@@ -1,4 +1,10 @@
 
+v0.6.0
+------
+
+Proxy: message now use __type instead of type, to avoid collision
+
+
 v0.5.23
 -------
 
