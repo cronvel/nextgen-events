@@ -1004,6 +1004,120 @@ describe( "Next Gen feature: group emitters" , function() {
 		NextGenEvents.groupEmit( busList , 'hello' , 'world' , '!' ) ;
 		expect( triggered ).to.be( 1 ) ;
 	} ) ;
+	
+	it( "should emit with a completion callback that should be triggered once all emitters have finished" , function( done ) {
+		
+		var busList = [
+			Object.create( NextGenEvents.prototype ) ,
+			Object.create( NextGenEvents.prototype ) ,
+			Object.create( NextGenEvents.prototype )
+		] ;
+		
+		var triggered = 0 , timeoutTriggered = 0 , callbackTriggered = 0 ;
+		
+		busList[ 0 ].on( 'hello' , function( arg1 , arg2 , callback ) {
+			triggered ++ ;
+			expect( arg1 ).to.be( 'world' ) ;
+			expect( arg2 ).to.be( '!' ) ;
+			setTimeout( function() {
+				timeoutTriggered ++ ;
+				callback() ;
+			} , 50 ) ;
+		} , { async: true } ) ;
+		
+		busList[ 1 ].on( 'hello' , function( arg1 , arg2 , callback ) {
+			triggered ++ ;
+			expect( arg1 ).to.be( 'world' ) ;
+			expect( arg2 ).to.be( '!' ) ;
+			setTimeout( function() {
+				timeoutTriggered ++ ;
+				callback() ;
+			} , 10 ) ;
+		} , { async: true } ) ;
+		
+		busList[ 2 ].on( 'hello' , function( arg1 , arg2 , callback ) {
+			triggered ++ ;
+			expect( arg1 ).to.be( 'world' ) ;
+			expect( arg2 ).to.be( '!' ) ;
+			setTimeout( function() {
+				timeoutTriggered ++ ;
+				callback() ;
+			} , 20 ) ;
+		} , { async: true } ) ;
+		
+		NextGenEvents.groupEmit( busList , 'hello' , 'world' , '!' , function( interruption ) {
+			callbackTriggered ++ ;
+			expect( interruption ).not.to.be.ok() ;
+			expect( callbackTriggered ).to.be( 1 ) ;
+		} ) ;
+		
+		expect( triggered ).to.be( 3 ) ;
+		
+		setTimeout( function() {
+			expect( timeoutTriggered ).to.be( 3 ) ;
+			expect( callbackTriggered ).to.be( 1 ) ;
+			done() ;
+		} , 100 ) ;
+	} ) ;
+	
+	it( "using interruptible emitters, it should trigger the completion callback once one of them is interrupted" , function( done ) {
+		
+		var busList = [
+			Object.create( NextGenEvents.prototype ) ,
+			Object.create( NextGenEvents.prototype ) ,
+			Object.create( NextGenEvents.prototype )
+		] ;
+		
+		busList.forEach( function( bus ) { bus.setInterruptible( true ) ; } ) ;
+		
+		var triggered = 0 , timeoutTriggered = 0 , callbackTriggered = 0 ;
+		
+		busList[ 0 ].on( 'hello' , function( arg1 , arg2 , callback ) {
+			triggered ++ ;
+			expect( arg1 ).to.be( 'world' ) ;
+			expect( arg2 ).to.be( '!' ) ;
+			setTimeout( function() {
+				timeoutTriggered ++ ;
+				callback() ;
+			} , 50 ) ;
+		} , { async: true } ) ;
+		
+		busList[ 1 ].on( 'hello' , function( arg1 , arg2 , callback ) {
+			triggered ++ ;
+			expect( arg1 ).to.be( 'world' ) ;
+			expect( arg2 ).to.be( '!' ) ;
+			setTimeout( function() {
+				timeoutTriggered ++ ;
+				callback( 'interrupted!' ) ;
+			} , 10 ) ;
+		} , { async: true } ) ;
+		
+		busList[ 2 ].on( 'hello' , function( arg1 , arg2 , callback ) {
+			triggered ++ ;
+			expect( arg1 ).to.be( 'world' ) ;
+			expect( arg2 ).to.be( '!' ) ;
+			setTimeout( function() {
+				timeoutTriggered ++ ;
+				callback() ;
+			} , 20 ) ;
+		} , { async: true } ) ;
+		
+		NextGenEvents.groupEmit( busList , 'hello' , 'world' , '!' , function( interruption ) {
+			callbackTriggered ++ ;
+			expect( interruption ).to.be( 'interrupted!' ) ;
+			expect( callbackTriggered ).to.be( 1 ) ;
+		} ) ;
+		
+		expect( triggered ).to.be( 3 ) ;
+		
+		setTimeout( function() {
+			expect( timeoutTriggered ).to.be( 3 ) ;
+			expect( callbackTriggered ).to.be( 1 ) ;
+			done() ;
+		} , 100 ) ;
+	} ) ;
+	
+	it( "using interruptible emitters, once one of them is interrupted, should all other emitter be interrupted too?" ) ;
 } ) ;
 	
 
