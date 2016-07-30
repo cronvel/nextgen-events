@@ -1,8 +1,14 @@
 
+v0.6.3
+------
+
+New: NextGenEvents.share(), share the event bus on differents objects
+
+
 v0.6.2
 ------
 
-Bigfixed: completion callback should be called only once for groupEmit()
+Bugfixed: completion callback should be called only once for groupEmit()
 
 
 v0.6.1

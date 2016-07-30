@@ -1119,7 +1119,40 @@ describe( "Next Gen feature: group emitters" , function() {
 	
 	it( "using interruptible emitters, once one of them is interrupted, should all other emitter be interrupted too?" ) ;
 } ) ;
+
+
+
+describe( "Next Gen feature: objects sharing the same event bus" , function() {
 	
+	it( "should emit on one of the shared emitters and receive on all" , function() {
+		var bus1 = Object.create( NextGenEvents.prototype , { a: { value: 1 , enumerable: true } } ) ;
+		var bus2 = Object.create( NextGenEvents.prototype , { b: { value: 2 , enumerable: true } } ) ;
+		var triggered = 0 ;
+		
+		NextGenEvents.share( bus1 , bus2 ) ;
+		
+		expect( bus1.a ).to.be( 1 ) ;
+		expect( bus2.b ).to.be( 2 ) ;
+		
+		bus1.on( 'hello' , function() {
+			triggered ++ ;
+		} ) ;
+		
+		bus2.emit( 'hello' ) ;
+		expect( triggered ).to.be( 1 ) ;
+		
+		bus2.on( 'hello' , function() {
+			triggered ++ ;
+		} ) ;
+		
+		bus2.emit( 'hello' ) ;
+		expect( triggered ).to.be( 3 ) ;
+		
+		bus1.emit( 'hello' ) ;
+		expect( triggered ).to.be( 5 ) ;
+	} ) ;
+} ) ;
+
 
 
 describe( "Next Gen feature: async emitting" , function() {
