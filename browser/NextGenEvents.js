@@ -567,7 +567,7 @@ NextGenEvents.groupEmit = function groupEmit( emitters )
 				callbackTriggered = true ;
 				callback( interruption ) ;
 			}
-			else if ( -- count <= 0 )
+			else if ( ! -- count )
 			{
 				callbackTriggered = true ;
                 callback() ;
@@ -648,6 +648,40 @@ NextGenEvents.groupGlobalOnce = function groupGlobalOnce( emitters , eventName ,
 		if ( triggered ) { return ; }
 		triggered = true ;
 		NextGenEvents.groupRemoveListener( emitters , eventName , options.id ) ;
+		fn.apply( undefined , arguments ) ;
+	} ;
+	
+	emitters.forEach( function( emitter ) {
+		emitter.once( eventName , fnWrapper.bind( undefined , emitter ) , options ) ;
+	} ) ;
+} ;
+
+
+
+// Globally once, only one event could be emitted, by the last emitter to emit
+NextGenEvents.groupGlobalOnceAll = function groupGlobalOnceAll( emitters , eventName , fn , options )
+{
+	var fnWrapper , triggered = false , count = emitters.length ;
+	
+	// Manage arguments
+	if ( typeof fn !== 'function' ) { options = fn ; fn = undefined ; }
+	if ( ! options || typeof options !== 'object' ) { options = {} ; }
+	
+	fn = fn || options.fn ;
+	delete options.fn ;
+	
+	// Preserve the listener ID, so groupRemoveListener() will work as expected
+	options.id = options.id || fn ;
+	
+	fnWrapper = function() {
+		if ( triggered ) { return ; }
+		if ( -- count ) { return ; }
+		
+		// So this is the last emitter...
+		
+		triggered = true ;
+		// No need to remove listeners: there are already removed anyway
+		//NextGenEvents.groupRemoveListener( emitters , eventName , options.id ) ;
 		fn.apply( undefined , arguments ) ;
 	} ;
 	

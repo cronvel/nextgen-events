@@ -998,10 +998,57 @@ describe( "Next Gen feature: group emitters" , function() {
 			expect( emitter.triggered ).to.be( 1 ) ;
 		} ) ;
 		
-		NextGenEvents.groupEmit( busList , 'hello' , 'world' , '!' ) ;
+		busList[ 1 ].emit( 'hello' , 'world' , '!' ) ;
 		expect( triggered ).to.be( 1 ) ;
 		
-		NextGenEvents.groupEmit( busList , 'hello' , 'world' , '!' ) ;
+		NextGenEvents.groupEmit( busList , 'hello' , 'world' , '?' ) ;
+		expect( triggered ).to.be( 1 ) ;
+		
+		NextGenEvents.groupEmit( busList , 'hello' , 'world' , '?' ) ;
+		expect( triggered ).to.be( 1 ) ;
+	} ) ;
+	
+	it( "should listen once the last emitter to emit from whole group" , function() {
+		
+		var busList = [
+			Object.create( NextGenEvents.prototype ) ,
+			Object.create( NextGenEvents.prototype ) ,
+			Object.create( NextGenEvents.prototype )
+		] ;
+		
+		var triggered = 0 ;
+		
+		NextGenEvents.groupGlobalOnceAll( busList , 'hello' , function( emitter , arg1 , arg2 ) {
+			triggered ++ ;
+			emitter.triggered = ( emitter.triggered || 0 ) + 1 ;
+			expect( arg1 ).to.be( 'world' ) ;
+			expect( arg2 ).to.be( '!' ) ;
+			expect( emitter.triggered ).to.be( 1 ) ;
+		} ) ;
+		
+		busList[ 1 ].emit( 'hello' , 'world' , '...' ) ;
+		expect( triggered ).to.be( 0 ) ;
+		busList[ 1 ].emit( 'hello' , 'world' , '...' ) ;
+		expect( triggered ).to.be( 0 ) ;
+		busList[ 1 ].emit( 'hello' , 'world' , '...' ) ;
+		expect( triggered ).to.be( 0 ) ;
+		busList[ 0 ].emit( 'hello' , 'world' , '...' ) ;
+		expect( triggered ).to.be( 0 ) ;
+		busList[ 0 ].emit( 'hello' , 'world' , '...' ) ;
+		expect( triggered ).to.be( 0 ) ;
+		busList[ 1 ].emit( 'hello' , 'world' , '...' ) ;
+		expect( triggered ).to.be( 0 ) ;
+		
+		busList[ 2 ].emit( 'hello' , 'world' , '!' ) ;
+		expect( triggered ).to.be( 1 ) ;
+		
+		busList[ 2 ].emit( 'hello' , 'world' , '?' ) ;
+		expect( triggered ).to.be( 1 ) ;
+		
+		NextGenEvents.groupEmit( busList , 'hello' , 'world' , '?' ) ;
+		expect( triggered ).to.be( 1 ) ;
+		
+		NextGenEvents.groupEmit( busList , 'hello' , 'world' , '?' ) ;
 		expect( triggered ).to.be( 1 ) ;
 	} ) ;
 	
