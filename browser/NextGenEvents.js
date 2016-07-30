@@ -52,6 +52,11 @@ NextGenEvents.init = function init()
 			interruptible: false ,
 			recursion: 0 ,
 			contexts: {} ,
+			
+			// One-time events and their cache
+			once: {} ,
+			
+			// Listeners for events
 			events: {
 				// Special events
 				error: [] ,
@@ -108,7 +113,7 @@ NextGenEvents.prototype.addListener = function addListener( eventName , fn , opt
 	if ( this.__ngev.events.newListener.length )
 	{
 		// Extra care should be taken with the 'newListener' event, we should avoid recursion
-		// in the case that eventName === 'newListener', but inside a 'nexListener' listener,
+		// in the case that eventName === 'newListener', but inside a 'newListener' listener,
 		// .listenerCount() should report correctly
 		newListenerListeners = this.__ngev.events.newListener.slice() ;
 		
@@ -123,10 +128,14 @@ NextGenEvents.prototype.addListener = function addListener( eventName , fn , opt
 			listeners: newListenerListeners
 		} ) ;
 		
+		if ( this.__ngev.once[ eventName ] ) { NextGenEvents.emitToOneListener( this.__ngev.once[ eventName ] , listener ) ; }
+		
 		return this ;
 	}
 	
 	this.__ngev.events[ eventName ].push( listener ) ;
+	
+	if ( this.__ngev.once[ eventName ] ) { NextGenEvents.emitToOneListener( this.__ngev.once[ eventName ] , listener ) ; }
 	
 	return this ;
 } ;
@@ -349,13 +358,67 @@ NextGenEvents.prototype.emit = function emit()
 	return NextGenEvents.emitEvent( event ) ;
 } ;
 
+
+
+/*
+	emitOnce( [nice] , eventName , [arg1] , [arg2] , [...] , [emitCallback] )
 	
+	The event is a one-time event, but subsequent listeners immediately get it from the past.
+	Use case: the 'ready' event.
+*/
+NextGenEvents.prototype.emitOnce = function emitOnce()
+{
+	var event ;
+	
+	event = { emitter: this , once: true } ;
+	
+	// Arguments handling
+	if ( typeof arguments[ 0 ] === 'number' )
+	{
+		event.nice = Math.floor( arguments[ 0 ] ) ;
+		event.name = arguments[ 1 ] ;
+		if ( ! event.name || typeof event.name !== 'string' ) { throw new TypeError( ".emit(): when argument #0 is a number, argument #1 should be a non-empty string" ) ; }
+		
+		if ( typeof arguments[ arguments.length - 1 ] === 'function' )
+		{
+			event.callback = arguments[ arguments.length - 1 ] ;
+			event.args = Array.prototype.slice.call( arguments , 2 , -1 ) ;
+		}
+		else
+		{
+			event.args = Array.prototype.slice.call( arguments , 2 ) ;
+		}
+	}
+	else
+	{
+		//event.nice = this.__ngev.nice ;
+		event.name = arguments[ 0 ] ;
+		if ( ! event.name || typeof event.name !== 'string' ) { throw new TypeError( ".emit(): argument #0 should be an number or a non-empty string" ) ; }
+		event.args = Array.prototype.slice.call( arguments , 1 ) ;
+		
+		if ( typeof arguments[ arguments.length - 1 ] === 'function' )
+		{
+			event.callback = arguments[ arguments.length - 1 ] ;
+			event.args = Array.prototype.slice.call( arguments , 1 , -1 ) ;
+		}
+		else
+		{
+			event.args = Array.prototype.slice.call( arguments , 1 ) ;
+		}
+	}
+	
+	return NextGenEvents.emitEvent( event ) ;
+} ;
+
+
 
 /*
 	At this stage, event should have properties for the event:
 		* emitter: the event emitter
 		* name: the event name
 		* args: array, the arguments of the event
+		* once: (optional) if truthy, the event is a one-time event, but subsequent listeners immediately get it from the past.
+		  Use case: the 'ready' event.
 		* nice: (optional) nice value
 		* callback: (optional) a callback for emit
 		* listeners: (optional) override the listeners array stored in __ngev
@@ -363,81 +426,41 @@ NextGenEvents.prototype.emit = function emit()
 NextGenEvents.emitEvent = function emitEvent( event )
 {
 	var self = event.emitter ,
-		i , iMax , count = 0 ,
-		listener , context , currentNice ,
-		removedListeners = [] ;
+		i , iMax , count = 0 , removedListeners ;
 	
 	if ( ! self.__ngev ) { NextGenEvents.init.call( self ) ; }
+	
+	if ( self.__ngev.once[ event.name ] )
+	{
+		// One-time event already triggered! This is an error! Emit an error!
+		self.emit( 'error' , new Error( "One-time event '" + event.name + "' already emitted." ) ) ;
+		return ;
+	}
 	
 	if ( ! self.__ngev.events[ event.name ] ) { self.__ngev.events[ event.name ] = [] ; }
 	
 	event.id = nextEventId ++ ;
 	event.listenersDone = 0 ;
+	event.once = !! event.once ;
 	
 	if ( event.nice === undefined || event.nice === null ) { event.nice = self.__ngev.nice ; }
-	
-	// Increment self.__ngev.recursion
-	self.__ngev.recursion ++ ;
 	
 	// Trouble arise when a listener is removed from another listener, while we are still in the loop.
 	// So we have to COPY the listener array right now!
 	if ( ! event.listeners ) { event.listeners = self.__ngev.events[ event.name ].slice() ; }
 	
+	// This is a one-time event, register it now!
+	if ( event.once ) { self.__ngev.once[ event.name ] = event ; }
+	
+	// Increment self.__ngev.recursion
+	self.__ngev.recursion ++ ;
+	removedListeners = [] ;
+	
+	// Emit the event to all listeners!
 	for ( i = 0 , iMax = event.listeners.length ; i < iMax ; i ++ )
 	{
 		count ++ ;
-		listener = event.listeners[ i ] ;
-		context = listener.context && self.__ngev.contexts[ listener.context ] ;
-		
-		// If the listener context is disabled...
-		if ( context && context.status === NextGenEvents.CONTEXT_DISABLED ) { continue ; }
-		
-		// The nice value for this listener...
-		if ( context ) { currentNice = Math.max( event.nice , listener.nice , context.nice ) ; }
-		else { currentNice = Math.max( event.nice , listener.nice ) ; }
-		
-		
-		if ( listener.once )
-		{
-			// We should remove the current listener RIGHT NOW because of recursive .emit() issues:
-			// one listener may eventually fire this very same event synchronously during the current loop.
-			self.__ngev.events[ event.name ] = self.__ngev.events[ event.name ].filter(
-				NextGenEvents.filterOutCallback.bind( undefined , listener )
-			) ;
-			
-			removedListeners.push( listener ) ;
-		}
-		
-		if ( context && ( context.status === NextGenEvents.CONTEXT_QUEUED || ! context.ready ) )
-		{
-			// Almost all works should be done by .emit(), and little few should be done by .processQueue()
-			context.queue.push( { event: event , listener: listener , nice: currentNice } ) ;
-		}
-		else
-		{
-			try {
-				if ( currentNice < 0 )
-				{
-					if ( self.__ngev.recursion >= - currentNice )
-					{
-						setImmediate( NextGenEvents.listenerWrapper.bind( self , listener , event , context ) ) ;
-					}
-					else
-					{
-						NextGenEvents.listenerWrapper.call( self , listener , event , context ) ;
-					}
-				}
-				else
-				{
-					setTimeout( NextGenEvents.listenerWrapper.bind( self , listener , event , context ) , currentNice ) ;
-				}
-			}
-			catch ( error ) {
-				// Catch error, just to decrement self.__ngev.recursion, re-throw after that...
-				self.__ngev.recursion -- ;
-				throw error ;
-			}
-		}
+		NextGenEvents.emitToOneListener( event , event.listeners[ i ] , removedListeners ) ;
 	}
 	
 	// Decrement recursion
@@ -467,6 +490,75 @@ NextGenEvents.emitEvent = function emitEvent( event )
 	}
 	
 	return event ;
+} ;
+
+
+
+// If removedListeners is not given, then one-time listener emit the 'removeListener' event,
+// if given: that's the caller business to do it
+NextGenEvents.emitToOneListener = function emitToOneListener( event , listener , removedListeners )
+{	
+	var self = event.emitter ,
+		context , currentNice , emitRemoveListener = false ;
+	
+	context = listener.context && self.__ngev.contexts[ listener.context ] ;
+	
+	// If the listener context is disabled...
+	if ( context && context.status === NextGenEvents.CONTEXT_DISABLED ) { return ; }
+	
+	// The nice value for this listener...
+	if ( context ) { currentNice = Math.max( event.nice , listener.nice , context.nice ) ; }
+	else { currentNice = Math.max( event.nice , listener.nice ) ; }
+	
+	
+	if ( listener.once )
+	{
+		// We should remove the current listener RIGHT NOW because of recursive .emit() issues:
+		// one listener may eventually fire this very same event synchronously during the current loop.
+		self.__ngev.events[ event.name ] = self.__ngev.events[ event.name ].filter(
+			NextGenEvents.filterOutCallback.bind( undefined , listener )
+		) ;
+		
+		if ( removedListeners ) { removedListeners.push( listener ) ; }
+		else { emitRemoveListener = true ; }
+	}
+	
+	if ( context && ( context.status === NextGenEvents.CONTEXT_QUEUED || ! context.ready ) )
+	{
+		// Almost all works should be done by .emit(), and little few should be done by .processQueue()
+		context.queue.push( { event: event , listener: listener , nice: currentNice } ) ;
+	}
+	else
+	{
+		try {
+			if ( currentNice < 0 )
+			{
+				if ( self.__ngev.recursion >= - currentNice )
+				{
+					setImmediate( NextGenEvents.listenerWrapper.bind( self , listener , event , context ) ) ;
+				}
+				else
+				{
+					NextGenEvents.listenerWrapper.call( self , listener , event , context ) ;
+				}
+			}
+			else
+			{
+				setTimeout( NextGenEvents.listenerWrapper.bind( self , listener , event , context ) , currentNice ) ;
+			}
+		}
+		catch ( error ) {
+			// Catch error, just to decrement self.__ngev.recursion, re-throw after that...
+			self.__ngev.recursion -- ;
+			throw error ;
+		}
+	}
+	
+	// Emit 'removeListener' after calling the listener
+	if ( emitRemoveListener && self.__ngev.events.removeListener.length )
+	{
+		self.emit( 'removeListener' , [ listener ] ) ;
+	}
 } ;
 
 
@@ -577,7 +669,7 @@ NextGenEvents.groupEmit = function groupEmit( emitters )
 			else if ( ! -- count )
 			{
 				callbackTriggered = true ;
-                callback() ;
+				callback() ;
 			}
 		} ;
 	}

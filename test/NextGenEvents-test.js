@@ -865,7 +865,51 @@ describe( "Next Gen feature: listener in 'eventObject' mode" , function() {
 		bus.emit( 'hello' , emitCallback ) ;
 	} ) ;
 } ) ;
+
+
+
+describe( "Next Gen feature: emit once" , function() {
 	
+	it( "should emit an event once, and further listeners should receive it 'from the past'" , function() {
+		
+		var bus = new NextGenEvents() ;
+		
+		var triggered = 0 , errorTriggered = 0 ;
+		
+		bus.on( 'ready' , function( arg ) {
+			triggered ++ ;
+			expect( arg ).to.be( 'ok!' ) ;
+		} ) ;
+		
+		bus.emitOnce( 'ready' , 'ok!' ) ;
+		expect( triggered ).to.be( 1 ) ;
+		
+		bus.on( 'ready' , function( arg ) {
+			triggered ++ ;
+			expect( arg ).to.be( 'ok!' ) ;
+		} ) ;
+		
+		expect( triggered ).to.be( 2 ) ;
+		
+		bus.once( 'ready' , function( arg ) {
+			triggered ++ ;
+			expect( arg ).to.be( 'ok!' ) ;
+		} ) ;
+		
+		expect( triggered ).to.be( 3 ) ;
+		
+		// Trying to emit 'ready' again cause an 'error' event to be emitted
+		bus.on( 'error' , function( error ) {
+			errorTriggered ++ ;
+			expect( error ).to.be.an( Error ) ;
+		} ) ;
+		
+		bus.emit( 'ready' ) ;
+		expect( triggered ).to.be( 3 ) ;
+		expect( errorTriggered ).to.be( 1 ) ;
+	} ) ;
+} ) ;
+
 
 
 describe( "Next Gen feature: group emitters" , function() {

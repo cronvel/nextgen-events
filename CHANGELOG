@@ -1,4 +1,10 @@
 
+v0.7.0
+------
+
+New: emit once, for 'ready'-like event
+
+
 v0.6.5
 ------
 
