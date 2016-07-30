@@ -1,4 +1,10 @@
 
+v0.6.5
+------
+
+Bugfix: make __ngev property configurable
+
+
 v0.6.4
 ------
 
