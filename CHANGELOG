@@ -1,8 +1,16 @@
 
+v0.9.0
+------
+
+Breaking change: new methods on the prototype: .hasState() and .getAllStates() ; new static method: NextGenEvents.groupDefineStates()
+
+
 v0.8.0
 ------
 
-Breaking change: emitOnce() (0.7.x) is removed in favor of a more generic 'state-events' approach, featuring group exclusivity: .defineStates(). Normal .emit() can be used, so better compatibility.
+Breaking change: .emitOnce() (0.7.x) is removed in favor of a more generic 'state-events' approach, featuring group exclusivity:
+.defineStates().
+Normal .emit() can be used, so better backward-compatibility with 0.6.x and below.
 
 
 v0.7.0

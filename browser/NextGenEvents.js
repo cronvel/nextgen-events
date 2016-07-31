@@ -566,22 +566,6 @@ NextGenEvents.prototype.setInterruptible = function setInterruptible( value )
 
 
 
-// .defineStates( exclusiveState1 , [exclusiveState2] , exclusiveState3] , ... )
-NextGenEvents.prototype.defineStates = function defineStates()
-{
-	var self = this ,
-		states = Array.prototype.slice.call( arguments ) ;
-	
-	if ( ! this.__ngev ) { NextGenEvents.init.call( this ) ; }
-	
-	states.forEach( function( state ) {
-		self.__ngev.states[ state ] = null ;
-		self.__ngev.stateGroups[ state ] = states ;
-	} ) ;
-} ;
-
-
-
 // Make two objects sharing the same event bus
 NextGenEvents.share = function( source , target )
 {
@@ -610,54 +594,44 @@ NextGenEvents.noop = function() {} ;
 
 
 
-			/* Next Gen feature: groups! */
+			/* Next Gen feature: states! */
 
 
 
-NextGenEvents.groupEmit = function groupEmit( emitters )
+// .defineStates( exclusiveState1 , [exclusiveState2] , [exclusiveState3] , ... )
+NextGenEvents.prototype.defineStates = function defineStates()
 {
-	var eventName , nice , argStart = 2 , argEnd , args , count = emitters.length ,
-		callback , callbackWrapper , callbackTriggered = false ;
+	var self = this ,
+		states = Array.prototype.slice.call( arguments ) ;
 	
-	if ( typeof arguments[ arguments.length - 1 ] === 'function' )
-	{
-		argEnd = -1 ;
-		callback = arguments[ arguments.length - 1 ] ;
-		
-		callbackWrapper = function( interruption ) {
-			if ( callbackTriggered ) { return ; }
-			
-			if ( interruption )
-			{
-				callbackTriggered = true ;
-				callback( interruption ) ;
-			}
-			else if ( ! -- count )
-			{
-				callbackTriggered = true ;
-				callback() ;
-			}
-		} ;
-	}
+	if ( ! this.__ngev ) { NextGenEvents.init.call( this ) ; }
 	
-	if ( typeof arguments[ 1 ] === 'number' )
-	{
-		argStart = 3 ;
-		nice = typeof arguments[ 1 ] ;
-	}
-	
-	eventName = arguments[ argStart - 1 ] ;
-	args = Array.prototype.slice.call( arguments , argStart , argEnd ) ;
-	
-	emitters.forEach( function( emitter ) {
-		NextGenEvents.emitEvent( {
-			emitter: emitter ,
-			name: eventName ,
-			args: args ,
-			callback: callbackWrapper
-		} ) ;
+	states.forEach( function( state ) {
+		self.__ngev.states[ state ] = null ;
+		self.__ngev.stateGroups[ state ] = states ;
 	} ) ;
 } ;
+
+
+
+NextGenEvents.prototype.hasState = function hasState( state )
+{
+	return !! this.__ngev.states[ state ] ;
+} ;
+
+
+
+NextGenEvents.prototype.getAllStates = function getAllStates()
+{
+	var self = this ;
+	return Object.keys( this.__ngev.states ).filter( function( e ) { return self.__ngev.states[ e ] ; } ) ;
+} ;
+
+
+
+
+
+			/* Next Gen feature: groups! */
 
 
 
@@ -765,6 +739,64 @@ NextGenEvents.groupRemoveListener = function groupRemoveListener( emitters , eve
 } ;
 
 NextGenEvents.groupOff = NextGenEvents.groupRemoveListener ;
+
+
+
+NextGenEvents.groupEmit = function groupEmit( emitters )
+{
+	var eventName , nice , argStart = 2 , argEnd , args , count = emitters.length ,
+		callback , callbackWrapper , callbackTriggered = false ;
+	
+	if ( typeof arguments[ arguments.length - 1 ] === 'function' )
+	{
+		argEnd = -1 ;
+		callback = arguments[ arguments.length - 1 ] ;
+		
+		callbackWrapper = function( interruption ) {
+			if ( callbackTriggered ) { return ; }
+			
+			if ( interruption )
+			{
+				callbackTriggered = true ;
+				callback( interruption ) ;
+			}
+			else if ( ! -- count )
+			{
+				callbackTriggered = true ;
+				callback() ;
+			}
+		} ;
+	}
+	
+	if ( typeof arguments[ 1 ] === 'number' )
+	{
+		argStart = 3 ;
+		nice = typeof arguments[ 1 ] ;
+	}
+	
+	eventName = arguments[ argStart - 1 ] ;
+	args = Array.prototype.slice.call( arguments , argStart , argEnd ) ;
+	
+	emitters.forEach( function( emitter ) {
+		NextGenEvents.emitEvent( {
+			emitter: emitter ,
+			name: eventName ,
+			args: args ,
+			callback: callbackWrapper
+		} ) ;
+	} ) ;
+} ;
+
+
+
+NextGenEvents.groupDefineStates = function groupDefineStates( emitters )
+{
+	var args = Array.prototype.slice.call( arguments , 1 ) ;
+	
+	emitters.forEach( function( emitter ) {
+		emitter.defineStates.apply( emitter , args ) ;
+	} ) ;
+} ;
 
 
 

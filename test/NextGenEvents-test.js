@@ -883,9 +883,13 @@ describe( "Next Gen feature: state-events" , function() {
 			expect( arg ).to.be( 'ok!' ) ;
 		} ) ;
 		expect( triggered ).to.be( 0 ) ;
+		expect( bus.hasState( 'ready' ) ).to.be( false ) ;
+		expect( bus.getAllStates() ).to.eql( [] ) ;
 		
 		bus.emit( 'ready' , 'ok!' ) ;
 		expect( triggered ).to.be( 1 ) ;
+		expect( bus.hasState( 'ready' ) ).to.be( true ) ;
+		expect( bus.getAllStates() ).to.eql( [ 'ready' ] ) ;
 		
 		bus.on( 'ready' , function( arg ) {
 			triggered ++ ;
@@ -920,6 +924,8 @@ describe( "Next Gen feature: state-events" , function() {
 			expect( arg ).not.to.be.ok() ;
 		} ) ;
 		expect( triggered ).to.be( 7 ) ;
+		expect( bus.hasState( 'ready' ) ).to.be( true ) ;
+		expect( bus.getAllStates() ).to.eql( [ 'ready' ] ) ;
 	} ) ;
 	
 	it( "should define three exclusive states, emitting one should discard the two others" , function() {
@@ -930,6 +936,10 @@ describe( "Next Gen feature: state-events" , function() {
 		
 		// Define 3 exclusives states
 		bus.defineStates( 'starting' , 'running' , 'ending' ) ;
+		expect( bus.hasState( 'starting' ) ).to.be( false ) ;
+		expect( bus.hasState( 'running' ) ).to.be( false ) ;
+		expect( bus.hasState( 'ending' ) ).to.be( false ) ;
+		expect( bus.getAllStates() ).to.eql( [] ) ;
 		
 		bus.on( 'starting' , function() {
 			startingTriggered ++ ;
@@ -937,6 +947,10 @@ describe( "Next Gen feature: state-events" , function() {
 		expect( startingTriggered ).to.be( 0 ) ;
 		
 		bus.emit( 'starting' ) ;
+		expect( bus.hasState( 'starting' ) ).to.be( true ) ;
+		expect( bus.hasState( 'running' ) ).to.be( false ) ;
+		expect( bus.hasState( 'ending' ) ).to.be( false ) ;
+		expect( bus.getAllStates() ).to.eql( [ 'starting' ] ) ;
 		expect( startingTriggered ).to.be( 1 ) ;
 		
 		bus.on( 'starting' , function() {
@@ -952,6 +966,10 @@ describe( "Next Gen feature: state-events" , function() {
 		
 		// Emit the 'running' state-event, thus discarding the 'starting' state
 		bus.emit( 'running' ) ;
+		expect( bus.hasState( 'starting' ) ).to.be( false ) ;
+		expect( bus.hasState( 'running' ) ).to.be( true ) ;
+		expect( bus.hasState( 'ending' ) ).to.be( false ) ;
+		expect( bus.getAllStates() ).to.eql( [ 'running' ] ) ;
 		expect( startingTriggered ).to.be( 2 ) ;
 		expect( runningTriggered ).to.be( 1 ) ;
 		
@@ -976,12 +994,20 @@ describe( "Next Gen feature: state-events" , function() {
 		
 		// Emit the 'ending' state-event, thus discarding the 'running' state
 		bus.emit( 'ending' ) ;
+		expect( bus.hasState( 'starting' ) ).to.be( false ) ;
+		expect( bus.hasState( 'running' ) ).to.be( false ) ;
+		expect( bus.hasState( 'ending' ) ).to.be( true ) ;
+		expect( bus.getAllStates() ).to.eql( [ 'ending' ] ) ;
 		expect( startingTriggered ).to.be( 2 ) ;
 		expect( runningTriggered ).to.be( 2 ) ;
 		expect( endingTriggered ).to.be( 1 ) ;
 		
 		// Emit the 'starting' state-event, thus discarding the 'ending' state
 		bus.emit( 'starting' ) ;
+		expect( bus.hasState( 'starting' ) ).to.be( true ) ;
+		expect( bus.hasState( 'running' ) ).to.be( false ) ;
+		expect( bus.hasState( 'ending' ) ).to.be( false ) ;
+		expect( bus.getAllStates() ).to.eql( [ 'starting' ] ) ;
 		expect( startingTriggered ).to.be( 5 ) ;
 		expect( runningTriggered ).to.be( 2 ) ;
 		expect( endingTriggered ).to.be( 1 ) ;
@@ -1294,6 +1320,47 @@ describe( "Next Gen feature: group emitters" , function() {
 			expect( callbackTriggered ).to.be( 1 ) ;
 			done() ;
 		} , 100 ) ;
+	} ) ;
+	
+	it( "should define states on a group of emitters and use it" , function() {
+		
+		var busList = [
+			Object.create( NextGenEvents.prototype ) ,
+			Object.create( NextGenEvents.prototype ) ,
+			Object.create( NextGenEvents.prototype )
+		] ;
+		
+		var triggered = 0 ;
+		
+		NextGenEvents.groupDefineStates( busList , 'starting' , 'running' , 'ending' ) ;
+		
+		NextGenEvents.groupEmit( busList , 'starting' ) ;
+		
+		NextGenEvents.groupOn( busList , 'starting' , function( emitter ) {
+			triggered ++ ;
+			emitter.triggered = ( emitter.triggered || 0 ) + 1 ;
+			expect( emitter.triggered ).to.be( 1 ) ;
+		} ) ;
+		
+		expect( triggered ).to.be( 3 ) ;
+		
+		NextGenEvents.groupEmit( busList , 'ending' ) ;
+		
+		NextGenEvents.groupOn( busList , 'starting' , function( emitter ) {
+			triggered ++ ;
+			emitter.triggered = ( emitter.triggered || 0 ) + 1 ;
+			expect( emitter.triggered ).to.be( 1 ) ;
+		} ) ;
+		
+		expect( triggered ).to.be( 3 ) ;
+		
+		NextGenEvents.groupOn( busList , 'ending' , function( emitter ) {
+			triggered ++ ;
+			emitter.triggered = ( emitter.triggered || 0 ) + 1 ;
+			expect( emitter.triggered ).to.be( 2 ) ;
+		} ) ;
+		
+		expect( triggered ).to.be( 6 ) ;
 	} ) ;
 	
 	it( "using interruptible emitters, once one of them is interrupted, should all other emitter be interrupted too?" ) ;
