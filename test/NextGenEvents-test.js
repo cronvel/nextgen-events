@@ -868,20 +868,23 @@ describe( "Next Gen feature: listener in 'eventObject' mode" , function() {
 
 
 
-describe( "Next Gen feature: emit once" , function() {
+describe( "Next Gen feature: state-events" , function() {
 	
-	it( "should emit an event once, and further listeners should receive it 'from the past'" , function() {
+	it( "should emit a state-event, further listeners should receive the last emitted event immediately" , function() {
 		
 		var bus = new NextGenEvents() ;
 		
-		var triggered = 0 , errorTriggered = 0 ;
+		var triggered = 0 ;
+		
+		bus.defineStates( 'ready' ) ;
 		
 		bus.on( 'ready' , function( arg ) {
 			triggered ++ ;
 			expect( arg ).to.be( 'ok!' ) ;
 		} ) ;
+		expect( triggered ).to.be( 0 ) ;
 		
-		bus.emitOnce( 'ready' , 'ok!' ) ;
+		bus.emit( 'ready' , 'ok!' ) ;
 		expect( triggered ).to.be( 1 ) ;
 		
 		bus.on( 'ready' , function( arg ) {
@@ -898,15 +901,100 @@ describe( "Next Gen feature: emit once" , function() {
 		
 		expect( triggered ).to.be( 3 ) ;
 		
-		// Trying to emit 'ready' again cause an 'error' event to be emitted
-		bus.on( 'error' , function( error ) {
-			errorTriggered ++ ;
-			expect( error ).to.be.an( Error ) ;
+		bus.emit( 'ready' , 'ok!' ) ;
+		expect( triggered ).to.be( 5 ) ;
+		
+		
+		bus.removeAllListeners( 'ready' ) ;
+		
+		bus.once( 'ready' , function( arg ) {
+			triggered ++ ;
+			expect( arg ).to.be( 'ok!' ) ;
 		} ) ;
+		expect( triggered ).to.be( 6 ) ;
 		
 		bus.emit( 'ready' ) ;
-		expect( triggered ).to.be( 3 ) ;
-		expect( errorTriggered ).to.be( 1 ) ;
+		
+		bus.once( 'ready' , function( arg ) {
+			triggered ++ ;
+			expect( arg ).not.to.be.ok() ;
+		} ) ;
+		expect( triggered ).to.be( 7 ) ;
+	} ) ;
+	
+	it( "should define three exclusive states, emitting one should discard the two others" , function() {
+		
+		var bus = new NextGenEvents() ;
+		
+		var startingTriggered = 0 , runningTriggered = 0 , endingTriggered = 0 ;
+		
+		// Define 3 exclusives states
+		bus.defineStates( 'starting' , 'running' , 'ending' ) ;
+		
+		bus.on( 'starting' , function() {
+			startingTriggered ++ ;
+		} ) ;
+		expect( startingTriggered ).to.be( 0 ) ;
+		
+		bus.emit( 'starting' ) ;
+		expect( startingTriggered ).to.be( 1 ) ;
+		
+		bus.on( 'starting' , function() {
+			startingTriggered ++ ;
+		} ) ;
+		expect( startingTriggered ).to.be( 2 ) ;
+		
+		bus.on( 'running' , function() {
+			runningTriggered ++ ;
+		} ) ;
+		expect( startingTriggered ).to.be( 2 ) ;
+		expect( runningTriggered ).to.be( 0 ) ;
+		
+		// Emit the 'running' state-event, thus discarding the 'starting' state
+		bus.emit( 'running' ) ;
+		expect( startingTriggered ).to.be( 2 ) ;
+		expect( runningTriggered ).to.be( 1 ) ;
+		
+		bus.on( 'starting' , function() {
+			startingTriggered ++ ;
+		} ) ;
+		expect( startingTriggered ).to.be( 2 ) ;
+		expect( runningTriggered ).to.be( 1 ) ;
+		
+		bus.on( 'running' , function() {
+			runningTriggered ++ ;
+		} ) ;
+		expect( startingTriggered ).to.be( 2 ) ;
+		expect( runningTriggered ).to.be( 2 ) ;
+		
+		bus.on( 'ending' , function() {
+			endingTriggered ++ ;
+		} ) ;
+		expect( startingTriggered ).to.be( 2 ) ;
+		expect( runningTriggered ).to.be( 2 ) ;
+		expect( endingTriggered ).to.be( 0 ) ;
+		
+		// Emit the 'ending' state-event, thus discarding the 'running' state
+		bus.emit( 'ending' ) ;
+		expect( startingTriggered ).to.be( 2 ) ;
+		expect( runningTriggered ).to.be( 2 ) ;
+		expect( endingTriggered ).to.be( 1 ) ;
+		
+		// Emit the 'starting' state-event, thus discarding the 'ending' state
+		bus.emit( 'starting' ) ;
+		expect( startingTriggered ).to.be( 5 ) ;
+		expect( runningTriggered ).to.be( 2 ) ;
+		expect( endingTriggered ).to.be( 1 ) ;
+		
+		bus.on( 'running' , function() {
+			runningTriggered ++ ;
+		} ) ;
+		bus.on( 'ending' , function() {
+			endingTriggered ++ ;
+		} ) ;
+		expect( startingTriggered ).to.be( 5 ) ;
+		expect( runningTriggered ).to.be( 2 ) ;
+		expect( endingTriggered ).to.be( 1 ) ;
 	} ) ;
 } ) ;
 
