@@ -1,4 +1,10 @@
 
+v0.9.1
+------
+
+Bugfix: state-event should not emit if the state and the event argument hasn't changed
+
+
 v0.9.0
 ------
 

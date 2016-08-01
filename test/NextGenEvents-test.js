@@ -905,7 +905,7 @@ describe( "Next Gen feature: state-events" , function() {
 		
 		expect( triggered ).to.be( 3 ) ;
 		
-		bus.emit( 'ready' , 'ok!' ) ;
+		bus.emit( 'ready' , 'ok!' , 'stateBreaker#1' ) ;
 		expect( triggered ).to.be( 5 ) ;
 		
 		
@@ -925,6 +925,83 @@ describe( "Next Gen feature: state-events" , function() {
 		} ) ;
 		expect( triggered ).to.be( 7 ) ;
 		expect( bus.hasState( 'ready' ) ).to.be( true ) ;
+		expect( bus.getAllStates() ).to.eql( [ 'ready' ] ) ;
+	} ) ;
+	
+	it( "when the state remains the same, nothing should be emitted" , function() {
+		
+		var bus = new NextGenEvents() ;
+		
+		var triggered = 0 ;
+		
+		bus.defineStates( 'ready' , 'notReady' ) ;
+		
+		bus.on( 'ready' , function() {
+			triggered ++ ;
+		} ) ;
+		expect( triggered ).to.be( 0 ) ;
+		expect( bus.hasState( 'ready' ) ).to.be( false ) ;
+		expect( bus.getAllStates() ).to.eql( [] ) ;
+		
+		bus.emit( 'ready' ) ;
+		expect( triggered ).to.be( 1 ) ;
+		expect( bus.hasState( 'ready' ) ).to.be( true ) ;
+		expect( bus.getAllStates() ).to.eql( [ 'ready' ] ) ;
+		
+		bus.on( 'ready' , function() {
+			triggered ++ ;
+		} ) ;
+		
+		expect( triggered ).to.be( 2 ) ;
+		expect( bus.hasState( 'ready' ) ).to.be( true ) ;
+		expect( bus.getAllStates() ).to.eql( [ 'ready' ] ) ;
+		
+		bus.emit( 'ready' ) ;
+		
+		expect( triggered ).to.be( 2 ) ;
+		expect( bus.hasState( 'ready' ) ).to.be( true ) ;
+		expect( bus.getAllStates() ).to.eql( [ 'ready' ] ) ;
+		
+		bus.emit( 'ready' , '#1' ) ;
+		
+		expect( triggered ).to.be( 4 ) ;
+		expect( bus.hasState( 'ready' ) ).to.be( true ) ;
+		expect( bus.getAllStates() ).to.eql( [ 'ready' ] ) ;
+		
+		bus.emit( 'ready' , '#1' ) ;
+		
+		expect( triggered ).to.be( 4 ) ;
+		expect( bus.hasState( 'ready' ) ).to.be( true ) ;
+		expect( bus.getAllStates() ).to.eql( [ 'ready' ] ) ;
+		
+		bus.emit( 'ready' , '#2' ) ;
+		
+		expect( triggered ).to.be( 6 ) ;
+		expect( bus.hasState( 'ready' ) ).to.be( true ) ;
+		expect( bus.getAllStates() ).to.eql( [ 'ready' ] ) ;
+		
+		bus.emit( 'ready' , '#2' ) ;
+		
+		expect( triggered ).to.be( 6 ) ;
+		expect( bus.hasState( 'ready' ) ).to.be( true ) ;
+		expect( bus.getAllStates() ).to.eql( [ 'ready' ] ) ;
+		
+		bus.emit( 'ready' ) ;
+		
+		expect( triggered ).to.be( 8 ) ;
+		expect( bus.hasState( 'ready' ) ).to.be( true ) ;
+		expect( bus.getAllStates() ).to.eql( [ 'ready' ] ) ;
+		
+		bus.emit( 'notReady' ) ;
+		expect( triggered ).to.be( 8 ) ;
+		expect( bus.hasState( 'ready' ) ).to.be( false ) ;
+		expect( bus.hasState( 'notReady' ) ).to.be( true ) ;
+		expect( bus.getAllStates() ).to.eql( [ 'notReady' ] ) ;
+		
+		bus.emit( 'ready' ) ;
+		expect( triggered ).to.be( 10 ) ;
+		expect( bus.hasState( 'ready' ) ).to.be( true ) ;
+		expect( bus.hasState( 'notReady' ) ).to.be( false ) ;
 		expect( bus.getAllStates() ).to.eql( [ 'ready' ] ) ;
 	} ) ;
 	
