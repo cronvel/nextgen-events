@@ -1103,7 +1103,7 @@ describe( "Next Gen feature: state-events" , function() {
 
 
 
-describe( "Next Gen feature: group emitters" , function() {
+describe( "Next Gen feature: emitter group actions" , function() {
 	
 	it( "should emit on a group of emitters" , function() {
 		
@@ -1188,6 +1188,42 @@ describe( "Next Gen feature: group emitters" , function() {
 		NextGenEvents.groupOff( busList , 'hello' , fn ) ;
 		NextGenEvents.groupEmit( busList , 'hello' , 'world' , '!' ) ;
 		expect( triggered ).to.be( 3 ) ;
+	} ) ;
+	
+	it( "should add multiple listeners to a group of emitters then remove all of them at once" , function() {
+		
+		var busList = [
+			Object.create( NextGenEvents.prototype ) ,
+			Object.create( NextGenEvents.prototype ) ,
+			Object.create( NextGenEvents.prototype )
+		] ;
+		
+		var triggered = 0 ;
+		
+		var fn = function( emitter , arg1 , arg2 ) {
+			triggered ++ ;
+			emitter.triggered = ( emitter.triggered || 0 ) + 1 ;
+			expect( arg1 ).to.be( 'world' ) ;
+			expect( arg2 ).to.be( '!' ) ;
+			expect( emitter.triggered ).to.be( 1 ) ;
+		} ;
+		
+		var fn2 = function( emitter , arg1 , arg2 ) {
+			triggered ++ ;
+			emitter.triggered = ( emitter.triggered || 0 ) + 1 ;
+			expect( arg1 ).to.be( 'world' ) ;
+			expect( arg2 ).to.be( '!' ) ;
+			expect( emitter.triggered ).to.be( 2 ) ;
+		} ;
+		
+		NextGenEvents.groupOn( busList , 'hello' , fn ) ;
+		NextGenEvents.groupOn( busList , 'hello' , fn2 ) ;
+		NextGenEvents.groupEmit( busList , 'hello' , 'world' , '!' ) ;
+		expect( triggered ).to.be( 6 ) ;
+		
+		NextGenEvents.groupRemoveAllListeners( busList , 'hello' ) ;
+		NextGenEvents.groupEmit( busList , 'hello' , 'world' , '!' ) ;
+		expect( triggered ).to.be( 6 ) ;
 	} ) ;
 	
 	it( "should listen once to each emitters of a group" , function() {
