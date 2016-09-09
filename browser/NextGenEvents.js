@@ -1,4 +1,5 @@
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.NextGenEvents = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+(function (global){
 /*
 	Next Gen Events
 	
@@ -29,11 +30,10 @@
 
 
 
-// Create the object && export it
 function NextGenEvents() { return Object.create( NextGenEvents.prototype ) ; }
 module.exports = NextGenEvents ;
-
-
+NextGenEvents.prototype.__prototypeUID__ = 'nextgen-events/NextGenEvents' ;
+NextGenEvents.prototype.__prototypeVersion__ = require( '../package.json' ).version ;
 
 			/* Basic features, more or less compatible with Node.js */
 
@@ -1043,11 +1043,26 @@ NextGenEvents.off = NextGenEvents.prototype.off ;
 
 
 
+if ( global.AsyncTryCatch )
+{
+	NextGenEvents.prototype.asyncTryCatchId = global.AsyncTryCatch.NextGenEvents.length ;
+	global.AsyncTryCatch.NextGenEvents.push( NextGenEvents ) ;
+	
+	if ( global.AsyncTryCatch.substituted )
+	{
+		//console.log( 'live subsitute' ) ;
+		global.AsyncTryCatch.substitute() ;
+	}
+}
+
+
+
 // Load Proxy AT THE END (circular require)
 NextGenEvents.Proxy = require( './Proxy.js' ) ;
 
 
-},{"./Proxy.js":2}],2:[function(require,module,exports){
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{"../package.json":4,"./Proxy.js":2}],2:[function(require,module,exports){
 /*
 	Next Gen Events
 	
@@ -1693,5 +1708,56 @@ if ( typeof window.setImmediate !== 'function' )
 module.exports = require( './NextGenEvents.js' ) ;
 module.exports.isBrowser = true ;
 
-},{"./NextGenEvents.js":1}]},{},[3])(3)
+},{"./NextGenEvents.js":1}],4:[function(require,module,exports){
+module.exports={
+  "name": "nextgen-events",
+  "version": "0.9.5",
+  "description": "The next generation of events handling for javascript! New: abstract away the network!",
+  "main": "lib/NextGenEvents.js",
+  "directories": {
+    "test": "test"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "browserify": "^13.0.1",
+    "expect.js": "^0.3.1",
+    "jshint": "^2.9.2",
+    "mocha": "^2.5.3",
+    "uglify-js": "^2.6.2",
+    "ws": "^1.1.1"
+  },
+  "scripts": {
+    "test": "mocha -R dot"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cronvel/nextgen-events.git"
+  },
+  "keywords": [
+    "events",
+    "async",
+    "emit",
+    "listener",
+    "context",
+    "series",
+    "serialize",
+    "namespace",
+    "proxy",
+    "network"
+  ],
+  "author": "Cédric Ronvel",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/cronvel/nextgen-events/issues"
+  },
+  "copyright": {
+    "title": "Next-Gen Events",
+    "years": [
+      2015,
+      2016
+    ],
+    "owner": "Cédric Ronvel"
+  }
+}
+},{}]},{},[3])(3)
 });
