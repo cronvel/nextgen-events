@@ -1712,7 +1712,7 @@ module.exports.isBrowser = true ;
 },{"./NextGenEvents.js":1}],4:[function(require,module,exports){
 module.exports={
   "name": "nextgen-events",
-  "version": "0.9.6",
+  "version": "0.9.7",
   "description": "The next generation of events handling for javascript! New: abstract away the network!",
   "main": "lib/NextGenEvents.js",
   "directories": {

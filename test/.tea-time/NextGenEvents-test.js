@@ -1,4 +1,5 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+(function (global){
 /*
 	Next Gen Events
 	
@@ -29,13 +30,10 @@
 
 
 
-// Create the object && export it
 function NextGenEvents() { return Object.create( NextGenEvents.prototype ) ; }
 module.exports = NextGenEvents ;
-
-
-
-
+NextGenEvents.prototype.__prototypeUID__ = 'nextgen-events/NextGenEvents' ;
+NextGenEvents.prototype.__prototypeVersion__ = require( '../package.json' ).version ;
 
 			/* Basic features, more or less compatible with Node.js */
 
@@ -47,19 +45,30 @@ NextGenEvents.SYNC = -Infinity ;
 // It has an eventEmitter as 'this' anyway (always called using call()).
 NextGenEvents.init = function init()
 {
-	Object.defineProperty( this , '__ngev' , { value: {
-		nice: NextGenEvents.SYNC ,
-		interruptible: false ,
-		recursion: 0 ,
-		contexts: {} ,
-		events: {
-			// Special events
-			error: [] ,
-			interrupt: [] ,
-			newListener: [] ,
-			removeListener: []
+	Object.defineProperty( this , '__ngev' , {
+		configurable: true ,
+		value: {
+			nice: NextGenEvents.SYNC ,
+			interruptible: false ,
+			recursion: 0 ,
+			contexts: {} ,
+			
+			// States by events
+			states: {} ,
+			
+			// State groups by events
+			stateGroups: {} ,
+			
+			// Listeners by events
+			listeners: {
+				// Special events
+				error: [] ,
+				interrupt: [] ,
+				newListener: [] ,
+				removeListener: []
+			}
 		}
-	} } ) ;
+	} ) ;
 } ;
 
 
@@ -72,25 +81,20 @@ NextGenEvents.filterOutCallback = function( what , currentElement ) { return wha
 // .addListener( eventName , [fn] , [options] )
 NextGenEvents.prototype.addListener = function addListener( eventName , fn , options )
 {
-	var listener = {} ;
+	var listener = {} , newListenerListeners ;
 	
 	if ( ! this.__ngev ) { NextGenEvents.init.call( this ) ; }
-	if ( ! this.__ngev.events[ eventName ] ) { this.__ngev.events[ eventName ] = [] ; }
+	if ( ! this.__ngev.listeners[ eventName ] ) { this.__ngev.listeners[ eventName ] = [] ; }
 	
 	if ( ! eventName || typeof eventName !== 'string' ) { throw new TypeError( ".addListener(): argument #0 should be a non-empty string" ) ; }
-	
-	if ( typeof fn !== 'function' )
-	{
-		options = fn ;
-		fn = undefined ;
-	}
-	
+	if ( typeof fn !== 'function' ) { options = fn ; fn = undefined ; }
 	if ( ! options || typeof options !== 'object' ) { options = {} ; }
 	
 	listener.fn = fn || options.fn ;
-	listener.id = typeof options.id === 'string' ? options.id : listener.fn ;
+	listener.id = options.id !== undefined ? options.id : listener.fn ;
 	listener.once = !! options.once ;
 	listener.async = !! options.async ;
+	listener.eventObject = !! options.eventObject ;
 	listener.nice = options.nice !== undefined ? Math.floor( options.nice ) : NextGenEvents.SYNC ;
 	listener.context = typeof options.context === 'string' ? options.context : null ;
 	
@@ -109,16 +113,32 @@ NextGenEvents.prototype.addListener = function addListener( eventName , fn , opt
 	// So the event's name can be retrieved in the listener itself.
 	listener.event = eventName ;
 	
-	// We should emit 'newListener' first, before adding it to the listeners,
-	// to avoid recursion in the case that eventName === 'newListener'
-	if ( this.__ngev.events.newListener.length )
+	if ( this.__ngev.listeners.newListener.length )
 	{
-		// Return an array, because .addListener() may support multiple event addition at once
+		// Extra care should be taken with the 'newListener' event, we should avoid recursion
+		// in the case that eventName === 'newListener', but inside a 'newListener' listener,
+		// .listenerCount() should report correctly
+		newListenerListeners = this.__ngev.listeners.newListener.slice() ;
+		
+		this.__ngev.listeners[ eventName ].push( listener ) ;
+		
+		// Return an array, because one day, .addListener() may support multiple event addition at once,
 		// e.g.: .addListener( { request: onRequest, close: onClose, error: onError } ) ;
-		this.emit( 'newListener' , [ listener ] ) ;
+		NextGenEvents.emitEvent( {
+			emitter: this ,
+			name: 'newListener' ,
+			args: [ [ listener ] ] ,
+			listeners: newListenerListeners
+		} ) ;
+		
+		if ( this.__ngev.states[ eventName ] ) { NextGenEvents.emitToOneListener( this.__ngev.states[ eventName ] , listener ) ; }
+		
+		return this ;
 	}
 	
-	this.__ngev.events[ eventName ].push( listener ) ;
+	this.__ngev.listeners[ eventName ].push( listener ) ;
+	
+	if ( this.__ngev.states[ eventName ] ) { NextGenEvents.emitToOneListener( this.__ngev.states[ eventName ] , listener ) ; }
 	
 	return this ;
 } ;
@@ -128,6 +148,7 @@ NextGenEvents.prototype.on = NextGenEvents.prototype.addListener ;
 
 
 // Shortcut
+// .once( eventName , [fn] , [options] )
 NextGenEvents.prototype.once = function once( eventName , fn , options )
 {
 	if ( fn && typeof fn === 'object' ) { fn.once = true ; }
@@ -146,26 +167,26 @@ NextGenEvents.prototype.removeListener = function removeListener( eventName , id
 	if ( ! eventName || typeof eventName !== 'string' ) { throw new TypeError( ".removeListener(): argument #0 should be a non-empty string" ) ; }
 	
 	if ( ! this.__ngev ) { NextGenEvents.init.call( this ) ; }
-	if ( ! this.__ngev.events[ eventName ] ) { this.__ngev.events[ eventName ] = [] ; }
+	if ( ! this.__ngev.listeners[ eventName ] ) { this.__ngev.listeners[ eventName ] = [] ; }
 	
-	length = this.__ngev.events[ eventName ].length ;
+	length = this.__ngev.listeners[ eventName ].length ;
 	
 	// It's probably faster to create a new array of listeners
 	for ( i = 0 ; i < length ; i ++ )
 	{
-		if ( this.__ngev.events[ eventName ][ i ].id === id )
+		if ( this.__ngev.listeners[ eventName ][ i ].id === id )
 		{
-			removedListeners.push( this.__ngev.events[ eventName ][ i ] ) ;
+			removedListeners.push( this.__ngev.listeners[ eventName ][ i ] ) ;
 		}
 		else
 		{
-			newListeners.push( this.__ngev.events[ eventName ][ i ] ) ;
+			newListeners.push( this.__ngev.listeners[ eventName ][ i ] ) ;
 		}
 	}
 	
-	this.__ngev.events[ eventName ] = newListeners ;
+	this.__ngev.listeners[ eventName ] = newListeners ;
 	
-	if ( removedListeners.length && this.__ngev.events.removeListener.length )
+	if ( removedListeners.length && this.__ngev.listeners.removeListener.length )
 	{
 		this.emit( 'removeListener' , removedListeners ) ;
 	}
@@ -187,14 +208,14 @@ NextGenEvents.prototype.removeAllListeners = function removeAllListeners( eventN
 	{
 		// Remove all listeners for a particular event
 		
-		if ( ! eventName || typeof eventName !== 'string' ) { throw new TypeError( ".removeAllListener(): argument #0 should be undefined or a non-empty string" ) ; }
+		if ( ! eventName || typeof eventName !== 'string' ) { throw new TypeError( ".removeAllListeners(): argument #0 should be undefined or a non-empty string" ) ; }
 		
-		if ( ! this.__ngev.events[ eventName ] ) { this.__ngev.events[ eventName ] = [] ; }
+		if ( ! this.__ngev.listeners[ eventName ] ) { this.__ngev.listeners[ eventName ] = [] ; }
 		
-		removedListeners = this.__ngev.events[ eventName ] ;
-		this.__ngev.events[ eventName ] = [] ;
+		removedListeners = this.__ngev.listeners[ eventName ] ;
+		this.__ngev.listeners[ eventName ] = [] ;
 		
-		if ( removedListeners.length && this.__ngev.events.removeListener.length )
+		if ( removedListeners.length && this.__ngev.listeners.removeListener.length )
 		{
 			this.emit( 'removeListener' , removedListeners ) ;
 		}
@@ -203,7 +224,7 @@ NextGenEvents.prototype.removeAllListeners = function removeAllListeners( eventN
 	{
 		// Remove all listeners for any events
 		// 'removeListener' listeners cannot be triggered: they are already deleted
-		this.__ngev.events = {} ;
+		this.__ngev.listeners = {} ;
 	}
 	
 	return this ;
@@ -213,7 +234,7 @@ NextGenEvents.prototype.removeAllListeners = function removeAllListeners( eventN
 
 NextGenEvents.listenerWrapper = function listenerWrapper( listener , event , context )
 {
-	var returnValue , serial ;
+	var returnValue , serial , listenerCallback ;
 	
 	if ( event.interrupt ) { return ; }
 	
@@ -226,7 +247,7 @@ NextGenEvents.listenerWrapper = function listenerWrapper( listener , event , con
 			context.ready = ! serial ;
 		}
 		
-		returnValue = listener.fn.apply( undefined , event.args.concat( function( arg ) {
+		listenerCallback = function( arg ) {
 			
 			event.listenersDone ++ ;
 			
@@ -243,7 +264,7 @@ NextGenEvents.listenerWrapper = function listenerWrapper( listener , event , con
 				
 				event.emitter.emit( 'interrupt' , event.interrupt ) ;
 			}
-			else if ( event.listenersDone >= event.listeners && event.callback )
+			else if ( event.listenersDone >= event.listeners.length && event.callback )
 			{
 				event.callback( undefined , event ) ;
 				delete event.callback ;
@@ -252,11 +273,16 @@ NextGenEvents.listenerWrapper = function listenerWrapper( listener , event , con
 			// Process the queue if serialized
 			if ( serial ) { NextGenEvents.processQueue.call( event.emitter , listener.context , true ) ; }
 			
-		} ) ) ;
+		} ;
+		
+		if ( listener.eventObject ) { listener.fn( event , listenerCallback ) ; }
+		else { returnValue = listener.fn.apply( undefined , event.args.concat( listenerCallback ) ) ; }
 	}
 	else
 	{
-		returnValue = listener.fn.apply( undefined , event.args ) ;
+		if ( listener.eventObject ) { listener.fn( event ) ; }
+		else { returnValue = listener.fn.apply( undefined , event.args ) ; }
+		
 		event.listenersDone ++ ;
 	}
 	
@@ -274,7 +300,7 @@ NextGenEvents.listenerWrapper = function listenerWrapper( listener , event , con
 		
 		event.emitter.emit( 'interrupt' , event.interrupt ) ;
 	}
-	else if ( event.listenersDone >= event.listeners && event.callback )
+	else if ( event.listenersDone >= event.listeners.length && event.callback )
 	{
 		event.callback( undefined , event ) ;
 		delete event.callback ;
@@ -293,23 +319,9 @@ var nextEventId = 0 ;
 */
 NextGenEvents.prototype.emit = function emit()
 {
-	var i , iMax , count = 0 ,
-		event , listener , context , currentNice ,
-		listeners , removedListeners = [] ;
+	var event ;
 	
-	event = {
-		emitter: this ,
-		id: nextEventId ++ ,
-		name: null ,
-		args: null ,
-		nice: null ,
-		interrupt: null ,
-		listeners: null ,
-		listenersDone: 0 ,
-		callback: null ,
-	} ;
-	
-	if ( ! this.__ngev ) { NextGenEvents.init.call( this ) ; }
+	event = { emitter: this } ;
 	
 	// Arguments handling
 	if ( typeof arguments[ 0 ] === 'number' )
@@ -330,7 +342,7 @@ NextGenEvents.prototype.emit = function emit()
 	}
 	else
 	{
-		event.nice = this.__ngev.nice ;
+		//event.nice = this.__ngev.nice ;
 		event.name = arguments[ 0 ] ;
 		if ( ! event.name || typeof event.name !== 'string' ) { throw new TypeError( ".emit(): argument #0 should be an number or a non-empty string" ) ; }
 		event.args = Array.prototype.slice.call( arguments , 1 ) ;
@@ -346,81 +358,78 @@ NextGenEvents.prototype.emit = function emit()
 		}
 	}
 	
+	return NextGenEvents.emitEvent( event ) ;
+} ;
+
+
+
+/*
+	At this stage, 'event' should be an object having those properties:
+		* emitter: the event emitter
+		* name: the event name
+		* args: array, the arguments of the event
+		* nice: (optional) nice value
+		* callback: (optional) a callback for emit
+		* listeners: (optional) override the listeners array stored in __ngev
+*/
+NextGenEvents.emitEvent = function emitEvent( event )
+{
+	var self = event.emitter ,
+		i , iMax , count = 0 , state , removedListeners ;
 	
-	if ( ! this.__ngev.events[ event.name ] ) { this.__ngev.events[ event.name ] = [] ; }
+	if ( ! self.__ngev ) { NextGenEvents.init.call( self ) ; }
 	
-	// Increment this.__ngev.recursion
-	event.listeners = this.__ngev.events[ event.name ].length ;
-	this.__ngev.recursion ++ ;
+	state = self.__ngev.states[ event.name ] ;
+	
+	// This is a state event, register it now!
+	if ( state !== undefined )
+	{
+		
+		if ( state && event.args.length === state.args.length &&
+			event.args.every( function( arg , index ) { return arg === state.args[ index ] ; } ) )
+		{
+			// The emitter is already in this exact state, skip it now!
+			return ;
+		}
+		
+		// Unset all states of that group
+		self.__ngev.stateGroups[ event.name ].forEach( function( eventName ) {
+			self.__ngev.states[ eventName ] = null ;
+		} ) ;
+		
+		self.__ngev.states[ event.name ] = event ;
+	}
+	
+	if ( ! self.__ngev.listeners[ event.name ] ) { self.__ngev.listeners[ event.name ] = [] ; }
+	
+	event.id = nextEventId ++ ;
+	event.listenersDone = 0 ;
+	event.once = !! event.once ;
+	
+	if ( event.nice === undefined || event.nice === null ) { event.nice = self.__ngev.nice ; }
 	
 	// Trouble arise when a listener is removed from another listener, while we are still in the loop.
 	// So we have to COPY the listener array right now!
-	listeners = this.__ngev.events[ event.name ].slice() ;
+	if ( ! event.listeners ) { event.listeners = self.__ngev.listeners[ event.name ].slice() ; }
 	
-	for ( i = 0 , iMax = listeners.length ; i < iMax ; i ++ )
+	// Increment self.__ngev.recursion
+	self.__ngev.recursion ++ ;
+	removedListeners = [] ;
+	
+	// Emit the event to all listeners!
+	for ( i = 0 , iMax = event.listeners.length ; i < iMax ; i ++ )
 	{
 		count ++ ;
-		listener = listeners[ i ] ;
-		context = listener.context && this.__ngev.contexts[ listener.context ] ;
-		
-		// If the listener context is disabled...
-		if ( context && context.status === NextGenEvents.CONTEXT_DISABLED ) { continue ; }
-		
-		// The nice value for this listener...
-		if ( context ) { currentNice = Math.max( event.nice , listener.nice , context.nice ) ; }
-		else { currentNice = Math.max( event.nice , listener.nice ) ; }
-		
-		
-		if ( listener.once )
-		{
-			// We should remove the current listener RIGHT NOW because of recursive .emit() issues:
-			// one listener may eventually fire this very same event synchronously during the current loop.
-			this.__ngev.events[ event.name ] = this.__ngev.events[ event.name ].filter(
-				NextGenEvents.filterOutCallback.bind( undefined , listener )
-			) ;
-			
-			removedListeners.push( listener ) ;
-		}
-		
-		if ( context && ( context.status === NextGenEvents.CONTEXT_QUEUED || ! context.ready ) )
-		{
-			// Almost all works should be done by .emit(), and little few should be done by .processQueue()
-			context.queue.push( { event: event , listener: listener , nice: currentNice } ) ;
-		}
-		else
-		{
-			try {
-				if ( currentNice < 0 )
-				{
-					if ( this.__ngev.recursion >= - currentNice )
-					{
-						setImmediate( NextGenEvents.listenerWrapper.bind( this , listener , event , context ) ) ;
-					}
-					else
-					{
-						NextGenEvents.listenerWrapper.call( this , listener , event , context ) ;
-					}
-				}
-				else
-				{
-					setTimeout( NextGenEvents.listenerWrapper.bind( this , listener , event , context ) , currentNice ) ;
-				}
-			}
-			catch ( error ) {
-				// Catch error, just to decrement this.__ngev.recursion, re-throw after that...
-				this.__ngev.recursion -- ;
-				throw error ;
-			}
-		}
+		NextGenEvents.emitToOneListener( event , event.listeners[ i ] , removedListeners ) ;
 	}
 	
 	// Decrement recursion
-	this.__ngev.recursion -- ;
+	self.__ngev.recursion -- ;
 	
 	// Emit 'removeListener' after calling listeners
-	if ( removedListeners.length && this.__ngev.events.removeListener.length )
+	if ( removedListeners.length && self.__ngev.listeners.removeListener.length )
 	{
-		this.emit( 'removeListener' , removedListeners ) ;
+		self.emit( 'removeListener' , removedListeners ) ;
 	}
 	
 	
@@ -429,7 +438,7 @@ NextGenEvents.prototype.emit = function emit()
 	{
 		if ( event.name === 'error' )
 		{
-			if ( arguments[ 1 ] ) { throw arguments[ 1 ] ; }
+			if ( event.args[ 0 ] ) { throw event.args[ 0 ] ; }
 			else { throw Error( "Uncaught, unspecified 'error' event." ) ; }
 		}
 		
@@ -445,15 +454,84 @@ NextGenEvents.prototype.emit = function emit()
 
 
 
+// If removedListeners is not given, then one-time listener emit the 'removeListener' event,
+// if given: that's the caller business to do it
+NextGenEvents.emitToOneListener = function emitToOneListener( event , listener , removedListeners )
+{	
+	var self = event.emitter ,
+		context , currentNice , emitRemoveListener = false ;
+	
+	context = listener.context && self.__ngev.contexts[ listener.context ] ;
+	
+	// If the listener context is disabled...
+	if ( context && context.status === NextGenEvents.CONTEXT_DISABLED ) { return ; }
+	
+	// The nice value for this listener...
+	if ( context ) { currentNice = Math.max( event.nice , listener.nice , context.nice ) ; }
+	else { currentNice = Math.max( event.nice , listener.nice ) ; }
+	
+	
+	if ( listener.once )
+	{
+		// We should remove the current listener RIGHT NOW because of recursive .emit() issues:
+		// one listener may eventually fire this very same event synchronously during the current loop.
+		self.__ngev.listeners[ event.name ] = self.__ngev.listeners[ event.name ].filter(
+			NextGenEvents.filterOutCallback.bind( undefined , listener )
+		) ;
+		
+		if ( removedListeners ) { removedListeners.push( listener ) ; }
+		else { emitRemoveListener = true ; }
+	}
+	
+	if ( context && ( context.status === NextGenEvents.CONTEXT_QUEUED || ! context.ready ) )
+	{
+		// Almost all works should be done by .emit(), and little few should be done by .processQueue()
+		context.queue.push( { event: event , listener: listener , nice: currentNice } ) ;
+	}
+	else
+	{
+		try {
+			if ( currentNice < 0 )
+			{
+				if ( self.__ngev.recursion >= - currentNice )
+				{
+					setImmediate( NextGenEvents.listenerWrapper.bind( self , listener , event , context ) ) ;
+				}
+				else
+				{
+					NextGenEvents.listenerWrapper.call( self , listener , event , context ) ;
+				}
+			}
+			else
+			{
+				setTimeout( NextGenEvents.listenerWrapper.bind( self , listener , event , context ) , currentNice ) ;
+			}
+		}
+		catch ( error ) {
+			// Catch error, just to decrement self.__ngev.recursion, re-throw after that...
+			self.__ngev.recursion -- ;
+			throw error ;
+		}
+	}
+	
+	// Emit 'removeListener' after calling the listener
+	if ( emitRemoveListener && self.__ngev.listeners.removeListener.length )
+	{
+		self.emit( 'removeListener' , [ listener ] ) ;
+	}
+} ;
+
+
+
 NextGenEvents.prototype.listeners = function listeners( eventName )
 {
 	if ( ! eventName || typeof eventName !== 'string' ) { throw new TypeError( ".listeners(): argument #0 should be a non-empty string" ) ; }
 	
 	if ( ! this.__ngev ) { NextGenEvents.init.call( this ) ; }
-	if ( ! this.__ngev.events[ eventName ] ) { this.__ngev.events[ eventName ] = [] ; }
+	if ( ! this.__ngev.listeners[ eventName ] ) { this.__ngev.listeners[ eventName ] = [] ; }
 	
 	// Do not return the array, shallow copy it
-	return this.__ngev.events[ eventName ].slice() ;
+	return this.__ngev.listeners[ eventName ].slice() ;
 } ;
 
 
@@ -471,9 +549,9 @@ NextGenEvents.prototype.listenerCount = function( eventName )
 	if ( ! eventName || typeof eventName !== 'string' ) { throw new TypeError( ".listenerCount(): argument #1 should be a non-empty string" ) ; }
 	
 	if ( ! this.__ngev ) { NextGenEvents.init.call( this ) ; }
-	if ( ! this.__ngev.events[ eventName ] ) { this.__ngev.events[ eventName ] = [] ; }
+	if ( ! this.__ngev.listeners[ eventName ] ) { this.__ngev.listeners[ eventName ] = [] ; }
 	
-	return this.__ngev.events[ eventName ].length ;
+	return this.__ngev.listeners[ eventName ].length ;
 } ;
 
 
@@ -498,11 +576,259 @@ NextGenEvents.prototype.setInterruptible = function setInterruptible( value )
 
 
 
+// Make two objects sharing the same event bus
+NextGenEvents.share = function( source , target )
+{
+	if ( ! ( source instanceof NextGenEvents ) || ! ( target instanceof NextGenEvents ) )
+	{
+		throw new TypeError( 'NextGenEvents.share() arguments should be instances of NextGenEvents' ) ;
+	}
+	
+	if ( ! source.__ngev ) { NextGenEvents.init.call( source ) ; }
+	
+	Object.defineProperty( target , '__ngev' , {
+		configurable: true ,
+		value: source.__ngev
+	} ) ;
+} ;
+
+
+
+NextGenEvents.reset = function reset( emitter )
+{
+	Object.defineProperty( emitter , '__ngev' , {
+        configurable: true ,
+        value: null
+	} ) ;
+} ;
+
+
+
 // There is no such thing in NextGenEvents, however, we need to be compatible with node.js events at best
 NextGenEvents.prototype.setMaxListeners = function() {} ;
 
 // Sometime useful as a no-op callback...
 NextGenEvents.noop = function() {} ;
+
+
+
+
+
+			/* Next Gen feature: states! */
+
+
+
+// .defineStates( exclusiveState1 , [exclusiveState2] , [exclusiveState3] , ... )
+NextGenEvents.prototype.defineStates = function defineStates()
+{
+	var self = this ,
+		states = Array.prototype.slice.call( arguments ) ;
+	
+	if ( ! this.__ngev ) { NextGenEvents.init.call( this ) ; }
+	
+	states.forEach( function( state ) {
+		self.__ngev.states[ state ] = null ;
+		self.__ngev.stateGroups[ state ] = states ;
+	} ) ;
+} ;
+
+
+
+NextGenEvents.prototype.hasState = function hasState( state )
+{
+	if ( ! this.__ngev ) { NextGenEvents.init.call( this ) ; }
+	return !! this.__ngev.states[ state ] ;
+} ;
+
+
+
+NextGenEvents.prototype.getAllStates = function getAllStates()
+{
+	var self = this ;
+	if ( ! this.__ngev ) { NextGenEvents.init.call( this ) ; }
+	return Object.keys( this.__ngev.states ).filter( function( e ) { return self.__ngev.states[ e ] ; } ) ;
+} ;
+
+
+
+
+
+			/* Next Gen feature: groups! */
+
+
+
+NextGenEvents.groupAddListener = function groupAddListener( emitters , eventName , fn , options )
+{
+	// Manage arguments
+	if ( typeof fn !== 'function' ) { options = fn ; fn = undefined ; }
+	if ( ! options || typeof options !== 'object' ) { options = {} ; }
+	
+	fn = fn || options.fn ;
+	delete options.fn ;
+	
+	// Preserve the listener ID, so groupRemoveListener() will work as expected
+	options.id = options.id || fn ;
+	
+	emitters.forEach( function( emitter ) {
+		emitter.addListener( eventName , fn.bind( undefined , emitter ) , options ) ;
+	} ) ;
+} ;
+
+NextGenEvents.groupOn = NextGenEvents.groupAddListener ;
+
+
+
+// Once per emitter
+NextGenEvents.groupOnce = function groupOnce( emitters , eventName , fn , options )
+{
+	if ( fn && typeof fn === 'object' ) { fn.once = true ; }
+	else if ( options && typeof options === 'object' ) { options.once = true ; }
+	else { options = { once: true } ; }
+	
+	return this.groupAddListener( emitters , eventName , fn , options ) ;
+} ;
+
+
+
+// Globally once, only one event could be emitted, by the first emitter to emit
+NextGenEvents.groupGlobalOnce = function groupGlobalOnce( emitters , eventName , fn , options )
+{
+	var fnWrapper , triggered = false ;
+	
+	// Manage arguments
+	if ( typeof fn !== 'function' ) { options = fn ; fn = undefined ; }
+	if ( ! options || typeof options !== 'object' ) { options = {} ; }
+	
+	fn = fn || options.fn ;
+	delete options.fn ;
+	
+	// Preserve the listener ID, so groupRemoveListener() will work as expected
+	options.id = options.id || fn ;
+	
+	fnWrapper = function() {
+		if ( triggered ) { return ; }
+		triggered = true ;
+		NextGenEvents.groupRemoveListener( emitters , eventName , options.id ) ;
+		fn.apply( undefined , arguments ) ;
+	} ;
+	
+	emitters.forEach( function( emitter ) {
+		emitter.once( eventName , fnWrapper.bind( undefined , emitter ) , options ) ;
+	} ) ;
+} ;
+
+
+
+// Globally once, only one event could be emitted, by the last emitter to emit
+NextGenEvents.groupGlobalOnceAll = function groupGlobalOnceAll( emitters , eventName , fn , options )
+{
+	var fnWrapper , triggered = false , count = emitters.length ;
+	
+	// Manage arguments
+	if ( typeof fn !== 'function' ) { options = fn ; fn = undefined ; }
+	if ( ! options || typeof options !== 'object' ) { options = {} ; }
+	
+	fn = fn || options.fn ;
+	delete options.fn ;
+	
+	// Preserve the listener ID, so groupRemoveListener() will work as expected
+	options.id = options.id || fn ;
+	
+	fnWrapper = function() {
+		if ( triggered ) { return ; }
+		if ( -- count ) { return ; }
+		
+		// So this is the last emitter...
+		
+		triggered = true ;
+		// No need to remove listeners: there are already removed anyway
+		//NextGenEvents.groupRemoveListener( emitters , eventName , options.id ) ;
+		fn.apply( undefined , arguments ) ;
+	} ;
+	
+	emitters.forEach( function( emitter ) {
+		emitter.once( eventName , fnWrapper.bind( undefined , emitter ) , options ) ;
+	} ) ;
+} ;
+
+
+
+NextGenEvents.groupRemoveListener = function groupRemoveListener( emitters , eventName , id )
+{
+	emitters.forEach( function( emitter ) {
+		emitter.removeListener( eventName , id ) ;
+	} ) ;
+} ;
+
+NextGenEvents.groupOff = NextGenEvents.groupRemoveListener ;
+
+
+
+NextGenEvents.groupRemoveAllListeners = function groupRemoveAllListeners( emitters , eventName )
+{
+	emitters.forEach( function( emitter ) {
+		emitter.removeAllListeners( eventName ) ;
+	} ) ;
+} ;
+
+
+
+NextGenEvents.groupEmit = function groupEmit( emitters )
+{
+	var eventName , nice , argStart = 2 , argEnd , args , count = emitters.length ,
+		callback , callbackWrapper , callbackTriggered = false ;
+	
+	if ( typeof arguments[ arguments.length - 1 ] === 'function' )
+	{
+		argEnd = -1 ;
+		callback = arguments[ arguments.length - 1 ] ;
+		
+		callbackWrapper = function( interruption ) {
+			if ( callbackTriggered ) { return ; }
+			
+			if ( interruption )
+			{
+				callbackTriggered = true ;
+				callback( interruption ) ;
+			}
+			else if ( ! -- count )
+			{
+				callbackTriggered = true ;
+				callback() ;
+			}
+		} ;
+	}
+	
+	if ( typeof arguments[ 1 ] === 'number' )
+	{
+		argStart = 3 ;
+		nice = typeof arguments[ 1 ] ;
+	}
+	
+	eventName = arguments[ argStart - 1 ] ;
+	args = Array.prototype.slice.call( arguments , argStart , argEnd ) ;
+	
+	emitters.forEach( function( emitter ) {
+		NextGenEvents.emitEvent( {
+			emitter: emitter ,
+			name: eventName ,
+			args: args ,
+			nice: nice ,
+			callback: callbackWrapper
+		} ) ;
+	} ) ;
+} ;
+
+
+
+NextGenEvents.groupDefineStates = function groupDefineStates( emitters )
+{
+	var args = Array.prototype.slice.call( arguments , 1 ) ;
+	
+	emitters.forEach( function( emitter ) {
+		emitter.defineStates.apply( emitter , args ) ;
+	} ) ;
+} ;
 
 
 
@@ -622,30 +948,30 @@ NextGenEvents.prototype.destroyListenerContext = function destroyListenerContext
 	
 	// We don't care if a context actually exists, all listeners tied to that contextName will be removed
 	
-	for ( eventName in this.__ngev.events )
+	for ( eventName in this.__ngev.listeners )
 	{
 		newListeners = null ;
-		length = this.__ngev.events[ eventName ].length ;
+		length = this.__ngev.listeners[ eventName ].length ;
 		
 		for ( i = 0 ; i < length ; i ++ )
 		{
-			if ( this.__ngev.events[ eventName ][ i ].context === contextName )
+			if ( this.__ngev.listeners[ eventName ][ i ].context === contextName )
 			{
 				newListeners = [] ;
-				removedListeners.push( this.__ngev.events[ eventName ][ i ] ) ;
+				removedListeners.push( this.__ngev.listeners[ eventName ][ i ] ) ;
 			}
 			else if ( newListeners )
 			{
-				newListeners.push( this.__ngev.events[ eventName ][ i ] ) ;
+				newListeners.push( this.__ngev.listeners[ eventName ][ i ] ) ;
 			}
 		}
 		
-		if ( newListeners ) { this.__ngev.events[ eventName ] = newListeners ; }
+		if ( newListeners ) { this.__ngev.listeners[ eventName ] = newListeners ; }
 	}
 	
 	if ( this.__ngev.contexts[ contextName ] ) { delete this.__ngev.contexts[ contextName ] ; }
 	
-	if ( removedListeners.length && this.__ngev.events.removeListener.length )
+	if ( removedListeners.length && this.__ngev.listeners.removeListener.length )
 	{
 		this.emit( 'removeListener' , removedListeners ) ;
 	}
@@ -718,7 +1044,629 @@ NextGenEvents.off = NextGenEvents.prototype.off ;
 
 
 
-},{}],2:[function(require,module,exports){
+if ( global.AsyncTryCatch )
+{
+	NextGenEvents.prototype.asyncTryCatchId = global.AsyncTryCatch.NextGenEvents.length ;
+	global.AsyncTryCatch.NextGenEvents.push( NextGenEvents ) ;
+	
+	if ( global.AsyncTryCatch.substituted )
+	{
+		//console.log( 'live subsitute' ) ;
+		global.AsyncTryCatch.substitute() ;
+	}
+}
+
+
+
+// Load Proxy AT THE END (circular require)
+NextGenEvents.Proxy = require( './Proxy.js' ) ;
+
+
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{"../package.json":5,"./Proxy.js":2}],2:[function(require,module,exports){
+/*
+	Next Gen Events
+	
+	Copyright (c) 2015 - 2016 Cédric Ronvel
+	
+	The MIT License (MIT)
+	
+	Permission is hereby granted, free of charge, to any person obtaining a copy
+	of this software and associated documentation files (the "Software"), to deal
+	in the Software without restriction, including without limitation the rights
+	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+	copies of the Software, and to permit persons to whom the Software is
+	furnished to do so, subject to the following conditions:
+	
+	The above copyright notice and this permission notice shall be included in all
+	copies or substantial portions of the Software.
+	
+	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+	SOFTWARE.
+*/
+
+"use strict" ;
+
+
+
+// Create the object && export it
+function Proxy() { return Proxy.create() ; }
+module.exports = Proxy ;
+
+var NextGenEvents = require( './NextGenEvents.js' ) ;
+var MESSAGE_TYPE = 'NextGenEvents/message' ;
+
+function noop() {}
+
+
+
+Proxy.create = function create()
+{
+	var self = Object.create( Proxy.prototype , {
+		localServices: { value: {} , enumerable: true } ,
+		remoteServices: { value: {} , enumerable: true } ,
+		nextAckId: { value: 1 , writable: true , enumerable: true } ,
+	} ) ;
+	
+	return self ;
+} ;
+
+
+
+// Add a local service accessible remotely
+Proxy.prototype.addLocalService = function addLocalService( id , emitter , options )
+{
+	this.localServices[ id ] = LocalService.create( this , id , emitter , options ) ;
+	return this.localServices[ id ] ;
+} ;
+
+
+
+// Add a remote service accessible locally
+Proxy.prototype.addRemoteService = function addRemoteService( id )
+{
+	this.remoteServices[ id ] = RemoteService.create( this , id ) ;
+	return this.remoteServices[ id ] ;
+} ;
+
+
+
+// Destroy the proxy
+Proxy.prototype.destroy = function destroy()
+{
+	var self = this ;
+	
+	Object.keys( this.localServices ).forEach( function( id ) {
+		self.localServices[ id ].destroy() ;
+		delete self.localServices[ id ] ;
+	} ) ;
+	
+	Object.keys( this.remoteServices ).forEach( function( id ) {
+		self.remoteServices[ id ].destroy() ;
+		delete self.remoteServices[ id ] ;
+	} ) ;
+	
+	this.receive = this.send = noop ;
+} ;
+
+
+
+// Push an event message.
+Proxy.prototype.push = function push( message )
+{
+	if (
+		message.__type !== MESSAGE_TYPE ||
+		! message.service || typeof message.service !== 'string' ||
+		! message.event || typeof message.event !== 'string' ||
+		! message.method
+	)
+	{
+		return ;
+	}
+	
+	switch ( message.method )
+	{
+		// Those methods target a remote service
+		case 'event' :
+			return this.remoteServices[ message.service ] && this.remoteServices[ message.service ].receiveEvent( message ) ;
+		case 'ackEmit' :
+			return this.remoteServices[ message.service ] && this.remoteServices[ message.service ].receiveAckEmit( message ) ;
+			
+		// Those methods target a local service
+		case 'emit' :
+			return this.localServices[ message.service ] && this.localServices[ message.service ].receiveEmit( message ) ;
+		case 'listen' :
+			return this.localServices[ message.service ] && this.localServices[ message.service ].receiveListen( message ) ;
+		case 'ignore' :
+			return this.localServices[ message.service ] && this.localServices[ message.service ].receiveIgnore( message ) ;
+		case 'ackEvent' :
+			return this.localServices[ message.service ] && this.localServices[ message.service ].receiveAckEvent( message ) ;
+			
+		default:
+		 	return ;
+	}
+} ;
+
+
+
+// This is the method to receive and decode data from the other side of the communication channel, most of time another proxy.
+// In most case, this should be overwritten.
+Proxy.prototype.receive = function receive( raw )
+{
+	this.push( raw ) ;
+} ;
+
+
+
+// This is the method used to send data to the other side of the communication channel, most of time another proxy.
+// This MUST be overwritten in any case.
+Proxy.prototype.send = function send()
+{
+	throw new Error( 'The send() method of the Proxy MUST be extended/overwritten' ) ;
+} ;
+
+
+
+			/* Local Service */
+
+
+
+function LocalService( proxy , id , emitter , options ) { return LocalService.create( proxy , id , emitter , options ) ; }
+Proxy.LocalService = LocalService ;
+
+
+
+LocalService.create = function create( proxy , id , emitter , options )
+{
+	var self = Object.create( LocalService.prototype , {
+		proxy: { value: proxy , enumerable: true } ,
+		id: { value: id , enumerable: true } ,
+		emitter: { value: emitter , writable: true , enumerable: true } ,
+		internalEvents: { value: Object.create( NextGenEvents.prototype ) , writable: true , enumerable: true } ,
+		events: { value: {} , enumerable: true } ,
+		canListen: { value: !! options.listen , writable: true , enumerable: true } ,
+		canEmit: { value: !! options.emit , writable: true , enumerable: true } ,
+		canAck: { value: !! options.ack , writable: true , enumerable: true } ,
+		canRpc: { value: !! options.rpc , writable: true , enumerable: true } ,
+		destroyed: { value: false , writable: true , enumerable: true } ,
+	} ) ;
+	
+	return self ;
+} ;
+
+
+
+// Destroy a service
+LocalService.prototype.destroy = function destroy()
+{
+	var self = this ;
+	
+	Object.keys( this.events ).forEach( function( eventName ) {
+		self.emitter.off( eventName , self.events[ eventName ] ) ;
+		delete self.events[ eventName ] ;
+	} ) ;
+	
+	this.emitter = null ;
+	this.destroyed = true ;
+} ;
+
+
+
+// Remote want to emit on the local service
+LocalService.prototype.receiveEmit = function receiveEmit( message )
+{
+	if ( this.destroyed || ! this.canEmit || ( message.ack && ! this.canAck ) ) { return ; }
+	
+	var self = this ;
+	
+	var event = {
+		emitter: this.emitter ,
+		name: message.event ,
+		args: message.args || [] 
+	} ;
+	
+	if ( message.ack )
+	{
+		event.callback = function ack( interruption ) {
+			
+			self.proxy.send( {
+				__type: MESSAGE_TYPE ,
+				service: self.id ,
+				method: 'ackEmit' ,
+				ack: message.ack ,
+				event: message.event ,
+				interruption: interruption
+			} ) ;
+		} ;
+	}
+	
+	NextGenEvents.emitEvent( event ) ;
+} ;
+
+
+
+// Remote want to listen to an event of the local service
+LocalService.prototype.receiveListen = function receiveListen( message )
+{
+	if ( this.destroyed || ! this.canListen || ( message.ack && ! this.canAck ) ) { return ; }
+	
+	if ( message.ack )
+	{
+		if ( this.events[ message.event ] )
+		{
+			if ( this.events[ message.event ].ack ) { return ; }
+			
+			// There is already an event, but not featuring ack, remove that listener now
+			this.emitter.off( message.event , this.events[ message.event ] ) ;
+		}
+		
+		this.events[ message.event ] = LocalService.forwardWithAck.bind( this ) ;
+		this.events[ message.event ].ack = true ;
+		this.emitter.on( message.event , this.events[ message.event ] , { eventObject: true , async: true } ) ;
+	}
+	else
+	{
+		if ( this.events[ message.event ] )
+		{
+			if ( ! this.events[ message.event ].ack ) { return ; }
+			
+			// Remote want to downgrade:
+			// there is already an event, but featuring ack so we remove that listener now
+			this.emitter.off( message.event , this.events[ message.event ] ) ;
+		}
+		
+		this.events[ message.event ] = LocalService.forward.bind( this ) ;
+		this.events[ message.event ].ack = false ;
+		this.emitter.on( message.event , this.events[ message.event ] , { eventObject: true } ) ;
+	}
+} ;
+
+
+
+// Remote do not want to listen to that event of the local service anymore
+LocalService.prototype.receiveIgnore = function receiveIgnore( message )
+{
+	if ( this.destroyed || ! this.canListen ) { return ; }
+	
+	if ( ! this.events[ message.event ] ) { return ; }
+	
+	this.emitter.off( message.event , this.events[ message.event ] ) ;
+	this.events[ message.event ] = null ;
+} ;
+
+
+
+// 
+LocalService.prototype.receiveAckEvent = function receiveAckEvent( message )
+{
+	if (
+		this.destroyed || ! this.canListen || ! this.canAck || ! message.ack ||
+		! this.events[ message.event ] || ! this.events[ message.event ].ack
+	)
+	{
+		return ;
+	}
+	
+	this.internalEvents.emit( 'ack' , message ) ;
+} ;
+
+
+
+// Send an event from the local service to remote
+LocalService.forward = function forward( event )
+{
+	if ( this.destroyed ) { return ; }
+	
+	this.proxy.send( {
+		__type: MESSAGE_TYPE ,
+		service: this.id ,
+		method: 'event' ,
+		event: event.name ,
+		args: event.args
+	} ) ;
+} ;
+
+LocalService.forward.ack = false ;
+
+
+
+// Send an event from the local service to remote, with ACK
+LocalService.forwardWithAck = function forwardWithAck( event , callback )
+{
+	if ( this.destroyed ) { return ; }
+	
+	var self = this ;
+	
+	if ( ! event.callback )
+	{
+		// There is no emit callback, no need to ack this one
+		this.proxy.send( {
+			__type: MESSAGE_TYPE ,
+			service: this.id ,
+			method: 'event' ,
+			event: event.name ,
+			args: event.args
+		} ) ;
+		
+		callback() ;
+		return ;
+	}
+	
+	var triggered = false ;
+	var ackId = this.proxy.nextAckId ++ ;
+	
+	var onAck = function onAck( message ) {
+		if ( triggered || message.ack !== ackId ) { return ; }	// Not our ack...
+		//if ( message.event !== event ) { return ; }	// Do we care?
+		triggered = true ;
+		self.internalEvents.off( 'ack' , onAck ) ;
+		callback() ;
+	} ;
+	
+	this.internalEvents.on( 'ack' , onAck ) ;
+	
+	this.proxy.send( {
+		__type: MESSAGE_TYPE ,
+		service: this.id ,
+		method: 'event' ,
+		event: event.name ,
+		ack: ackId ,
+		args: event.args
+	} ) ;
+} ;
+
+LocalService.forwardWithAck.ack = true ;
+
+
+
+			/* Remote Service */
+
+
+
+function RemoteService( proxy , id ) { return RemoteService.create( proxy , id ) ; }
+//RemoteService.prototype = Object.create( NextGenEvents.prototype ) ;
+//RemoteService.prototype.constructor = RemoteService ;
+Proxy.RemoteService = RemoteService ;
+
+
+
+var EVENT_NO_ACK = 1 ;
+var EVENT_ACK = 2 ;
+
+
+
+RemoteService.create = function create( proxy , id )
+{
+	var self = Object.create( RemoteService.prototype , {
+		proxy: { value: proxy , enumerable: true } ,
+		id: { value: id , enumerable: true } ,
+		// This is the emitter where everything is routed to
+		emitter: { value: Object.create( NextGenEvents.prototype ) , writable: true , enumerable: true } ,
+		internalEvents: { value: Object.create( NextGenEvents.prototype ) , writable: true , enumerable: true } ,
+		events: { value: {} , enumerable: true } ,
+		destroyed: { value: false , writable: true , enumerable: true } ,
+		
+		/*	Useless for instance, unless some kind of service capabilities discovery mechanism exists
+		canListen: { value: !! options.listen , writable: true , enumerable: true } ,
+		canEmit: { value: !! options.emit , writable: true , enumerable: true } ,
+		canAck: { value: !! options.ack , writable: true , enumerable: true } ,
+		canRpc: { value: !! options.rpc , writable: true , enumerable: true } ,
+		*/
+	} ) ;
+	
+	return self ;
+} ;
+
+
+
+// Destroy a service
+RemoteService.prototype.destroy = function destroy()
+{
+	var self = this ;
+	this.emitter.removeAllListeners() ;
+	this.emitter = null ;
+	Object.keys( this.events ).forEach( function( eventName ) { delete self.events[ eventName ] ; } ) ;
+	this.destroyed = true ;
+} ;
+
+
+
+// Local code want to emit to remote service
+RemoteService.prototype.emit = function emit( eventName )
+{
+	if ( this.destroyed ) { return ; }
+	
+	var self = this , args , callback , ackId , triggered ;
+	
+	if ( typeof eventName === 'number' ) { throw new TypeError( 'Cannot emit with a nice value on a remote service' ) ; }
+	
+	if ( typeof arguments[ arguments.length - 1 ] !== 'function' )
+	{
+		args = Array.prototype.slice.call( arguments , 1 ) ;
+		
+		this.proxy.send( {
+			__type: MESSAGE_TYPE ,
+			service: this.id ,
+			method: 'emit' ,
+			event: eventName ,
+			args: args
+		} ) ;
+		
+		return ;
+	}
+	
+	args = Array.prototype.slice.call( arguments , 1 , -1 ) ;
+	callback = arguments[ arguments.length - 1 ] ;
+	ackId = this.proxy.nextAckId ++ ;
+	triggered = false ;
+	
+	var onAck = function onAck( message ) {
+		if ( triggered || message.ack !== ackId ) { return ; }	// Not our ack...
+		//if ( message.event !== event ) { return ; }	// Do we care?
+		triggered = true ;
+		self.internalEvents.off( 'ack' , onAck ) ;
+		callback( message.interruption ) ;
+	} ;
+	
+	this.internalEvents.on( 'ack' , onAck ) ;
+	
+	this.proxy.send( {
+		__type: MESSAGE_TYPE ,
+		service: this.id ,
+		method: 'emit' ,
+		ack: ackId ,
+		event: eventName ,
+		args: args
+	} ) ;
+} ;
+
+
+
+// Local code want to listen to an event of remote service
+RemoteService.prototype.addListener = function addListener( eventName , fn , options )
+{
+	if ( this.destroyed ) { return ; }
+	
+	// Manage arguments the same way NextGenEvents#addListener() does
+	if ( typeof fn !== 'function' ) { options = fn ; fn = undefined ; }
+	if ( ! options || typeof options !== 'object' ) { options = {} ; }
+	options.fn = fn || options.fn ;
+	
+	this.emitter.addListener( eventName , options ) ;
+	
+	// No event was added...
+	if ( ! this.emitter.__ngev.listeners[ eventName ] || ! this.emitter.__ngev.listeners[ eventName ].length ) { return ; }
+	
+	// If the event is successfully listened to and was not remotely listened...
+	if ( options.async && this.events[ eventName ] !== EVENT_ACK )
+	{
+		// We need to listen to or upgrade this event
+		this.events[ eventName ] = EVENT_ACK ;
+		
+		this.proxy.send( {
+			__type: MESSAGE_TYPE ,
+			service: this.id ,
+			method: 'listen' ,
+			ack: true ,
+			event: eventName
+		} ) ;
+	}
+	else if ( ! options.async && ! this.events[ eventName ] )
+	{
+		// We need to listen to this event
+		this.events[ eventName ] = EVENT_NO_ACK ;
+		
+		this.proxy.send( {
+			__type: MESSAGE_TYPE ,
+			service: this.id ,
+			method: 'listen' ,
+			event: eventName
+		} ) ;
+	}
+} ;
+
+RemoteService.prototype.on = RemoteService.prototype.addListener ;
+
+// This is a shortcut to this.addListener()
+RemoteService.prototype.once = NextGenEvents.prototype.once ;
+
+
+
+// Local code want to ignore an event of remote service
+RemoteService.prototype.removeListener = function removeListener( eventName , id )
+{
+	if ( this.destroyed ) { return ; }
+	
+	this.emitter.removeListener( eventName , id ) ;
+	
+	// If no more listener are locally tied to with event and the event was remotely listened...
+	if (
+		( ! this.emitter.__ngev.listeners[ eventName ] || ! this.emitter.__ngev.listeners[ eventName ].length ) &&
+		this.events[ eventName ]
+	)
+	{
+		this.events[ eventName ] = 0 ;
+		
+		this.proxy.send( {
+			__type: MESSAGE_TYPE ,
+			service: this.id ,
+			method: 'ignore' ,
+			event: eventName
+		} ) ;
+	}
+} ;
+
+RemoteService.prototype.off = RemoteService.prototype.removeListener ;
+
+
+
+// A remote service sent an event we are listening to, emit on the service representing the remote
+RemoteService.prototype.receiveEvent = function receiveEvent( message )
+{
+	var self = this ;
+	
+	if ( this.destroyed || ! this.events[ message.event ] ) { return ; }
+	
+	var event = {
+		emitter: this.emitter ,
+		name: message.event ,
+		args: message.args || [] 
+	} ;
+	
+	if ( message.ack )
+	{
+		event.callback = function ack() {
+			
+			self.proxy.send( {
+				__type: MESSAGE_TYPE ,
+				service: self.id ,
+				method: 'ackEvent' ,
+				ack: message.ack ,
+				event: message.event
+			} ) ;
+		} ;
+	}
+	
+	NextGenEvents.emitEvent( event ) ;
+	
+	var eventName = event.name ;
+	
+	// Here we should catch if the event is still listened to ('once' type listeners)
+	//if ( this.events[ eventName ]	) // not needed, already checked at the begining of the function
+	if ( ! this.emitter.__ngev.listeners[ eventName ] || ! this.emitter.__ngev.listeners[ eventName ].length )
+	{
+		this.events[ eventName ] = 0 ;
+		
+		this.proxy.send( {
+			__type: MESSAGE_TYPE ,
+			service: this.id ,
+			method: 'ignore' ,
+			event: eventName
+		} ) ;
+	}
+} ;
+
+
+
+// 
+RemoteService.prototype.receiveAckEmit = function receiveAckEmit( message )
+{
+	if ( this.destroyed || ! message.ack || this.events[ message.event ] !== EVENT_ACK )
+	{
+		return ;
+	}
+	
+	this.internalEvents.emit( 'ack' , message ) ;
+} ;
+
+
+
+},{"./NextGenEvents.js":1}],3:[function(require,module,exports){
 /*
 	Next Gen Events
 	
@@ -761,7 +1709,7 @@ if ( typeof window.setImmediate !== 'function' )
 module.exports = require( './NextGenEvents.js' ) ;
 module.exports.isBrowser = true ;
 
-},{"./NextGenEvents.js":1}],3:[function(require,module,exports){
+},{"./NextGenEvents.js":1}],4:[function(require,module,exports){
 (function (Buffer){
 (function (global, module) {
 
@@ -2049,8 +2997,59 @@ module.exports.isBrowser = true ;
 );
 
 }).call(this,require("buffer").Buffer)
-},{"buffer":5}],4:[function(require,module,exports){
-(function (process){
+},{"buffer":7}],5:[function(require,module,exports){
+module.exports={
+  "name": "nextgen-events",
+  "version": "0.9.7",
+  "description": "The next generation of events handling for javascript! New: abstract away the network!",
+  "main": "lib/NextGenEvents.js",
+  "directories": {
+    "test": "test"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "browserify": "^13.0.1",
+    "expect.js": "^0.3.1",
+    "jshint": "^2.9.2",
+    "mocha": "^2.5.3",
+    "uglify-js": "^2.6.2",
+    "ws": "^1.1.1"
+  },
+  "scripts": {
+    "test": "mocha -R dot"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cronvel/nextgen-events.git"
+  },
+  "keywords": [
+    "events",
+    "async",
+    "emit",
+    "listener",
+    "context",
+    "series",
+    "serialize",
+    "namespace",
+    "proxy",
+    "network"
+  ],
+  "author": "Cédric Ronvel",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/cronvel/nextgen-events/issues"
+  },
+  "copyright": {
+    "title": "Next-Gen Events",
+    "years": [
+      2015,
+      2016
+    ],
+    "owner": "Cédric Ronvel"
+  }
+}
+},{}],6:[function(require,module,exports){
+(function (process,global){
 /*
 	Next Gen Events
 	
@@ -2190,6 +3189,22 @@ describe( "Basic synchronous event-emitting (node-compatible)" , function() {
 		var triggered = 0 ;
 		
 		bus.on( 'hello' , function() { triggered ++ ; } ) ;
+		
+		bus.emit( 'hello' ) ;
+		
+		expect( triggered ).to.be( 1 ) ;
+	} ) ;
+	
+	it( "should emit without argument" , function() {
+		
+		var bus = Object.create( NextGenEvents.prototype ) ;
+		
+		var triggered = 0 ;
+		
+		bus.on( 'hello' , function() {
+			triggered ++ ;
+			expect( arguments.length ).to.be( 0 ) ;
+		} ) ;
 		
 		bus.emit( 'hello' ) ;
 		
@@ -2400,7 +3415,7 @@ describe( "Basic synchronous event-emitting (node-compatible)" , function() {
 		expect( triggered ).to.eql( { foo1: 3 , bar1: 1 , bar2: 1 , baz1: 1 , baz2: 1 , baz3: 1 , qux: 0 } ) ;
 	} ) ;
 	
-	it( ".removeAllListeners() without argument should all listeners for all events" , function() {
+	it( ".removeAllListeners() without argument should remove all listeners for all events" , function() {
 		
 		var bus = Object.create( NextGenEvents.prototype ) ;
 		
@@ -2759,13 +3774,16 @@ describe( "Basic synchronous event-emitting (NOT compatible with node)" , functi
 		
 		var listeners , onFoo1 ;
 		
-		onFoo1 = function() {} ;
+		onFoo1 = function onFoo1() {} ;
 		
 		bus.on( 'foo' , onFoo1 ) ;
 		listeners = bus.listeners( 'foo' ) ;
 		expect( listeners.length ).to.be( 1 ) ;
 		expect( listeners[ 0 ].id ).to.be( onFoo1 ) ;
-		expect( listeners[ 0 ].fn ).to.be( onFoo1 ) ;
+		
+		console.log( "Has global.AsyncTryCatch?" , global.AsyncTryCatch ) ;
+		
+		if ( ! global.AsyncTryCatch ) { expect( listeners[ 0 ].fn ).to.be( onFoo1 ) ; }
 		expect( listeners[ 0 ].event ).to.be( 'foo' ) ;
 		expect( bus.listeners( 'bar' ).length ).to.be( 0 ) ;
 		
@@ -2775,10 +3793,10 @@ describe( "Basic synchronous event-emitting (NOT compatible with node)" , functi
 		listeners = bus.listeners( 'foo' ) ;
 		expect( listeners.length ).to.be( 3 ) ;
 		expect( listeners[ 1 ].id ).to.be( onFoo1 ) ;
-		expect( listeners[ 1 ].fn ).to.be( onFoo1 ) ;
+		if ( ! global.AsyncTryCatch ) { expect( listeners[ 1 ].fn ).to.be( onFoo1 ) ; }
 		expect( listeners[ 1 ].event ).to.be( 'foo' ) ;
 		expect( listeners[ 2 ].id ).to.be( onFoo1 ) ;
-		expect( listeners[ 2 ].fn ).to.be( onFoo1 ) ;
+		if ( ! global.AsyncTryCatch ) { expect( listeners[ 2 ].fn ).to.be( onFoo1 ) ; }
 		expect( listeners[ 2 ].event ).to.be( 'foo' ) ;
 		expect( bus.listeners( 'bar' ).length ).to.be( 0 ) ;
 		
@@ -2790,7 +3808,7 @@ describe( "Basic synchronous event-emitting (NOT compatible with node)" , functi
 		listeners = bus.listeners( 'foo' ) ;
 		expect( listeners.length ).to.be( 1 ) ;
 		expect( listeners[ 0 ].id ).to.be( onFoo1 ) ;
-		expect( listeners[ 0 ].fn ).to.be( onFoo1 ) ;
+		if ( ! global.AsyncTryCatch ) { expect( listeners[ 0 ].fn ).to.be( onFoo1 ) ; }
 		expect( listeners[ 0 ].event ).to.be( 'foo' ) ;
 		expect( bus.listeners( 'bar' ).length ).to.be( 0 ) ;
 		
@@ -2798,6 +3816,754 @@ describe( "Basic synchronous event-emitting (NOT compatible with node)" , functi
 		listeners = bus.listeners( 'foo' ) ;
 		expect( bus.listeners( 'foo' ).length ).to.be( 0 ) ;
 		expect( bus.listeners( 'bar' ).length ).to.be( 0 ) ;
+	} ) ;
+} ) ;
+
+
+
+describe( "Edge cases" , function() {
+	
+	it( "inside a 'newListener' listener, the .listenerCount() should report correctly" , function() {
+		
+		var triggered = 0 ,
+			bus = Object.create( NextGenEvents.prototype ) ;
+		
+		bus.on( 'newListener' , function( listeners ) {
+			triggered ++ ;
+			expect( listeners.length ).to.be( 1 ) ;
+			expect( listeners[ 0 ].event ).to.be( 'ready' ) ;
+			
+			// This is the tricky condition
+			expect( bus.listenerCount( 'ready' ) ).to.be( 1 ) ;
+		} ) ;
+		
+		bus.on( 'ready' , function() {} ) ;
+		expect( triggered ).to.be( 1 ) ;
+	} ) ;
+} ) ;
+
+
+		
+describe( "Next Gen feature: listener in 'eventObject' mode" , function() {
+	
+	it( "listener using 'eventObject' option" , function() {
+		
+		var triggered = 0 ,
+			bus = Object.create( NextGenEvents.prototype ) ;
+		
+		bus.once( 'hello' , function( event ) {
+			triggered ++ ;
+			expect( event.args.length ).to.be( 2 ) ;
+			expect( event.args[ 0 ] ).to.be( 'world' ) ;
+			expect( event.args[ 1 ] ).to.be( '!' ) ;
+			
+			expect( event.emitter ).to.be( bus ) ;
+			expect( event.name ).to.be( 'hello' ) ;
+			expect( event.callback ).not.to.be.ok() ;
+		} , { eventObject: true } ) ;
+		
+		bus.emit( 'hello' , 'world' , '!' ) ;
+		
+		expect( triggered ).to.be( 1 ) ;
+	} ) ;
+	
+	it( "listener using 'eventObject' option and emit() with completion callback" , function() {
+		
+		var triggered = 0 , emitCallbackTriggered = 0 ,
+			bus = Object.create( NextGenEvents.prototype ) ;
+		
+		var emitCallback = function() {
+			emitCallbackTriggered ++ ;
+		} ;
+		
+		bus.once( 'hello' , function( event ) {
+			triggered ++ ;
+			expect( event.args.length ).to.be( 0 ) ;
+			
+			expect( event.emitter ).to.be( bus ) ;
+			expect( event.name ).to.be( 'hello' ) ;
+			expect( event.callback ).to.be( emitCallback ) ;
+		} , { eventObject: true } ) ;
+		
+		bus.emit( 'hello' , emitCallback ) ;
+		
+		expect( triggered ).to.be( 1 ) ;
+		expect( emitCallbackTriggered ).to.be( 1 ) ;
+	} ) ;
+	
+	it( "listener using 'eventObject' and 'async' options, and emit() with completion callback" , function( done ) {
+		
+		var triggered = 0 , emitCallbackTriggered = 0 ,
+			bus = Object.create( NextGenEvents.prototype ) ;
+		
+		var emitCallback = function() {
+			emitCallbackTriggered ++ ;
+			expect( triggered ).to.be( 1 ) ;
+			expect( emitCallbackTriggered ).to.be( 1 ) ;
+			done() ;
+		} ;
+		
+		bus.once( 'hello' , function( event , callback ) {
+			triggered ++ ;
+			expect( event.args.length ).to.be( 0 ) ;
+			
+			expect( event.emitter ).to.be( bus ) ;
+			expect( event.name ).to.be( 'hello' ) ;
+			expect( event.callback ).to.be( emitCallback ) ;
+			
+			setTimeout( function() {
+				callback() ;
+			} , 20 ) ;
+			
+		} , { async: true , eventObject: true } ) ;
+		
+		bus.emit( 'hello' , emitCallback ) ;
+	} ) ;
+} ) ;
+
+
+
+describe( "Next Gen feature: state-events" , function() {
+	
+	it( "should emit a state-event, further listeners should receive the last emitted event immediately" , function() {
+		
+		var bus = new NextGenEvents() ;
+		
+		var triggered = 0 ;
+		
+		bus.defineStates( 'ready' ) ;
+		
+		bus.on( 'ready' , function( arg ) {
+			triggered ++ ;
+			expect( arg ).to.be( 'ok!' ) ;
+		} ) ;
+		expect( triggered ).to.be( 0 ) ;
+		expect( bus.hasState( 'ready' ) ).to.be( false ) ;
+		expect( bus.getAllStates() ).to.eql( [] ) ;
+		
+		bus.emit( 'ready' , 'ok!' ) ;
+		expect( triggered ).to.be( 1 ) ;
+		expect( bus.hasState( 'ready' ) ).to.be( true ) ;
+		expect( bus.getAllStates() ).to.eql( [ 'ready' ] ) ;
+		
+		bus.on( 'ready' , function( arg ) {
+			triggered ++ ;
+			expect( arg ).to.be( 'ok!' ) ;
+		} ) ;
+		
+		expect( triggered ).to.be( 2 ) ;
+		
+		bus.once( 'ready' , function( arg ) {
+			triggered ++ ;
+			expect( arg ).to.be( 'ok!' ) ;
+		} ) ;
+		
+		expect( triggered ).to.be( 3 ) ;
+		
+		bus.emit( 'ready' , 'ok!' , 'stateBreaker#1' ) ;
+		expect( triggered ).to.be( 5 ) ;
+		
+		
+		bus.removeAllListeners( 'ready' ) ;
+		
+		bus.once( 'ready' , function( arg ) {
+			triggered ++ ;
+			expect( arg ).to.be( 'ok!' ) ;
+		} ) ;
+		expect( triggered ).to.be( 6 ) ;
+		
+		bus.emit( 'ready' ) ;
+		
+		bus.once( 'ready' , function( arg ) {
+			triggered ++ ;
+			expect( arg ).not.to.be.ok() ;
+		} ) ;
+		expect( triggered ).to.be( 7 ) ;
+		expect( bus.hasState( 'ready' ) ).to.be( true ) ;
+		expect( bus.getAllStates() ).to.eql( [ 'ready' ] ) ;
+	} ) ;
+	
+	it( "when the state remains the same, nothing should be emitted" , function() {
+		
+		var bus = new NextGenEvents() ;
+		
+		var triggered = 0 ;
+		
+		bus.defineStates( 'ready' , 'notReady' ) ;
+		
+		bus.on( 'ready' , function() {
+			triggered ++ ;
+		} ) ;
+		expect( triggered ).to.be( 0 ) ;
+		expect( bus.hasState( 'ready' ) ).to.be( false ) ;
+		expect( bus.getAllStates() ).to.eql( [] ) ;
+		
+		bus.emit( 'ready' ) ;
+		expect( triggered ).to.be( 1 ) ;
+		expect( bus.hasState( 'ready' ) ).to.be( true ) ;
+		expect( bus.getAllStates() ).to.eql( [ 'ready' ] ) ;
+		
+		bus.on( 'ready' , function() {
+			triggered ++ ;
+		} ) ;
+		
+		expect( triggered ).to.be( 2 ) ;
+		expect( bus.hasState( 'ready' ) ).to.be( true ) ;
+		expect( bus.getAllStates() ).to.eql( [ 'ready' ] ) ;
+		
+		bus.emit( 'ready' ) ;
+		
+		expect( triggered ).to.be( 2 ) ;
+		expect( bus.hasState( 'ready' ) ).to.be( true ) ;
+		expect( bus.getAllStates() ).to.eql( [ 'ready' ] ) ;
+		
+		bus.emit( 'ready' , '#1' ) ;
+		
+		expect( triggered ).to.be( 4 ) ;
+		expect( bus.hasState( 'ready' ) ).to.be( true ) ;
+		expect( bus.getAllStates() ).to.eql( [ 'ready' ] ) ;
+		
+		bus.emit( 'ready' , '#1' ) ;
+		
+		expect( triggered ).to.be( 4 ) ;
+		expect( bus.hasState( 'ready' ) ).to.be( true ) ;
+		expect( bus.getAllStates() ).to.eql( [ 'ready' ] ) ;
+		
+		bus.emit( 'ready' , '#2' ) ;
+		
+		expect( triggered ).to.be( 6 ) ;
+		expect( bus.hasState( 'ready' ) ).to.be( true ) ;
+		expect( bus.getAllStates() ).to.eql( [ 'ready' ] ) ;
+		
+		bus.emit( 'ready' , '#2' ) ;
+		
+		expect( triggered ).to.be( 6 ) ;
+		expect( bus.hasState( 'ready' ) ).to.be( true ) ;
+		expect( bus.getAllStates() ).to.eql( [ 'ready' ] ) ;
+		
+		bus.emit( 'ready' ) ;
+		
+		expect( triggered ).to.be( 8 ) ;
+		expect( bus.hasState( 'ready' ) ).to.be( true ) ;
+		expect( bus.getAllStates() ).to.eql( [ 'ready' ] ) ;
+		
+		bus.emit( 'notReady' ) ;
+		expect( triggered ).to.be( 8 ) ;
+		expect( bus.hasState( 'ready' ) ).to.be( false ) ;
+		expect( bus.hasState( 'notReady' ) ).to.be( true ) ;
+		expect( bus.getAllStates() ).to.eql( [ 'notReady' ] ) ;
+		
+		bus.emit( 'ready' ) ;
+		expect( triggered ).to.be( 10 ) ;
+		expect( bus.hasState( 'ready' ) ).to.be( true ) ;
+		expect( bus.hasState( 'notReady' ) ).to.be( false ) ;
+		expect( bus.getAllStates() ).to.eql( [ 'ready' ] ) ;
+	} ) ;
+	
+	it( "should define three exclusive states, emitting one should discard the two others" , function() {
+		
+		var bus = new NextGenEvents() ;
+		
+		var startingTriggered = 0 , runningTriggered = 0 , endingTriggered = 0 ;
+		
+		// Define 3 exclusives states
+		bus.defineStates( 'starting' , 'running' , 'ending' ) ;
+		expect( bus.hasState( 'starting' ) ).to.be( false ) ;
+		expect( bus.hasState( 'running' ) ).to.be( false ) ;
+		expect( bus.hasState( 'ending' ) ).to.be( false ) ;
+		expect( bus.getAllStates() ).to.eql( [] ) ;
+		
+		bus.on( 'starting' , function() {
+			startingTriggered ++ ;
+		} ) ;
+		expect( startingTriggered ).to.be( 0 ) ;
+		
+		bus.emit( 'starting' ) ;
+		expect( bus.hasState( 'starting' ) ).to.be( true ) ;
+		expect( bus.hasState( 'running' ) ).to.be( false ) ;
+		expect( bus.hasState( 'ending' ) ).to.be( false ) ;
+		expect( bus.getAllStates() ).to.eql( [ 'starting' ] ) ;
+		expect( startingTriggered ).to.be( 1 ) ;
+		
+		bus.on( 'starting' , function() {
+			startingTriggered ++ ;
+		} ) ;
+		expect( startingTriggered ).to.be( 2 ) ;
+		
+		bus.on( 'running' , function() {
+			runningTriggered ++ ;
+		} ) ;
+		expect( startingTriggered ).to.be( 2 ) ;
+		expect( runningTriggered ).to.be( 0 ) ;
+		
+		// Emit the 'running' state-event, thus discarding the 'starting' state
+		bus.emit( 'running' ) ;
+		expect( bus.hasState( 'starting' ) ).to.be( false ) ;
+		expect( bus.hasState( 'running' ) ).to.be( true ) ;
+		expect( bus.hasState( 'ending' ) ).to.be( false ) ;
+		expect( bus.getAllStates() ).to.eql( [ 'running' ] ) ;
+		expect( startingTriggered ).to.be( 2 ) ;
+		expect( runningTriggered ).to.be( 1 ) ;
+		
+		bus.on( 'starting' , function() {
+			startingTriggered ++ ;
+		} ) ;
+		expect( startingTriggered ).to.be( 2 ) ;
+		expect( runningTriggered ).to.be( 1 ) ;
+		
+		bus.on( 'running' , function() {
+			runningTriggered ++ ;
+		} ) ;
+		expect( startingTriggered ).to.be( 2 ) ;
+		expect( runningTriggered ).to.be( 2 ) ;
+		
+		bus.on( 'ending' , function() {
+			endingTriggered ++ ;
+		} ) ;
+		expect( startingTriggered ).to.be( 2 ) ;
+		expect( runningTriggered ).to.be( 2 ) ;
+		expect( endingTriggered ).to.be( 0 ) ;
+		
+		// Emit the 'ending' state-event, thus discarding the 'running' state
+		bus.emit( 'ending' ) ;
+		expect( bus.hasState( 'starting' ) ).to.be( false ) ;
+		expect( bus.hasState( 'running' ) ).to.be( false ) ;
+		expect( bus.hasState( 'ending' ) ).to.be( true ) ;
+		expect( bus.getAllStates() ).to.eql( [ 'ending' ] ) ;
+		expect( startingTriggered ).to.be( 2 ) ;
+		expect( runningTriggered ).to.be( 2 ) ;
+		expect( endingTriggered ).to.be( 1 ) ;
+		
+		// Emit the 'starting' state-event, thus discarding the 'ending' state
+		bus.emit( 'starting' ) ;
+		expect( bus.hasState( 'starting' ) ).to.be( true ) ;
+		expect( bus.hasState( 'running' ) ).to.be( false ) ;
+		expect( bus.hasState( 'ending' ) ).to.be( false ) ;
+		expect( bus.getAllStates() ).to.eql( [ 'starting' ] ) ;
+		expect( startingTriggered ).to.be( 5 ) ;
+		expect( runningTriggered ).to.be( 2 ) ;
+		expect( endingTriggered ).to.be( 1 ) ;
+		
+		bus.on( 'running' , function() {
+			runningTriggered ++ ;
+		} ) ;
+		bus.on( 'ending' , function() {
+			endingTriggered ++ ;
+		} ) ;
+		expect( startingTriggered ).to.be( 5 ) ;
+		expect( runningTriggered ).to.be( 2 ) ;
+		expect( endingTriggered ).to.be( 1 ) ;
+	} ) ;
+} ) ;
+
+
+
+describe( "Next Gen feature: emitter group actions" , function() {
+	
+	it( "should emit on a group of emitters" , function() {
+		
+		var busList = [
+			Object.create( NextGenEvents.prototype ) ,
+			Object.create( NextGenEvents.prototype ) ,
+			Object.create( NextGenEvents.prototype )
+		] ;
+		
+		var triggered = 0 ;
+		
+		busList[ 0 ].on( 'hello' , function( arg1 , arg2 ) {
+			triggered ++ ;
+			expect( arg1 ).to.be( 'world' ) ;
+			expect( arg2 ).to.be( '!' ) ;
+		} ) ;
+		
+		busList[ 1 ].on( 'hello' , function( arg1 , arg2 ) {
+			triggered ++ ;
+			expect( arg1 ).to.be( 'world' ) ;
+			expect( arg2 ).to.be( '!' ) ;
+		} ) ;
+		
+		busList[ 2 ].on( 'hello' , function( arg1 , arg2 ) {
+			triggered ++ ;
+			expect( arg1 ).to.be( 'world' ) ;
+			expect( arg2 ).to.be( '!' ) ;
+		} ) ;
+		
+		NextGenEvents.groupEmit( busList , 'hello' , 'world' , '!' ) ;
+		
+		expect( triggered ).to.be( 3 ) ;
+	} ) ;
+	
+	it( "should listen to a group of emitters" , function() {
+		
+		var busList = [
+			Object.create( NextGenEvents.prototype ) ,
+			Object.create( NextGenEvents.prototype ) ,
+			Object.create( NextGenEvents.prototype )
+		] ;
+		
+		var triggered = 0 ;
+		
+		NextGenEvents.groupOn( busList , 'hello' , function( emitter , arg1 , arg2 ) {
+			triggered ++ ;
+			emitter.triggered = ( emitter.triggered || 0 ) + 1 ;
+			expect( arg1 ).to.be( 'world' ) ;
+			expect( arg2 ).to.be( '!' ) ;
+			expect( emitter.triggered ).to.be.within( 1 , 2 ) ;
+		} ) ;
+		
+		NextGenEvents.groupEmit( busList , 'hello' , 'world' , '!' ) ;
+		expect( triggered ).to.be( 3 ) ;
+		
+		NextGenEvents.groupEmit( busList , 'hello' , 'world' , '!' ) ;
+		expect( triggered ).to.be( 6 ) ;
+	} ) ;
+	
+	it( "should listen to a group of emitters then stop listening" , function() {
+		
+		var busList = [
+			Object.create( NextGenEvents.prototype ) ,
+			Object.create( NextGenEvents.prototype ) ,
+			Object.create( NextGenEvents.prototype )
+		] ;
+		
+		var triggered = 0 ;
+		
+		var fn = function( emitter , arg1 , arg2 ) {
+			triggered ++ ;
+			emitter.triggered = ( emitter.triggered || 0 ) + 1 ;
+			expect( arg1 ).to.be( 'world' ) ;
+			expect( arg2 ).to.be( '!' ) ;
+			expect( emitter.triggered ).to.be( 1 ) ;
+		} ;
+		
+		NextGenEvents.groupOn( busList , 'hello' , fn ) ;
+		NextGenEvents.groupEmit( busList , 'hello' , 'world' , '!' ) ;
+		expect( triggered ).to.be( 3 ) ;
+		
+		NextGenEvents.groupOff( busList , 'hello' , fn ) ;
+		NextGenEvents.groupEmit( busList , 'hello' , 'world' , '!' ) ;
+		expect( triggered ).to.be( 3 ) ;
+	} ) ;
+	
+	it( "should add multiple listeners to a group of emitters then remove all of them at once" , function() {
+		
+		var busList = [
+			Object.create( NextGenEvents.prototype ) ,
+			Object.create( NextGenEvents.prototype ) ,
+			Object.create( NextGenEvents.prototype )
+		] ;
+		
+		var triggered = 0 ;
+		
+		var fn = function( emitter , arg1 , arg2 ) {
+			triggered ++ ;
+			emitter.triggered = ( emitter.triggered || 0 ) + 1 ;
+			expect( arg1 ).to.be( 'world' ) ;
+			expect( arg2 ).to.be( '!' ) ;
+			expect( emitter.triggered ).to.be( 1 ) ;
+		} ;
+		
+		var fn2 = function( emitter , arg1 , arg2 ) {
+			triggered ++ ;
+			emitter.triggered = ( emitter.triggered || 0 ) + 1 ;
+			expect( arg1 ).to.be( 'world' ) ;
+			expect( arg2 ).to.be( '!' ) ;
+			expect( emitter.triggered ).to.be( 2 ) ;
+		} ;
+		
+		NextGenEvents.groupOn( busList , 'hello' , fn ) ;
+		NextGenEvents.groupOn( busList , 'hello' , fn2 ) ;
+		NextGenEvents.groupEmit( busList , 'hello' , 'world' , '!' ) ;
+		expect( triggered ).to.be( 6 ) ;
+		
+		NextGenEvents.groupRemoveAllListeners( busList , 'hello' ) ;
+		NextGenEvents.groupEmit( busList , 'hello' , 'world' , '!' ) ;
+		expect( triggered ).to.be( 6 ) ;
+	} ) ;
+	
+	it( "should listen once to each emitters of a group" , function() {
+		
+		var busList = [
+			Object.create( NextGenEvents.prototype ) ,
+			Object.create( NextGenEvents.prototype ) ,
+			Object.create( NextGenEvents.prototype )
+		] ;
+		
+		var triggered = 0 ;
+		
+		NextGenEvents.groupOnce( busList , 'hello' , function( emitter , arg1 , arg2 ) {
+			triggered ++ ;
+			emitter.triggered = ( emitter.triggered || 0 ) + 1 ;
+			expect( arg1 ).to.be( 'world' ) ;
+			expect( arg2 ).to.be( '!' ) ;
+			expect( emitter.triggered ).to.be( 1 ) ;
+		} ) ;
+		
+		NextGenEvents.groupEmit( busList , 'hello' , 'world' , '!' ) ;
+		expect( triggered ).to.be( 3 ) ;
+		
+		NextGenEvents.groupEmit( busList , 'hello' , 'world' , '!' ) ;
+		expect( triggered ).to.be( 3 ) ;
+	} ) ;
+	
+	it( "should listen once to a whole group of emitters" , function() {
+		
+		var busList = [
+			Object.create( NextGenEvents.prototype ) ,
+			Object.create( NextGenEvents.prototype ) ,
+			Object.create( NextGenEvents.prototype )
+		] ;
+		
+		var triggered = 0 ;
+		
+		NextGenEvents.groupGlobalOnce( busList , 'hello' , function( emitter , arg1 , arg2 ) {
+			triggered ++ ;
+			emitter.triggered = ( emitter.triggered || 0 ) + 1 ;
+			expect( arg1 ).to.be( 'world' ) ;
+			expect( arg2 ).to.be( '!' ) ;
+			expect( emitter.triggered ).to.be( 1 ) ;
+		} ) ;
+		
+		busList[ 1 ].emit( 'hello' , 'world' , '!' ) ;
+		expect( triggered ).to.be( 1 ) ;
+		
+		NextGenEvents.groupEmit( busList , 'hello' , 'world' , '?' ) ;
+		expect( triggered ).to.be( 1 ) ;
+		
+		NextGenEvents.groupEmit( busList , 'hello' , 'world' , '?' ) ;
+		expect( triggered ).to.be( 1 ) ;
+	} ) ;
+	
+	it( "should listen once the last emitter to emit from whole group" , function() {
+		
+		var busList = [
+			Object.create( NextGenEvents.prototype ) ,
+			Object.create( NextGenEvents.prototype ) ,
+			Object.create( NextGenEvents.prototype )
+		] ;
+		
+		var triggered = 0 ;
+		
+		NextGenEvents.groupGlobalOnceAll( busList , 'hello' , function( emitter , arg1 , arg2 ) {
+			triggered ++ ;
+			emitter.triggered = ( emitter.triggered || 0 ) + 1 ;
+			expect( arg1 ).to.be( 'world' ) ;
+			expect( arg2 ).to.be( '!' ) ;
+			expect( emitter.triggered ).to.be( 1 ) ;
+		} ) ;
+		
+		busList[ 1 ].emit( 'hello' , 'world' , '...' ) ;
+		expect( triggered ).to.be( 0 ) ;
+		busList[ 1 ].emit( 'hello' , 'world' , '...' ) ;
+		expect( triggered ).to.be( 0 ) ;
+		busList[ 1 ].emit( 'hello' , 'world' , '...' ) ;
+		expect( triggered ).to.be( 0 ) ;
+		busList[ 0 ].emit( 'hello' , 'world' , '...' ) ;
+		expect( triggered ).to.be( 0 ) ;
+		busList[ 0 ].emit( 'hello' , 'world' , '...' ) ;
+		expect( triggered ).to.be( 0 ) ;
+		busList[ 1 ].emit( 'hello' , 'world' , '...' ) ;
+		expect( triggered ).to.be( 0 ) ;
+		
+		busList[ 2 ].emit( 'hello' , 'world' , '!' ) ;
+		expect( triggered ).to.be( 1 ) ;
+		
+		busList[ 2 ].emit( 'hello' , 'world' , '?' ) ;
+		expect( triggered ).to.be( 1 ) ;
+		
+		NextGenEvents.groupEmit( busList , 'hello' , 'world' , '?' ) ;
+		expect( triggered ).to.be( 1 ) ;
+		
+		NextGenEvents.groupEmit( busList , 'hello' , 'world' , '?' ) ;
+		expect( triggered ).to.be( 1 ) ;
+	} ) ;
+	
+	it( "should emit with a completion callback that should be triggered once all emitters have finished" , function( done ) {
+		
+		var busList = [
+			Object.create( NextGenEvents.prototype ) ,
+			Object.create( NextGenEvents.prototype ) ,
+			Object.create( NextGenEvents.prototype )
+		] ;
+		
+		var triggered = 0 , timeoutTriggered = 0 , callbackTriggered = 0 ;
+		
+		busList[ 0 ].on( 'hello' , function( arg1 , arg2 , callback ) {
+			triggered ++ ;
+			expect( arg1 ).to.be( 'world' ) ;
+			expect( arg2 ).to.be( '!' ) ;
+			setTimeout( function() {
+				timeoutTriggered ++ ;
+				callback() ;
+			} , 50 ) ;
+		} , { async: true } ) ;
+		
+		busList[ 1 ].on( 'hello' , function( arg1 , arg2 , callback ) {
+			triggered ++ ;
+			expect( arg1 ).to.be( 'world' ) ;
+			expect( arg2 ).to.be( '!' ) ;
+			setTimeout( function() {
+				timeoutTriggered ++ ;
+				callback() ;
+			} , 10 ) ;
+		} , { async: true } ) ;
+		
+		busList[ 2 ].on( 'hello' , function( arg1 , arg2 , callback ) {
+			triggered ++ ;
+			expect( arg1 ).to.be( 'world' ) ;
+			expect( arg2 ).to.be( '!' ) ;
+			setTimeout( function() {
+				timeoutTriggered ++ ;
+				callback() ;
+			} , 20 ) ;
+		} , { async: true } ) ;
+		
+		NextGenEvents.groupEmit( busList , 'hello' , 'world' , '!' , function( interruption ) {
+			callbackTriggered ++ ;
+			expect( interruption ).not.to.be.ok() ;
+			expect( callbackTriggered ).to.be( 1 ) ;
+		} ) ;
+		
+		expect( triggered ).to.be( 3 ) ;
+		
+		setTimeout( function() {
+			expect( timeoutTriggered ).to.be( 3 ) ;
+			expect( callbackTriggered ).to.be( 1 ) ;
+			done() ;
+		} , 100 ) ;
+	} ) ;
+	
+	it( "using interruptible emitters, it should trigger the completion callback once one of them is interrupted" , function( done ) {
+		
+		var busList = [
+			Object.create( NextGenEvents.prototype ) ,
+			Object.create( NextGenEvents.prototype ) ,
+			Object.create( NextGenEvents.prototype )
+		] ;
+		
+		busList.forEach( function( bus ) { bus.setInterruptible( true ) ; } ) ;
+		
+		var triggered = 0 , timeoutTriggered = 0 , callbackTriggered = 0 ;
+		
+		busList[ 0 ].on( 'hello' , function( arg1 , arg2 , callback ) {
+			triggered ++ ;
+			expect( arg1 ).to.be( 'world' ) ;
+			expect( arg2 ).to.be( '!' ) ;
+			setTimeout( function() {
+				timeoutTriggered ++ ;
+				callback() ;
+			} , 50 ) ;
+		} , { async: true } ) ;
+		
+		busList[ 1 ].on( 'hello' , function( arg1 , arg2 , callback ) {
+			triggered ++ ;
+			expect( arg1 ).to.be( 'world' ) ;
+			expect( arg2 ).to.be( '!' ) ;
+			setTimeout( function() {
+				timeoutTriggered ++ ;
+				callback( 'interrupted!' ) ;
+			} , 10 ) ;
+		} , { async: true } ) ;
+		
+		busList[ 2 ].on( 'hello' , function( arg1 , arg2 , callback ) {
+			triggered ++ ;
+			expect( arg1 ).to.be( 'world' ) ;
+			expect( arg2 ).to.be( '!' ) ;
+			setTimeout( function() {
+				timeoutTriggered ++ ;
+				callback() ;
+			} , 20 ) ;
+		} , { async: true } ) ;
+		
+		NextGenEvents.groupEmit( busList , 'hello' , 'world' , '!' , function( interruption ) {
+			callbackTriggered ++ ;
+			expect( interruption ).to.be( 'interrupted!' ) ;
+			expect( callbackTriggered ).to.be( 1 ) ;
+		} ) ;
+		
+		expect( triggered ).to.be( 3 ) ;
+		
+		setTimeout( function() {
+			expect( timeoutTriggered ).to.be( 3 ) ;
+			expect( callbackTriggered ).to.be( 1 ) ;
+			done() ;
+		} , 100 ) ;
+	} ) ;
+	
+	it( "should define states on a group of emitters and use it" , function() {
+		
+		var busList = [
+			Object.create( NextGenEvents.prototype ) ,
+			Object.create( NextGenEvents.prototype ) ,
+			Object.create( NextGenEvents.prototype )
+		] ;
+		
+		var triggered = 0 ;
+		
+		NextGenEvents.groupDefineStates( busList , 'starting' , 'running' , 'ending' ) ;
+		
+		NextGenEvents.groupEmit( busList , 'starting' ) ;
+		
+		NextGenEvents.groupOn( busList , 'starting' , function( emitter ) {
+			triggered ++ ;
+			emitter.triggered = ( emitter.triggered || 0 ) + 1 ;
+			expect( emitter.triggered ).to.be( 1 ) ;
+		} ) ;
+		
+		expect( triggered ).to.be( 3 ) ;
+		
+		NextGenEvents.groupEmit( busList , 'ending' ) ;
+		
+		NextGenEvents.groupOn( busList , 'starting' , function( emitter ) {
+			triggered ++ ;
+			emitter.triggered = ( emitter.triggered || 0 ) + 1 ;
+			expect( emitter.triggered ).to.be( 1 ) ;
+		} ) ;
+		
+		expect( triggered ).to.be( 3 ) ;
+		
+		NextGenEvents.groupOn( busList , 'ending' , function( emitter ) {
+			triggered ++ ;
+			emitter.triggered = ( emitter.triggered || 0 ) + 1 ;
+			expect( emitter.triggered ).to.be( 2 ) ;
+		} ) ;
+		
+		expect( triggered ).to.be( 6 ) ;
+	} ) ;
+	
+	it( "using interruptible emitters, once one of them is interrupted, should all other emitter be interrupted too?" ) ;
+} ) ;
+
+
+
+describe( "Next Gen feature: objects sharing the same event bus" , function() {
+	
+	it( "should emit on one of the shared emitters and receive on all" , function() {
+		var bus1 = Object.create( NextGenEvents.prototype , { a: { value: 1 , enumerable: true } } ) ;
+		var bus2 = Object.create( NextGenEvents.prototype , { b: { value: 2 , enumerable: true } } ) ;
+		var triggered = 0 ;
+		
+		NextGenEvents.share( bus1 , bus2 ) ;
+		
+		expect( bus1.a ).to.be( 1 ) ;
+		expect( bus2.b ).to.be( 2 ) ;
+		
+		bus1.on( 'hello' , function() {
+			triggered ++ ;
+		} ) ;
+		
+		bus2.emit( 'hello' ) ;
+		expect( triggered ).to.be( 1 ) ;
+		
+		bus2.on( 'hello' , function() {
+			triggered ++ ;
+		} ) ;
+		
+		bus2.emit( 'hello' ) ;
+		expect( triggered ).to.be( 3 ) ;
+		
+		bus1.emit( 'hello' ) ;
+		expect( triggered ).to.be( 5 ) ;
 	} ) ;
 } ) ;
 
@@ -3584,16 +5350,16 @@ describe( "Next Gen feature: completion callback" , function() {
 		bus.setInterruptible( true ) ;
 		
 		var onFoo1 , onFoo2 , onFoo3 ;
-		var triggered = { foo1: 0 , foo2: 0 , foo3: 0 } ;
+		var triggered = { foo1: 0 , foo1timeout: 0 , foo2: 0 , foo3: 0 } ;
 		
 		// 3 listeners for 'foo'
 		onFoo1 = function( callback ) {
 			triggered.foo1 ++ ;
-			return { want: 'interruption' } ;
 			setTimeout( function() {
-				triggered.foo1 ++ ;
+				triggered.foo1timeout ++ ;
 				callback() ;
 			} , 10 ) ;
+			return { want: 'interruption' } ;
 		} ;
 		bus.on( 'foo' , onFoo1 , { async: true } ) ;
 		bus.on( 'foo' , onFoo2 = function() { triggered.foo2 ++ ; } ) ;
@@ -3602,17 +5368,17 @@ describe( "Next Gen feature: completion callback" , function() {
 		bus.emit( 'foo' , function( interruption ) {
 			expect( arguments.length ).to.be( 2 ) ;
 			expect( interruption ).to.eql( { want: 'interruption' } ) ;
-			expect( triggered ).to.eql( { foo1: 1 , foo2: 0 , foo3: 0 } ) ;
+			expect( triggered ).to.eql( { foo1: 1 , foo1timeout: 0 , foo2: 0 , foo3: 0 } ) ;
 			
 			bus.emit( -1 , 'foo' , function( interruption ) {
 				expect( arguments.length ).to.be( 2 ) ;
 				expect( interruption ).to.eql( { want: 'interruption' } ) ;
-				expect( triggered ).to.eql( { foo1: 2 , foo2: 0 , foo3: 0 } ) ;
+				expect( triggered ).to.eql( { foo1: 2 , foo1timeout: 0 , foo2: 0 , foo3: 0 } ) ;
 				
 				bus.emit( 10 , 'foo' , function( interruption ) {
 					expect( arguments.length ).to.be( 2 ) ;
 					expect( interruption ).to.eql( { want: 'interruption' } ) ;
-					expect( triggered ).to.eql( { foo1: 3 , foo2: 0 , foo3: 0 } ) ;
+					expect( triggered ).to.eql( { foo1: 3 , foo1timeout: 2 , foo2: 0 , foo3: 0 } ) ;
 					done() ;
 				} ) ;
 			} ) ;
@@ -3622,8 +5388,8 @@ describe( "Next Gen feature: completion callback" , function() {
 
 
 
-}).call(this,require('_process'))
-},{"../lib/NextGenEvents.js":1,"../lib/browser.js":2,"_process":9,"expect.js":3}],5:[function(require,module,exports){
+}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{"../lib/NextGenEvents.js":1,"../lib/browser.js":3,"_process":11,"expect.js":4}],7:[function(require,module,exports){
 (function (global){
 /*!
  * The buffer module from node.js, for the browser.
@@ -3679,7 +5445,7 @@ exports.kMaxLength = kMaxLength()
 function typedArraySupport () {
   try {
     var arr = new Uint8Array(1)
-    arr.foo = function () { return 42 }
+    arr.__proto__ = {__proto__: Uint8Array.prototype, foo: function () { return 42 }}
     return arr.foo() === 42 && // typed array instances can be augmented
         typeof arr.subarray === 'function' && // chrome 9-10 lack `subarray`
         arr.subarray(1, 1).byteLength === 0 // ie10 has broken `subarray`
@@ -3823,7 +5589,7 @@ function allocUnsafe (that, size) {
   assertSize(size)
   that = createBuffer(that, size < 0 ? 0 : checked(size) | 0)
   if (!Buffer.TYPED_ARRAY_SUPPORT) {
-    for (var i = 0; i < size; i++) {
+    for (var i = 0; i < size; ++i) {
       that[i] = 0
     }
   }
@@ -3879,7 +5645,9 @@ function fromArrayBuffer (that, array, byteOffset, length) {
     throw new RangeError('\'length\' is out of bounds')
   }
 
-  if (length === undefined) {
+  if (byteOffset === undefined && length === undefined) {
+    array = new Uint8Array(array)
+  } else if (length === undefined) {
     array = new Uint8Array(array, byteOffset)
   } else {
     array = new Uint8Array(array, byteOffset, length)
@@ -4001,14 +5769,14 @@ Buffer.concat = function concat (list, length) {
   var i
   if (length === undefined) {
     length = 0
-    for (i = 0; i < list.length; i++) {
+    for (i = 0; i < list.length; ++i) {
       length += list[i].length
     }
   }
 
   var buffer = Buffer.allocUnsafe(length)
   var pos = 0
-  for (i = 0; i < list.length; i++) {
+  for (i = 0; i < list.length; ++i) {
     var buf = list[i]
     if (!Buffer.isBuffer(buf)) {
       throw new TypeError('"list" argument must be an Array of Buffers')
@@ -4040,7 +5808,6 @@ function byteLength (string, encoding) {
     switch (encoding) {
       case 'ascii':
       case 'binary':
-      // Deprecated
       case 'raw':
       case 'raws':
         return len
@@ -4278,15 +6045,16 @@ function arrayIndexOf (arr, val, byteOffset, encoding) {
   }
 
   var foundIndex = -1
-  for (var i = 0; byteOffset + i < arrLength; i++) {
-    if (read(arr, byteOffset + i) === read(val, foundIndex === -1 ? 0 : i - foundIndex)) {
+  for (var i = byteOffset; i < arrLength; ++i) {
+    if (read(arr, i) === read(val, foundIndex === -1 ? 0 : i - foundIndex)) {
       if (foundIndex === -1) foundIndex = i
-      if (i - foundIndex + 1 === valLength) return (byteOffset + foundIndex) * indexSize
+      if (i - foundIndex + 1 === valLength) return foundIndex * indexSize
     } else {
       if (foundIndex !== -1) i -= i - foundIndex
       foundIndex = -1
     }
   }
+
   return -1
 }
 
@@ -4351,7 +6119,7 @@ function hexWrite (buf, string, offset, length) {
   if (length > strLen / 2) {
     length = strLen / 2
   }
-  for (var i = 0; i < length; i++) {
+  for (var i = 0; i < length; ++i) {
     var parsed = parseInt(string.substr(i * 2, 2), 16)
     if (isNaN(parsed)) return i
     buf[offset + i] = parsed
@@ -4565,7 +6333,7 @@ function asciiSlice (buf, start, end) {
   var ret = ''
   end = Math.min(buf.length, end)
 
-  for (var i = start; i < end; i++) {
+  for (var i = start; i < end; ++i) {
     ret += String.fromCharCode(buf[i] & 0x7F)
   }
   return ret
@@ -4575,7 +6343,7 @@ function binarySlice (buf, start, end) {
   var ret = ''
   end = Math.min(buf.length, end)
 
-  for (var i = start; i < end; i++) {
+  for (var i = start; i < end; ++i) {
     ret += String.fromCharCode(buf[i])
   }
   return ret
@@ -4588,7 +6356,7 @@ function hexSlice (buf, start, end) {
   if (!end || end < 0 || end > len) end = len
 
   var out = ''
-  for (var i = start; i < end; i++) {
+  for (var i = start; i < end; ++i) {
     out += toHex(buf[i])
   }
   return out
@@ -4631,7 +6399,7 @@ Buffer.prototype.slice = function slice (start, end) {
   } else {
     var sliceLen = end - start
     newBuf = new Buffer(sliceLen, undefined)
-    for (var i = 0; i < sliceLen; i++) {
+    for (var i = 0; i < sliceLen; ++i) {
       newBuf[i] = this[i + start]
     }
   }
@@ -4858,7 +6626,7 @@ Buffer.prototype.writeUInt8 = function writeUInt8 (value, offset, noAssert) {
 
 function objectWriteUInt16 (buf, value, offset, littleEndian) {
   if (value < 0) value = 0xffff + value + 1
-  for (var i = 0, j = Math.min(buf.length - offset, 2); i < j; i++) {
+  for (var i = 0, j = Math.min(buf.length - offset, 2); i < j; ++i) {
     buf[offset + i] = (value & (0xff << (8 * (littleEndian ? i : 1 - i)))) >>>
       (littleEndian ? i : 1 - i) * 8
   }
@@ -4892,7 +6660,7 @@ Buffer.prototype.writeUInt16BE = function writeUInt16BE (value, offset, noAssert
 
 function objectWriteUInt32 (buf, value, offset, littleEndian) {
   if (value < 0) value = 0xffffffff + value + 1
-  for (var i = 0, j = Math.min(buf.length - offset, 4); i < j; i++) {
+  for (var i = 0, j = Math.min(buf.length - offset, 4); i < j; ++i) {
     buf[offset + i] = (value >>> (littleEndian ? i : 3 - i) * 8) & 0xff
   }
 }
@@ -5107,12 +6875,12 @@ Buffer.prototype.copy = function copy (target, targetStart, start, end) {
 
   if (this === target && start < targetStart && targetStart < end) {
     // descending copy from end
-    for (i = len - 1; i >= 0; i--) {
+    for (i = len - 1; i >= 0; --i) {
       target[i + targetStart] = this[i + start]
     }
   } else if (len < 1000 || !Buffer.TYPED_ARRAY_SUPPORT) {
     // ascending copy from start
-    for (i = 0; i < len; i++) {
+    for (i = 0; i < len; ++i) {
       target[i + targetStart] = this[i + start]
     }
   } else {
@@ -5173,7 +6941,7 @@ Buffer.prototype.fill = function fill (val, start, end, encoding) {
 
   var i
   if (typeof val === 'number') {
-    for (i = start; i < end; i++) {
+    for (i = start; i < end; ++i) {
       this[i] = val
     }
   } else {
@@ -5181,7 +6949,7 @@ Buffer.prototype.fill = function fill (val, start, end, encoding) {
       ? val
       : utf8ToBytes(new Buffer(val, encoding).toString())
     var len = bytes.length
-    for (i = 0; i < end - start; i++) {
+    for (i = 0; i < end - start; ++i) {
       this[i + start] = bytes[i % len]
     }
   }
@@ -5223,7 +6991,7 @@ function utf8ToBytes (string, units) {
   var leadSurrogate = null
   var bytes = []
 
-  for (var i = 0; i < length; i++) {
+  for (var i = 0; i < length; ++i) {
     codePoint = string.charCodeAt(i)
 
     // is surrogate component
@@ -5298,7 +7066,7 @@ function utf8ToBytes (string, units) {
 
 function asciiToBytes (str) {
   var byteArray = []
-  for (var i = 0; i < str.length; i++) {
+  for (var i = 0; i < str.length; ++i) {
     // Node's code seems to be doing this and not & 0x7F..
     byteArray.push(str.charCodeAt(i) & 0xFF)
   }
@@ -5308,7 +7076,7 @@ function asciiToBytes (str) {
 function utf16leToBytes (str, units) {
   var c, hi, lo
   var byteArray = []
-  for (var i = 0; i < str.length; i++) {
+  for (var i = 0; i < str.length; ++i) {
     if ((units -= 2) < 0) break
 
     c = str.charCodeAt(i)
@@ -5326,7 +7094,7 @@ function base64ToBytes (str) {
 }
 
 function blitBuffer (src, dst, offset, length) {
-  for (var i = 0; i < length; i++) {
+  for (var i = 0; i < length; ++i) {
     if ((i + offset >= dst.length) || (i >= src.length)) break
     dst[i + offset] = src[i]
   }
@@ -5338,7 +7106,7 @@ function isnan (val) {
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"base64-js":6,"ieee754":7,"isarray":8}],6:[function(require,module,exports){
+},{"base64-js":8,"ieee754":9,"isarray":10}],8:[function(require,module,exports){
 'use strict'
 
 exports.toByteArray = toByteArray
@@ -5449,7 +7217,7 @@ function fromByteArray (uint8) {
   return parts.join('')
 }
 
-},{}],7:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
   var e, m
   var eLen = nBytes * 8 - mLen - 1
@@ -5535,17 +7303,42 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
   buffer[offset + i - d] |= s * 128
 }
 
-},{}],8:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 var toString = {}.toString;
 
 module.exports = Array.isArray || function (arr) {
   return toString.call(arr) == '[object Array]';
 };
 
-},{}],9:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
+
+// cached from whatever global is present so that test runners that stub it
+// don't break things.  But we need to wrap it in a try catch in case it is
+// wrapped in strict mode code which doesn't define any globals.  It's inside a
+// function because try/catches deoptimize in certain engines.
+
+var cachedSetTimeout;
+var cachedClearTimeout;
+
+(function () {
+  try {
+    cachedSetTimeout = setTimeout;
+  } catch (e) {
+    cachedSetTimeout = function () {
+      throw new Error('setTimeout is not defined');
+    }
+  }
+  try {
+    cachedClearTimeout = clearTimeout;
+  } catch (e) {
+    cachedClearTimeout = function () {
+      throw new Error('clearTimeout is not defined');
+    }
+  }
+} ())
 var queue = [];
 var draining = false;
 var currentQueue;
@@ -5570,7 +7363,7 @@ function drainQueue() {
     if (draining) {
         return;
     }
-    var timeout = setTimeout(cleanUpNextTick);
+    var timeout = cachedSetTimeout.call(null, cleanUpNextTick);
     draining = true;
 
     var len = queue.length;
@@ -5587,7 +7380,7 @@ function drainQueue() {
     }
     currentQueue = null;
     draining = false;
-    clearTimeout(timeout);
+    cachedClearTimeout.call(null, timeout);
 }
 
 process.nextTick = function (fun) {
@@ -5599,7 +7392,7 @@ process.nextTick = function (fun) {
     }
     queue.push(new Item(fun, args));
     if (queue.length === 1 && !draining) {
-        setTimeout(drainQueue, 0);
+        cachedSetTimeout.call(null, drainQueue, 0);
     }
 };
 
@@ -5638,4 +7431,4 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}]},{},[4]);
+},{}]},{},[6]);

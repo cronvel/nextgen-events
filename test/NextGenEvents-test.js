@@ -2295,16 +2295,16 @@ describe( "Next Gen feature: completion callback" , function() {
 		bus.setInterruptible( true ) ;
 		
 		var onFoo1 , onFoo2 , onFoo3 ;
-		var triggered = { foo1: 0 , foo2: 0 , foo3: 0 } ;
+		var triggered = { foo1: 0 , foo1timeout: 0 , foo2: 0 , foo3: 0 } ;
 		
 		// 3 listeners for 'foo'
 		onFoo1 = function( callback ) {
 			triggered.foo1 ++ ;
-			return { want: 'interruption' } ;
 			setTimeout( function() {
-				triggered.foo1 ++ ;
+				triggered.foo1timeout ++ ;
 				callback() ;
 			} , 10 ) ;
+			return { want: 'interruption' } ;
 		} ;
 		bus.on( 'foo' , onFoo1 , { async: true } ) ;
 		bus.on( 'foo' , onFoo2 = function() { triggered.foo2 ++ ; } ) ;
@@ -2313,17 +2313,17 @@ describe( "Next Gen feature: completion callback" , function() {
 		bus.emit( 'foo' , function( interruption ) {
 			expect( arguments.length ).to.be( 2 ) ;
 			expect( interruption ).to.eql( { want: 'interruption' } ) ;
-			expect( triggered ).to.eql( { foo1: 1 , foo2: 0 , foo3: 0 } ) ;
+			expect( triggered ).to.eql( { foo1: 1 , foo1timeout: 0 , foo2: 0 , foo3: 0 } ) ;
 			
 			bus.emit( -1 , 'foo' , function( interruption ) {
 				expect( arguments.length ).to.be( 2 ) ;
 				expect( interruption ).to.eql( { want: 'interruption' } ) ;
-				expect( triggered ).to.eql( { foo1: 2 , foo2: 0 , foo3: 0 } ) ;
+				expect( triggered ).to.eql( { foo1: 2 , foo1timeout: 0 , foo2: 0 , foo3: 0 } ) ;
 				
 				bus.emit( 10 , 'foo' , function( interruption ) {
 					expect( arguments.length ).to.be( 2 ) ;
 					expect( interruption ).to.eql( { want: 'interruption' } ) ;
-					expect( triggered ).to.eql( { foo1: 3 , foo2: 0 , foo3: 0 } ) ;
+					expect( triggered ).to.eql( { foo1: 3 , foo1timeout: 2 , foo2: 0 , foo3: 0 } ) ;
 					done() ;
 				} ) ;
 			} ) ;
