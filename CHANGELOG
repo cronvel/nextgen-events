@@ -1,4 +1,10 @@
 
+v0.9.6
+------
+
+Bugfix: groupEmit() now supports the nice argument
+
+
 v0.9.5
 ------
 
