@@ -722,13 +722,13 @@ describe( "Basic synchronous event-emitting (NOT compatible with node)" , functi
 		
 		var listeners , onFoo1 ;
 		
-		onFoo1 = function() {} ;
+		onFoo1 = function onFoo1() {} ;
 		
 		bus.on( 'foo' , onFoo1 ) ;
 		listeners = bus.listeners( 'foo' ) ;
 		expect( listeners.length ).to.be( 1 ) ;
 		expect( listeners[ 0 ].id ).to.be( onFoo1 ) ;
-		expect( listeners[ 0 ].fn ).to.be( onFoo1 ) ;
+		if ( ! global.AsyncTryCatch ) { expect( listeners[ 0 ].fn ).to.be( onFoo1 ) ; }
 		expect( listeners[ 0 ].event ).to.be( 'foo' ) ;
 		expect( bus.listeners( 'bar' ).length ).to.be( 0 ) ;
 		
@@ -738,10 +738,10 @@ describe( "Basic synchronous event-emitting (NOT compatible with node)" , functi
 		listeners = bus.listeners( 'foo' ) ;
 		expect( listeners.length ).to.be( 3 ) ;
 		expect( listeners[ 1 ].id ).to.be( onFoo1 ) ;
-		expect( listeners[ 1 ].fn ).to.be( onFoo1 ) ;
+		if ( ! global.AsyncTryCatch ) { expect( listeners[ 1 ].fn ).to.be( onFoo1 ) ; }
 		expect( listeners[ 1 ].event ).to.be( 'foo' ) ;
 		expect( listeners[ 2 ].id ).to.be( onFoo1 ) ;
-		expect( listeners[ 2 ].fn ).to.be( onFoo1 ) ;
+		if ( ! global.AsyncTryCatch ) { expect( listeners[ 2 ].fn ).to.be( onFoo1 ) ; }
 		expect( listeners[ 2 ].event ).to.be( 'foo' ) ;
 		expect( bus.listeners( 'bar' ).length ).to.be( 0 ) ;
 		
@@ -753,7 +753,7 @@ describe( "Basic synchronous event-emitting (NOT compatible with node)" , functi
 		listeners = bus.listeners( 'foo' ) ;
 		expect( listeners.length ).to.be( 1 ) ;
 		expect( listeners[ 0 ].id ).to.be( onFoo1 ) ;
-		expect( listeners[ 0 ].fn ).to.be( onFoo1 ) ;
+		if ( ! global.AsyncTryCatch ) { expect( listeners[ 0 ].fn ).to.be( onFoo1 ) ; }
 		expect( listeners[ 0 ].event ).to.be( 'foo' ) ;
 		expect( bus.listeners( 'bar' ).length ).to.be( 0 ) ;
 		

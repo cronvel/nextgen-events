@@ -1,4 +1,10 @@
 
+v0.9.7
+------
+
+Fixing tests to ensure async-try-catch module compatibilities
+
+
 v0.9.6
 ------
 
