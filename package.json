@@ -39,6 +39,13 @@
   "bugs": {
     "url": "https://github.com/cronvel/nextgen-events/issues"
   },
+  "config": {
+    "tea-time": {
+      "coverDir": [
+        "lib"
+      ]
+    }
+  },
   "copyright": {
     "title": "Next-Gen Events",
     "years": [
