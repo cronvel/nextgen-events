@@ -73,6 +73,116 @@ NextGenEvents.init = function init()
 
 
 
+NextGenEvents.initFrom = function initFrom( from )
+{
+	if ( ! from.__ngev ) { NextGenEvents.init.call( from ) ; }
+	
+	Object.defineProperty( this , '__ngev' , {
+		configurable: true ,
+		value: {
+			nice: from.__ngev.nice ,
+			interruptible: from.__ngev.interruptible ,
+			recursion: 0 ,
+			contexts: {} ,
+			
+			// States by events
+			states: Object.assign( {} , from.__ngev.states ) ,
+			
+			// State groups by events
+			stateGroups: Object.assign( {} , from.__ngev.stateGroups ) ,
+			
+			// Listeners by events
+			listeners: {}
+		}
+	} ) ;
+	
+	// Copy all listeners
+	Object.keys( from.__ngev.listeners ).forEach( eventName => {
+		this.__ngev.listeners[ eventName ] = from.__ngev.listeners[ eventName ].slice() ;
+	} ) ;
+	
+	// Copy all contexts
+	Object.keys( from.__ngev.contexts ).forEach( contextName => {
+		var context = from.__ngev.contexts[ contextName ] ;
+		
+		this.addListenerContext( contextName , {
+			nice: context.nice ,
+			status: context.status ,
+			serial: context.serial
+		} ) ;
+	} ) ;
+} ;
+
+
+
+/*
+	Merge listeners of duplicated event bus:
+		* listeners that are present locally but not in all foreigner are removed (one of the foreigner has removed it)
+		* listeners that are not present locally but present in at least one foreigner are copied
+*/
+NextGenEvents.mergeListeners = function mergeListeners( foreigners )
+{
+	if ( ! this.__ngev ) { NextGenEvents.init.call( this ) ; }
+	
+	// Backup the current listeners...
+	var oldListeners = this.__ngev.listeners ;
+	
+	
+	// Reset listeners...
+	this.__ngev.listeners = {} ;
+	
+	Object.keys( oldListeners ).forEach( eventName => {
+		this.__ngev.listeners[ eventName ] = [] ;
+	} ) ;
+	
+	foreigners.forEach( foreigner => {
+		if ( ! foreigner.__ngev ) { NextGenEvents.init.call( foreigner ) ; }
+		
+		Object.keys( foreigner.__ngev.listeners ).forEach( eventName => {
+			if ( ! this.__ngev.listeners[ eventName ] ) { this.__ngev.listeners[ eventName ] = [] ; }
+		} ) ;
+	} ) ;
+	
+	
+	// Now we can scan by eventName first
+	Object.keys( this.__ngev.listeners ).forEach( eventName => {
+		
+		var i , iMax , blacklist = [] ;
+		
+		// First pass: find all removed listeners and add them to the blacklist
+		if ( oldListeners[ eventName ] )
+		{
+			oldListeners[ eventName ].forEach( listener => {
+				for ( i = 0 , iMax = foreigners.length ; i < iMax ; i ++ )
+				{
+					if (
+						! foreigners[ i ].__ngev.listeners[ eventName ] ||
+						foreigners[ i ].__ngev.listeners[ eventName ].indexOf( listener ) === -1
+					)
+					{
+						//console.error( "Missing listener" , eventName , listener , foreigners[ i ] ) ;
+						blacklist.push( listener ) ;
+						break ;
+					}
+				}
+			} ) ;
+		}
+		
+		// Second pass: add all listeners still not present and that are not blacklisted
+		foreigners.forEach( foreigner => {
+			
+			foreigner.__ngev.listeners[ eventName ].forEach( listener => {
+				if ( this.__ngev.listeners[ eventName ].indexOf( listener ) === -1 && blacklist.indexOf( listener ) === -1 )
+				{
+					this.__ngev.listeners[ eventName ].push( listener ) ;
+				}
+			} ) ;
+		} ) ;
+	} ) ;
+} ;
+
+
+
 // Use it with .bind()
 NextGenEvents.filterOutCallback = function( what , currentElement ) { return what !== currentElement ; } ;
 
@@ -247,7 +357,7 @@ NextGenEvents.listenerWrapper = function listenerWrapper( listener , event , con
 			context.ready = ! serial ;
 		}
 		
-		listenerCallback = function( arg ) {
+		listenerCallback = ( arg ) => {
 			
 			event.listenersDone ++ ;
 			
@@ -384,16 +494,15 @@ NextGenEvents.emitEvent = function emitEvent( event )
 	// This is a state event, register it now!
 	if ( state !== undefined )
 	{
-		
 		if ( state && event.args.length === state.args.length &&
-			event.args.every( function( arg , index ) { return arg === state.args[ index ] ; } ) )
+			event.args.every( ( arg , index ) => arg === state.args[ index ] ) )
 		{
 			// The emitter is already in this exact state, skip it now!
 			return ;
 		}
 		
 		// Unset all states of that group
-		self.__ngev.stateGroups[ event.name ].forEach( function( eventName ) {
+		self.__ngev.stateGroups[ event.name ].forEach( ( eventName ) => {
 			self.__ngev.states[ eventName ] = null ;
 		} ) ;
 		
@@ -576,7 +685,7 @@ NextGenEvents.prototype.setInterruptible = function setInterruptible( value )
 
 
 
-// Make two objects sharing the same event bus
+// Make two objects share the same event bus
 NextGenEvents.share = function( source , target )
 {
 	if ( ! ( source instanceof NextGenEvents ) || ! ( target instanceof NextGenEvents ) )
@@ -626,7 +735,7 @@ NextGenEvents.prototype.defineStates = function defineStates()
 	
 	if ( ! this.__ngev ) { NextGenEvents.init.call( this ) ; }
 	
-	states.forEach( function( state ) {
+	states.forEach( ( state ) => {
 		self.__ngev.states[ state ] = null ;
 		self.__ngev.stateGroups[ state ] = states ;
 	} ) ;
@@ -646,7 +755,7 @@ NextGenEvents.prototype.getAllStates = function getAllStates()
 {
 	var self = this ;
 	if ( ! this.__ngev ) { NextGenEvents.init.call( this ) ; }
-	return Object.keys( this.__ngev.states ).filter( function( e ) { return self.__ngev.states[ e ] ; } ) ;
+	return Object.keys( this.__ngev.states ).filter( e => self.__ngev.states[ e ] ) ;
 } ;
 
 
@@ -669,7 +778,7 @@ NextGenEvents.groupAddListener = function groupAddListener( emitters , eventName
 	// Preserve the listener ID, so groupRemoveListener() will work as expected
 	options.id = options.id || fn ;
 	
-	emitters.forEach( function( emitter ) {
+	emitters.forEach( ( emitter ) => {
 		emitter.addListener( eventName , fn.bind( undefined , emitter ) , options ) ;
 	} ) ;
 } ;
@@ -705,14 +814,14 @@ NextGenEvents.groupGlobalOnce = function groupGlobalOnce( emitters , eventName ,
 	// Preserve the listener ID, so groupRemoveListener() will work as expected
 	options.id = options.id || fn ;
 	
-	fnWrapper = function() {
+	fnWrapper = function() {	// use arguments
 		if ( triggered ) { return ; }
 		triggered = true ;
 		NextGenEvents.groupRemoveListener( emitters , eventName , options.id ) ;
 		fn.apply( undefined , arguments ) ;
 	} ;
 	
-	emitters.forEach( function( emitter ) {
+	emitters.forEach( ( emitter ) => {
 		emitter.once( eventName , fnWrapper.bind( undefined , emitter ) , options ) ;
 	} ) ;
 } ;
@@ -734,7 +843,7 @@ NextGenEvents.groupGlobalOnceAll = function groupGlobalOnceAll( emitters , event
 	// Preserve the listener ID, so groupRemoveListener() will work as expected
 	options.id = options.id || fn ;
 	
-	fnWrapper = function() {
+	fnWrapper = function() {	// use arguments
 		if ( triggered ) { return ; }
 		if ( -- count ) { return ; }
 		
@@ -746,7 +855,7 @@ NextGenEvents.groupGlobalOnceAll = function groupGlobalOnceAll( emitters , event
 		fn.apply( undefined , arguments ) ;
 	} ;
 	
-	emitters.forEach( function( emitter ) {
+	emitters.forEach( ( emitter ) => {
 		emitter.once( eventName , fnWrapper.bind( undefined , emitter ) , options ) ;
 	} ) ;
 } ;
@@ -755,7 +864,7 @@ NextGenEvents.groupGlobalOnceAll = function groupGlobalOnceAll( emitters , event
 
 NextGenEvents.groupRemoveListener = function groupRemoveListener( emitters , eventName , id )
 {
-	emitters.forEach( function( emitter ) {
+	emitters.forEach( ( emitter ) => {
 		emitter.removeListener( eventName , id ) ;
 	} ) ;
 } ;
@@ -766,7 +875,7 @@ NextGenEvents.groupOff = NextGenEvents.groupRemoveListener ;
 
 NextGenEvents.groupRemoveAllListeners = function groupRemoveAllListeners( emitters , eventName )
 {
-	emitters.forEach( function( emitter ) {
+	emitters.forEach( ( emitter ) => {
 		emitter.removeAllListeners( eventName ) ;
 	} ) ;
 } ;
@@ -783,7 +892,7 @@ NextGenEvents.groupEmit = function groupEmit( emitters )
 		argEnd = -1 ;
 		callback = arguments[ arguments.length - 1 ] ;
 		
-		callbackWrapper = function( interruption ) {
+		callbackWrapper = ( interruption ) => {
 			if ( callbackTriggered ) { return ; }
 			
 			if ( interruption )
@@ -808,7 +917,7 @@ NextGenEvents.groupEmit = function groupEmit( emitters )
 	eventName = arguments[ argStart - 1 ] ;
 	args = Array.prototype.slice.call( arguments , argStart , argEnd ) ;
 	
-	emitters.forEach( function( emitter ) {
+	emitters.forEach( ( emitter ) => {
 		NextGenEvents.emitEvent( {
 			emitter: emitter ,
 			name: eventName ,
@@ -825,7 +934,7 @@ NextGenEvents.groupDefineStates = function groupDefineStates( emitters )
 {
 	var args = Array.prototype.slice.call( arguments , 1 ) ;
 	
-	emitters.forEach( function( emitter ) {
+	emitters.forEach( ( emitter ) => {
 		emitter.defineStates.apply( emitter , args ) ;
 	} ) ;
 } ;
@@ -1712,20 +1821,23 @@ module.exports.isBrowser = true ;
 },{"./NextGenEvents.js":1}],4:[function(require,module,exports){
 module.exports={
   "name": "nextgen-events",
-  "version": "0.9.7",
+  "version": "0.10.0",
   "description": "The next generation of events handling for javascript! New: abstract away the network!",
   "main": "lib/NextGenEvents.js",
+  "engines": {
+    "node": ">=4.5.0"
+  },
   "directories": {
     "test": "test"
   },
   "dependencies": {},
   "devDependencies": {
-    "browserify": "^13.0.1",
+    "browserify": "^14.3.0",
     "expect.js": "^0.3.1",
     "jshint": "^2.9.2",
     "mocha": "^2.5.3",
-    "uglify-js": "^2.6.2",
-    "ws": "^1.1.1"
+    "uglify-js": "^2.8.22",
+    "ws": "^2.2.3"
   },
   "scripts": {
     "test": "mocha -R dot"
@@ -1750,6 +1862,13 @@ module.exports={
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/cronvel/nextgen-events/issues"
+  },
+  "config": {
+    "tea-time": {
+      "coverDir": [
+        "lib"
+      ]
+    }
   },
   "copyright": {
     "title": "Next-Gen Events",
