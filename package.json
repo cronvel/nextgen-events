@@ -3,6 +3,9 @@
   "version": "0.9.9",
   "description": "The next generation of events handling for javascript! New: abstract away the network!",
   "main": "lib/NextGenEvents.js",
+  "engines": {
+    "node": ">=4.5.0"
+  },
   "directories": {
     "test": "test"
   },
