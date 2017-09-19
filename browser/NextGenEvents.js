@@ -30,7 +30,7 @@
 
 
 
-function NextGenEvents() { return Object.create( NextGenEvents.prototype ) ; }
+function NextGenEvents() {}
 module.exports = NextGenEvents ;
 NextGenEvents.prototype.__prototypeUID__ = 'nextgen-events/NextGenEvents' ;
 NextGenEvents.prototype.__prototypeVersion__ = require( '../package.json' ).version ;
@@ -1821,7 +1821,7 @@ module.exports.isBrowser = true ;
 },{"./NextGenEvents.js":1}],4:[function(require,module,exports){
 module.exports={
   "name": "nextgen-events",
-  "version": "0.10.0",
+  "version": "0.10.1",
   "description": "The next generation of events handling for javascript! New: abstract away the network!",
   "main": "lib/NextGenEvents.js",
   "engines": {
@@ -1836,7 +1836,7 @@ module.exports={
     "expect.js": "^0.3.1",
     "jshint": "^2.9.2",
     "mocha": "^2.5.3",
-    "uglify-js": "^2.8.22",
+    "uglify-js-es6": "^2.8.9",
     "ws": "^2.2.3"
   },
   "scripts": {

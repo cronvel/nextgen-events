@@ -1,4 +1,10 @@
 
+v0.10.1
+-------
+
+Faster emitter creation when using the 'new' operator
+
+
 v0.9.9
 ------
 
