@@ -1832,12 +1832,12 @@ module.exports={
   },
   "dependencies": {},
   "devDependencies": {
-    "browserify": "^14.3.0",
+    "browserify": "^14.4.0",
     "expect.js": "^0.3.1",
     "jshint": "^2.9.2",
     "mocha": "^2.5.3",
     "uglify-js-es6": "^2.8.9",
-    "ws": "^2.2.3"
+    "ws": "^3.2.0"
   },
   "scripts": {
     "test": "mocha -R dot"
@@ -1879,5 +1879,6 @@ module.exports={
     "owner": "Cédric Ronvel"
   }
 }
+
 },{}]},{},[3])(3)
 });
