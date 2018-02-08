@@ -1,4 +1,10 @@
 
+v0.11.0
+-------
+
+Breaking change: ES6 standard update, so node v6 is required
+
+
 v0.10.2
 -------
 
