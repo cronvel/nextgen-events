@@ -585,16 +585,17 @@ NextGenEvents.emitToOneListener = function emitToOneListener( event , listener ,
 
 
 NextGenEvents.emitCallback = function emitCallback( event ) {
+	var callback = event.callback ;
+	delete event.callback ;
+
 	if ( event.sync && event.emitter.__ngev.nice !== NextGenEvents.SYNC ) {
 		// Force desync if global nice value is not SYNC
 		nextTick( () => {
-			event.callback( event.interrupt , event ) ;
-			delete event.callback ;
+			callback( event.interrupt , event ) ;
 		} ) ;
 	}
 	else {
-		event.callback( event.interrupt , event ) ;
-		delete event.callback ;
+		callback( event.interrupt , event ) ;
 	}
 } ;
 
@@ -1872,7 +1873,7 @@ process.umask = function() { return 0; };
 },{}],5:[function(require,module,exports){
 module.exports={
   "name": "nextgen-events",
-  "version": "0.11.1",
+  "version": "0.11.2",
   "description": "The next generation of events handling for javascript! New: abstract away the network!",
   "main": "lib/NextGenEvents.js",
   "engines": {
