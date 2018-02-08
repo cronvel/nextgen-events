@@ -836,6 +836,33 @@ describe( "Next Gen feature: listener in 'eventObject' mode" , function() {
 		expect( emitCallbackTriggered ).to.be( 1 ) ;
 	} ) ;
 	
+	it( "listener using 'eventObject' option and emit() with completion callback in non-SYNC mode" , function( done ) {
+		
+		var triggered = 0 , emitCallbackTriggered = 0 ,
+			bus = Object.create( NextGenEvents.prototype ) ;
+		
+		bus.setNice( -1000 ) ;
+		
+		var emitCallback = function() {
+			emitCallbackTriggered ++ ;
+			expect( triggered ).to.be( 1 ) ;
+			expect( emitCallbackTriggered ).to.be( 1 ) ;
+			done() ;
+		} ;
+		
+		bus.once( 'hello' , function( event ) {
+			triggered ++ ;
+			expect( event.args.length ).to.be( 0 ) ;
+			
+			expect( event.emitter ).to.be( bus ) ;
+			expect( event.name ).to.be( 'hello' ) ;
+			expect( event.callback ).to.be( emitCallback ) ;
+		} , { eventObject: true } ) ;
+		
+		bus.emit( 'hello' , emitCallback ) ;
+		expect( emitCallbackTriggered ).to.be( 0 ) ;
+	} ) ;
+	
 	it( "listener using 'eventObject' and 'async' options, and emit() with completion callback" , function( done ) {
 		
 		var triggered = 0 , emitCallbackTriggered = 0 ,
@@ -863,6 +890,7 @@ describe( "Next Gen feature: listener in 'eventObject' mode" , function() {
 		} , { async: true , eventObject: true } ) ;
 		
 		bus.emit( 'hello' , emitCallback ) ;
+		expect( emitCallbackTriggered ).to.be( 0 ) ;
 	} ) ;
 } ) ;
 

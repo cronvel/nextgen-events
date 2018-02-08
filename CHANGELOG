@@ -1,4 +1,10 @@
 
+v0.11.1
+-------
+
+Desync emit callback when the emitter is not SYNC
+
+
 v0.11.0
 -------
 
