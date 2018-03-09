@@ -61,23 +61,23 @@ npm install nextgen-events
 By the way you can create an event emitter simply by creating a new object, this way:
 
 ```js
-var NGEmitter = require( 'nextgen-events' ) ;
-var emitter = new NGEmitter() ;
+var NgEmitter = require( 'nextgen-events' ) ;
+var emitter = new NgEmitter() ;
 ```
 
-You can use `var emitter = Object.create( NGEmitter.prototype )` as well, the object does not need the constructor.
+You can use `var emitter = Object.create( NgEmitter.prototype )` as well, the object does not need the constructor.
 
 But in real life, you would make your own objects inherit it:
 
 ```js
-var NGEmitter = require( 'nextgen-events' ) ;
+var NgEmitter = require( 'nextgen-events' ) ;
 
 function myClass()
 {
 	// myClass constructor code here
 }
 
-myClass.prototype = Object.create( NGEmitter.prototype ) ;
+myClass.prototype = Object.create( NgEmitter.prototype ) ;
 myClass.prototype.constructor = myClass ;	// restore the constructor
 
 // define other methods for myClass...
@@ -86,8 +86,8 @@ myClass.prototype.constructor = myClass ;	// restore the constructor
 The basis of the event emitter works like Node.js built-in events:
 
 ```js
-var NGEmitter = require( 'nextgen-events' ) ;
-var emitter = new NGEmitter() ;
+var NgEmitter = require( 'nextgen-events' ) ;
+var emitter = new NgEmitter() ;
 
 // Normal listener
 emitter.on( 'message' , function( message ) {
@@ -606,7 +606,7 @@ NextGen Events is almost compatible with Node.js' EventEmitter, except for few t
   triggered when all listeners have done their job. If one want to pass function to listeners as the final argument, it is easy
   to add an extra `null` or `undefined` argument to .emit().
 
-* There is more reserved event name: 'interrupt', 'emitted'.
+* There are more reserved event names: 'interrupt', 'emitted'.
 
 * There is no such concept of *max listener* in NextGen Events, .setMaxListeners() function exists only to not break compatibility
   for people that want to make the switch, but it does nothing (it's an empty function).
@@ -615,10 +615,12 @@ NextGen Events is almost compatible with Node.js' EventEmitter, except for few t
 
 * 'newListener'/'removeListener' event listener will receive an array of new/removed *listener object*, instead of only one
   *listener function*.
-  E.g: it will be fired only once by when .removeListener() or .removeAllListener() is invoked and multiple listeners are deleted.
+  E.g: it will be fired only once per .removeListener()/.removeAllListener() call, even if that one call removes
+  multiple listeners at once.
+  It's also true for recursive/cascading removal.
   A *listener object* contains a property called 'fn' that hold the actual *listener function*.
 
-* `.removeAllListeners()` without any argument does not trigger 'removeListener' listener, because there are actually removed too.
+* `.removeAllListeners()` without any argument does not trigger 'removeListener' listener, because they are actually removed too.
   The same apply to `.removeAllListeners( 'removeListener' )`.
 
 * .listeners() same here: rather than providing an array of *listener function* an array of *listener object* is provided.
@@ -649,10 +651,10 @@ The client code could be easily rewritten for the browser.
 **Server:**
 
 ```js
-var NGEvents = require( 'nextgen-events' ) ;
+var NgEvents = require( 'nextgen-events' ) ;
 
 // Create our service/emitter
-var heartBeatEmitter = new NGEvents() ;
+var heartBeatEmitter = new NgEvents() ;
 var nextBeat = 1 ;
 
 // Emit one 'heartBeat' event every few seconds
@@ -669,7 +671,7 @@ var server = new WebSocket.Server( { port: 12345 } ) ;
 server.on( 'connection' , function connection( ws ) {
   
   // Create a proxy for this client
-  var proxy = new NGEvents.Proxy() ;
+  var proxy = new NgEvents.Proxy() ;
   
   // Add the local service exposed to this client and grant it all right
   proxy.addLocalService( 'heartBeatService' , heartBeatEmitter ,
@@ -701,12 +703,12 @@ server.on( 'connection' , function connection( ws ) {
 **Client:**
 
 ```js
-var NGEvents = require( 'nextgen-events' ) ;
+var NgEvents = require( 'nextgen-events' ) ;
 var WebSocket = require( 'ws' ) ;
 var ws = new WebSocket( 'ws://127.0.0.1:12345' ) ;
 
 // Create a proxy
-var proxy = new NGEvents.Proxy() ;
+var proxy = new NgEvents.Proxy() ;
 
 // Once the connection is established...
 ws.on( 'open' , function open() {
