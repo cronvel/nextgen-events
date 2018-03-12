@@ -192,7 +192,20 @@ NextGenEvents.prototype.addListener = function addListener( eventName , fn , opt
 	if ( ! this.__ngev.listeners[ eventName ] ) { this.__ngev.listeners[ eventName ] = [] ; }
 
 	if ( ! eventName || typeof eventName !== 'string' ) { throw new TypeError( ".addListener(): argument #0 should be a non-empty string" ) ; }
-	if ( typeof fn !== 'function' ) { options = fn ; fn = undefined ; }
+
+	if ( typeof fn !== 'function' ) {
+		if ( options === true && fn && typeof fn === 'object' ) {
+			// We want to use the current object as the listener object (used by Spellcast's serializer)
+			options = listener ;	// Stoopid code, to avoid complex code flow...
+			listener = fn ;
+			fn = undefined ;
+		}
+		else {
+			options = fn ;
+			fn = undefined ;
+		}
+	}
+
 	if ( ! options || typeof options !== 'object' ) { options = {} ; }
 
 	listener.fn = fn || options.fn ;
@@ -1869,7 +1882,7 @@ process.umask = function() { return 0; };
 },{}],5:[function(require,module,exports){
 module.exports={
   "name": "nextgen-events",
-  "version": "0.11.3",
+  "version": "0.12.1",
   "description": "The next generation of events handling for javascript! New: abstract away the network!",
   "main": "lib/NextGenEvents.js",
   "engines": {
