@@ -1,4 +1,10 @@
 
+v0.12.0
+-------
+
+Now the __ngev property is an instance of NextGenEvents.Internal
+
+
 v0.11.3
 -------
 

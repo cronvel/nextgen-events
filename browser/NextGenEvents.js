@@ -1,9 +1,9 @@
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.NextGenEvents = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 (function (process,global){
 /*
-	Next Gen Events
+	Next-Gen Events
 
-	Copyright (c) 2015 - 2016 Cédric Ronvel
+	Copyright (c) 2015 - 2018 Cédric Ronvel
 
 	The MIT License (MIT)
 
@@ -53,28 +53,54 @@ NextGenEvents.SYNC = -Infinity ;
 NextGenEvents.init = function init() {
 	Object.defineProperty( this , '__ngev' , {
 		configurable: true ,
-		value: {
-			nice: NextGenEvents.SYNC ,
-			interruptible: false ,
-			recursion: 0 ,
-			contexts: {} ,
-
-			// States by events
-			states: {} ,
-
-			// State groups by events
-			stateGroups: {} ,
-
-			// Listeners by events
-			listeners: {
-				// Special events
-				error: [] ,
-				interrupt: [] ,
-				newListener: [] ,
-				removeListener: []
-			}
-		}
+		value: new NextGenEvents.Internal()
 	} ) ;
+} ;
+
+
+
+NextGenEvents.Internal = function Internal( from ) {
+	this.nice = NextGenEvents.SYNC ;
+	this.interruptible = false ;
+	this.recursion = 0 ;
+	this.contexts = {} ;
+
+	// States by events
+	this.states = {} ;
+
+	// State groups by events
+	this.stateGroups = {} ;
+
+	// Listeners by events
+	this.listeners = {
+		// Special events
+		error: [] ,
+		interrupt: [] ,
+		newListener: [] ,
+		removeListener: []
+	} ;
+
+	if ( from ) {
+		this.nice = from.nice ;
+		this.interruptible = from.interruptible ;
+		Object.assign( this.states , from.states ) ,
+		Object.assign( this.stateGroups , from.stateGroups ) ,
+
+		Object.keys( from.listeners ).forEach( eventName => {
+			this.listeners[ eventName ] = from.listeners[ eventName ].slice() ;
+		} ) ;
+
+		// Copy all contexts
+		Object.keys( from.contexts ).forEach( contextName => {
+			var context = from.contexts[ contextName ] ;
+
+			this.addListenerContext( contextName , {
+				nice: context.nice ,
+				status: context.status ,
+				serial: context.serial
+			} ) ;
+		} ) ;
+	}
 } ;
 
 
@@ -84,37 +110,7 @@ NextGenEvents.initFrom = function initFrom( from ) {
 
 	Object.defineProperty( this , '__ngev' , {
 		configurable: true ,
-		value: {
-			nice: from.__ngev.nice ,
-			interruptible: from.__ngev.interruptible ,
-			recursion: 0 ,
-			contexts: {} ,
-
-			// States by events
-			states: Object.assign( {} , from.__ngev.states ) ,
-
-			// State groups by events
-			stateGroups: Object.assign( {} , from.__ngev.stateGroups ) ,
-
-			// Listeners by events
-			listeners: {}
-		}
-	} ) ;
-
-	// Copy all listeners
-	Object.keys( from.__ngev.listeners ).forEach( eventName => {
-		this.__ngev.listeners[ eventName ] = from.__ngev.listeners[ eventName ].slice() ;
-	} ) ;
-
-	// Copy all contexts
-	Object.keys( from.__ngev.contexts ).forEach( contextName => {
-		var context = from.__ngev.contexts[ contextName ] ;
-
-		this.addListenerContext( contextName , {
-			nice: context.nice ,
-			status: context.status ,
-			serial: context.serial
-		} ) ;
+		value: new NextGenEvents.Internal( from.__ngev )
 	} ) ;
 } ;
 
@@ -1093,9 +1089,9 @@ NextGenEvents.Proxy = require( './Proxy.js' ) ;
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 },{"../package.json":5,"./Proxy.js":2,"_process":4}],2:[function(require,module,exports){
 /*
-	Next Gen Events
+	Next-Gen Events
 
-	Copyright (c) 2015 - 2016 Cédric Ronvel
+	Copyright (c) 2015 - 2018 Cédric Ronvel
 
 	The MIT License (MIT)
 
@@ -1644,9 +1640,9 @@ RemoteService.prototype.receiveAckEmit = function receiveAckEmit( message ) {
 
 },{"./NextGenEvents.js":1}],3:[function(require,module,exports){
 /*
-	Next Gen Events
+	Next-Gen Events
 
-	Copyright (c) 2015 - 2016 Cédric Ronvel
+	Copyright (c) 2015 - 2018 Cédric Ronvel
 
 	The MIT License (MIT)
 
@@ -1873,7 +1869,7 @@ process.umask = function() { return 0; };
 },{}],5:[function(require,module,exports){
 module.exports={
   "name": "nextgen-events",
-  "version": "0.11.2",
+  "version": "0.11.3",
   "description": "The next generation of events handling for javascript! New: abstract away the network!",
   "main": "lib/NextGenEvents.js",
   "engines": {
@@ -1926,7 +1922,7 @@ module.exports={
     "title": "Next-Gen Events",
     "years": [
       2015,
-      2016
+      2018
     ],
     "owner": "Cédric Ronvel"
   }
