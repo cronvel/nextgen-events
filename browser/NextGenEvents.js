@@ -191,7 +191,9 @@ NextGenEvents.prototype.addListener = function addListener( eventName , fn , opt
 	if ( ! this.__ngev ) { NextGenEvents.init.call( this ) ; }
 	if ( ! this.__ngev.listeners[ eventName ] ) { this.__ngev.listeners[ eventName ] = [] ; }
 
-	if ( ! eventName || typeof eventName !== 'string' ) { throw new TypeError( ".addListener(): argument #0 should be a non-empty string" ) ; }
+	if ( ! eventName || typeof eventName !== 'string' ) {
+		throw new TypeError( ".addListener(): argument #0 should be a non-empty string" ) ;
+	}
 
 	if ( typeof fn !== 'function' ) {
 		if ( options === true && fn && typeof fn === 'object' ) {
@@ -216,7 +218,6 @@ NextGenEvents.prototype.addListener = function addListener( eventName , fn , opt
 	listener.context = typeof options.context === 'string' ? options.context : null ;
 
 	if ( typeof listener.fn !== 'function' ) {
-		console.log( "@" , listener.fn ) ;
 		throw new TypeError( ".addListener(): a function or an object with a 'fn' property which value is a function should be provided" ) ;
 	}
 
@@ -1882,7 +1883,7 @@ process.umask = function() { return 0; };
 },{}],5:[function(require,module,exports){
 module.exports={
   "name": "nextgen-events",
-  "version": "0.12.2",
+  "version": "0.12.3",
   "description": "The next generation of events handling for javascript! New: abstract away the network!",
   "main": "lib/NextGenEvents.js",
   "engines": {

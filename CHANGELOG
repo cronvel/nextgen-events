@@ -1,4 +1,10 @@
 
+v0.12.3
+-------
+
+a console.log() was not cleaned up
+
+
 v0.12.2
 -------
 
