@@ -47,6 +47,7 @@ NextGenEvents.prototype.__prototypeVersion__ = require( '../package.json' ).vers
 
 
 NextGenEvents.SYNC = -Infinity ;
+NextGenEvents.DESYNC = -1000 ;
 
 // Not part of the prototype, because it should not pollute userland's prototype.
 // It has an eventEmitter as 'this' anyway (always called using call()).
@@ -1883,7 +1884,7 @@ process.umask = function() { return 0; };
 },{}],5:[function(require,module,exports){
 module.exports={
   "name": "nextgen-events",
-  "version": "0.12.3",
+  "version": "0.12.4",
   "description": "The next generation of events handling for javascript! New: abstract away the network!",
   "main": "lib/NextGenEvents.js",
   "engines": {
