@@ -1,4 +1,10 @@
 
+v0.13.0
+-------
+
+Context serialization refacto (deadlock prevention)
+
+
 v0.12.4
 -------
 

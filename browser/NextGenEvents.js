@@ -35,6 +35,16 @@ const nextTick = process.browser ? window.setImmediate : process.nextTick ;
 
 
 
+if ( ! global.__NEXTGEN_EVENTS__ ) {
+	global.__NEXTGEN_EVENTS__ = {
+		recursions: 0
+	} ;
+}
+
+var globalData = global.__NEXTGEN_EVENTS__ ;
+
+
+
 function NextGenEvents() {}
 module.exports = NextGenEvents ;
 NextGenEvents.prototype.__prototypeUID__ = 'nextgen-events/NextGenEvents' ;
@@ -47,7 +57,7 @@ NextGenEvents.prototype.__prototypeVersion__ = require( '../package.json' ).vers
 
 
 NextGenEvents.SYNC = -Infinity ;
-NextGenEvents.DESYNC = -1000 ;
+NextGenEvents.DESYNC = -1 ;
 
 // Not part of the prototype, because it should not pollute userland's prototype.
 // It has an eventEmitter as 'this' anyway (always called using call()).
@@ -63,8 +73,9 @@ NextGenEvents.init = function init() {
 NextGenEvents.Internal = function Internal( from ) {
 	this.nice = NextGenEvents.SYNC ;
 	this.interruptible = false ;
-	this.recursion = 0 ;
 	this.contexts = {} ;
+	this.desync = setImmediate ;
+	this.depth = 0 ;
 
 	// States by events
 	this.states = {} ;
@@ -158,7 +169,6 @@ NextGenEvents.mergeListeners = function mergeListeners( foreigners ) {
 						! foreigners[ i ].__ngev.listeners[ eventName ] ||
 						foreigners[ i ].__ngev.listeners[ eventName ].indexOf( listener ) === -1
 					) {
-						//console.error( "Missing listener" , eventName , listener , foreigners[ i ] ) ;
 						blacklist.push( listener ) ;
 						break ;
 					}
@@ -339,16 +349,14 @@ NextGenEvents.prototype.removeAllListeners = function removeAllListeners( eventN
 
 
 
-NextGenEvents.listenerWrapper = function listenerWrapper( listener , event , context ) {
-	var returnValue , serial , listenerCallback ;
+NextGenEvents.listenerWrapper = function listenerWrapper( listener , event , contextScope , serial ) {
+	var returnValue , listenerCallback ;
 
 	if ( event.interrupt ) { return ; }
 
 	if ( listener.async ) {
-		//serial = context && context.serial ;
-		if ( context ) {
-			serial = context.serial ;
-			context.ready = ! serial ;
+		if ( contextScope ) {
+			contextScope.ready = ! serial ;
 		}
 
 		listenerCallback = ( arg ) => {
@@ -368,7 +376,7 @@ NextGenEvents.listenerWrapper = function listenerWrapper( listener , event , con
 			}
 
 			// Process the queue if serialized
-			if ( serial ) { NextGenEvents.processQueue.call( event.emitter , listener.context , true ) ; }
+			if ( serial ) { NextGenEvents.processScopeQueue( event.emitter , contextScope , true , true ) ; }
 		} ;
 
 		if ( listener.eventObject ) { listener.fn( event , listenerCallback ) ; }
@@ -498,8 +506,9 @@ NextGenEvents.emitEvent = function emitEvent( event ) {
 	// So we have to COPY the listener array right now!
 	if ( ! event.listeners ) { event.listeners = self.__ngev.listeners[ event.name ].slice() ; }
 
-	// Increment self.__ngev.recursion
-	self.__ngev.recursion ++ ;
+	// Increment globalData.recursions
+	globalData.recursions ++ ;
+	event.depth = self.__ngev.depth ++ ;
 	removedListeners = [] ;
 
 	// Emit the event to all listeners!
@@ -508,8 +517,9 @@ NextGenEvents.emitEvent = function emitEvent( event ) {
 		NextGenEvents.emitToOneListener( event , event.listeners[ i ] , removedListeners ) ;
 	}
 
-	// Decrement recursion
-	self.__ngev.recursion -- ;
+	// Decrement globalData.recursions
+	globalData.recursions -- ;
+	if ( ! event.callback ) { self.__ngev.depth -- ; }
 
 	// Emit 'removeListener' after calling listeners
 	if ( removedListeners.length && self.__ngev.listeners.removeListener.length ) {
@@ -539,7 +549,7 @@ NextGenEvents.emitEvent = function emitEvent( event ) {
 // if given: that's the caller business to do it
 NextGenEvents.emitToOneListener = function emitToOneListener( event , listener , removedListeners ) {
 	var self = event.emitter ,
-		context , currentNice , emitRemoveListener = false ;
+		context , contextScope , serial , currentNice , emitRemoveListener = false ;
 
 	context = listener.context && self.__ngev.contexts[ listener.context ] ;
 
@@ -547,8 +557,14 @@ NextGenEvents.emitToOneListener = function emitToOneListener( event , listener ,
 	if ( context && context.status === NextGenEvents.CONTEXT_DISABLED ) { return ; }
 
 	// The nice value for this listener...
-	if ( context ) { currentNice = Math.max( event.nice , listener.nice , context.nice ) ; }
-	else { currentNice = Math.max( event.nice , listener.nice ) ; }
+	if ( context ) {
+		currentNice = Math.max( event.nice , listener.nice , context.nice ) ;
+		serial = context.serial ;
+		contextScope = NextGenEvents.getContextScope( context , event.depth ) ;
+	}
+	else {
+		currentNice = Math.max( event.nice , listener.nice ) ;
+	}
 
 
 	if ( listener.once ) {
@@ -562,27 +578,27 @@ NextGenEvents.emitToOneListener = function emitToOneListener( event , listener ,
 		else { emitRemoveListener = true ; }
 	}
 
-	if ( context && ( context.status === NextGenEvents.CONTEXT_QUEUED || ! context.ready ) ) {
-		// Almost all works should be done by .emit(), and little few should be done by .processQueue()
-		context.queue.push( { event: event , listener: listener , nice: currentNice } ) ;
+	if ( context && ( context.status === NextGenEvents.CONTEXT_QUEUED || ! contextScope.ready ) ) {
+		// Almost all works should be done by .emit(), and little few should be done by .processScopeQueue()
+		contextScope.queue.push( { event: event , listener: listener , nice: currentNice } ) ;
 	}
 	else {
 		try {
 			if ( currentNice < 0 ) {
-				if ( self.__ngev.recursion >= -currentNice ) {
-					setImmediate( NextGenEvents.listenerWrapper.bind( self , listener , event , context ) ) ;
+				if ( globalData.recursions >= -currentNice ) {
+					self.__ngev.desync( NextGenEvents.listenerWrapper.bind( self , listener , event , contextScope , serial ) ) ;
 				}
 				else {
-					NextGenEvents.listenerWrapper.call( self , listener , event , context ) ;
+					NextGenEvents.listenerWrapper.call( self , listener , event , contextScope , serial ) ;
 				}
 			}
 			else {
-				setTimeout( NextGenEvents.listenerWrapper.bind( self , listener , event , context ) , currentNice ) ;
+				setTimeout( NextGenEvents.listenerWrapper.bind( self , listener , event , contextScope , serial ) , currentNice ) ;
 			}
 		}
 		catch ( error ) {
-			// Catch error, just to decrement self.__ngev.recursion, re-throw after that...
-			self.__ngev.recursion -- ;
+			// Catch error, just to decrement globalData.recursions, re-throw after that...
+			globalData.recursions -- ;
 			throw error ;
 		}
 	}
@@ -601,11 +617,13 @@ NextGenEvents.emitCallback = function emitCallback( event ) {
 
 	if ( event.sync && event.emitter.__ngev.nice !== NextGenEvents.SYNC ) {
 		// Force desync if global nice value is not SYNC
-		nextTick( () => {
+		event.emitter.__ngev.desync( () => {
+			event.emitter.__ngev.depth -- ;
 			callback( event.interrupt , event ) ;
 		} ) ;
 	}
 	else {
+		event.emitter.__ngev.depth -- ;
 		callback( event.interrupt , event ) ;
 	}
 } ;
@@ -647,6 +665,15 @@ NextGenEvents.prototype.setNice = function setNice( nice ) {
 	//if ( typeof nice !== 'number' ) { throw new TypeError( ".setNice(): argument #0 should be a number" ) ; }
 
 	this.__ngev.nice = Math.floor( + nice || 0 ) ;
+} ;
+
+
+
+NextGenEvents.prototype.desyncUseNextTick = function desyncUseNextTick( useNextTick ) {
+	if ( ! this.__ngev ) { NextGenEvents.init.call( this ) ; }
+	//if ( typeof nice !== 'number' ) { throw new TypeError( ".setNice(): argument #0 should be a number" ) ; }
+
+	this.__ngev.desync = useNextTick ? nextTick : setImmediate ;
 } ;
 
 
@@ -910,21 +937,37 @@ NextGenEvents.prototype.addListenerContext = function addListenerContext( contex
 	if ( ! contextName || typeof contextName !== 'string' ) { throw new TypeError( ".addListenerContext(): argument #0 should be a non-empty string" ) ; }
 	if ( ! options || typeof options !== 'object' ) { options = {} ; }
 
-	if ( ! this.__ngev.contexts[ contextName ] ) {
-		// A context IS an event emitter too!
-		this.__ngev.contexts[ contextName ] = Object.create( NextGenEvents.prototype ) ;
-		this.__ngev.contexts[ contextName ].nice = NextGenEvents.SYNC ;
-		this.__ngev.contexts[ contextName ].ready = true ;
-		this.__ngev.contexts[ contextName ].status = NextGenEvents.CONTEXT_ENABLED ;
-		this.__ngev.contexts[ contextName ].serial = false ;
-		this.__ngev.contexts[ contextName ].queue = [] ;
+	var context = this.__ngev.contexts[ contextName ] ;
+
+	if ( ! context ) {
+		context = this.__ngev.contexts[ contextName ] = {
+			nice: NextGenEvents.SYNC ,
+			ready: true ,
+			status: NextGenEvents.CONTEXT_ENABLED ,
+			scopes: {}
+		} ;
 	}
 
-	if ( options.nice !== undefined ) { this.__ngev.contexts[ contextName ].nice = Math.floor( options.nice ) ; }
-	if ( options.status !== undefined ) { this.__ngev.contexts[ contextName ].status = options.status ; }
-	if ( options.serial !== undefined ) { this.__ngev.contexts[ contextName ].serial = !! options.serial ; }
+	if ( options.nice !== undefined ) { context.nice = Math.floor( options.nice ) ; }
+	if ( options.status !== undefined ) { context.status = options.status ; }
+	if ( options.serial !== undefined ) { context.serial = !! options.serial ; }
 
 	return this ;
+} ;
+
+
+
+NextGenEvents.getContextScope = function getContextScope( context , scopeName ) {
+	var scope = context.scopes[ scopeName ] ;
+
+	if ( ! scope ) {
+		scope = context.scopes[ scopeName ] = {
+			ready: true ,
+			queue: []
+		} ;
+	}
+
+	return scope ;
 } ;
 
 
@@ -946,9 +989,13 @@ NextGenEvents.prototype.enableListenerContext = function enableListenerContext( 
 	if ( ! contextName || typeof contextName !== 'string' ) { throw new TypeError( ".enableListenerContext(): argument #0 should be a non-empty string" ) ; }
 	if ( ! this.__ngev.contexts[ contextName ] ) { this.addListenerContext( contextName ) ; }
 
-	this.__ngev.contexts[ contextName ].status = NextGenEvents.CONTEXT_ENABLED ;
+	var context = this.__ngev.contexts[ contextName ] ;
 
-	if ( this.__ngev.contexts[ contextName ].queue.length > 0 ) { NextGenEvents.processQueue.call( this , contextName ) ; }
+	context.status = NextGenEvents.CONTEXT_ENABLED ;
+
+	Object.values( context.scopes ).forEach( contextScope => {
+		if ( contextScope.queue.length > 0 ) { NextGenEvents.processScopeQueue( this , contextScope , context.serial ) ; }
+	} ) ;
 
 	return this ;
 } ;
@@ -1028,52 +1075,42 @@ NextGenEvents.prototype.destroyListenerContext = function destroyListenerContext
 
 
 
-// To be used with .call(), it should not pollute the prototype
-NextGenEvents.processQueue = function processQueue( contextName , isCompletionCallback ) {
-	var context , job ;
+NextGenEvents.processScopeQueue = function processScopeQueue( self , contextScope , serial , isCompletionCallback ) {
+	var job ;
 
-	// The context doesn't exist anymore, so just abort now
-	if ( ! this.__ngev.contexts[ contextName ] ) { return ; }
-
-	context = this.__ngev.contexts[ contextName ] ;
-
-	if ( isCompletionCallback ) { context.ready = true ; }
-
-	// Should work on serialization here
-
-	//console.log( ">>> " , context ) ;
+	if ( isCompletionCallback ) { contextScope.ready = true ; }
 
 	// Increment recursion
-	this.__ngev.recursion ++ ;
+	globalData.recursions ++ ;
 
-	while ( context.ready && context.queue.length ) {
-		job = context.queue.shift() ;
+	while ( contextScope.ready && contextScope.queue.length ) {
+		job = contextScope.queue.shift() ;
 
 		// This event has been interrupted, drop it now!
 		if ( job.event.interrupt ) { continue ; }
 
 		try {
 			if ( job.nice < 0 ) {
-				if ( this.__ngev.recursion >= -job.nice ) {
-					setImmediate( NextGenEvents.listenerWrapper.bind( this , job.listener , job.event , context ) ) ;
+				if ( globalData.recursions >= -job.nice ) {
+					self.__ngev.desync( NextGenEvents.listenerWrapper.bind( self , job.listener , job.event , contextScope , serial ) ) ;
 				}
 				else {
-					NextGenEvents.listenerWrapper.call( this , job.listener , job.event , context ) ;
+					NextGenEvents.listenerWrapper.call( self , job.listener , job.event , contextScope , serial ) ;
 				}
 			}
 			else {
-				setTimeout( NextGenEvents.listenerWrapper.bind( this , job.listener , job.event , context ) , job.nice ) ;
+				setTimeout( NextGenEvents.listenerWrapper.bind( self , job.listener , job.event , contextScope , serial ) , job.nice ) ;
 			}
 		}
 		catch ( error ) {
-			// Catch error, just to decrement this.__ngev.recursion, re-throw after that...
-			this.__ngev.recursion -- ;
+			// Catch error, just to decrement globalData.recursions, re-throw after that...
+			globalData.recursions -- ;
 			throw error ;
 		}
 	}
 
 	// Decrement recursion
-	this.__ngev.recursion -- ;
+	globalData.recursions -- ;
 } ;
 
 
@@ -1090,7 +1127,6 @@ if ( global.AsyncTryCatch ) {
 	global.AsyncTryCatch.NextGenEvents.push( NextGenEvents ) ;
 
 	if ( global.AsyncTryCatch.substituted ) {
-		//console.log( 'live subsitute' ) ;
 		global.AsyncTryCatch.substitute() ;
 	}
 }
@@ -1884,7 +1920,7 @@ process.umask = function() { return 0; };
 },{}],5:[function(require,module,exports){
 module.exports={
   "name": "nextgen-events",
-  "version": "0.12.4",
+  "version": "0.13.0",
   "description": "The next generation of events handling for javascript! New: abstract away the network!",
   "main": "lib/NextGenEvents.js",
   "engines": {
