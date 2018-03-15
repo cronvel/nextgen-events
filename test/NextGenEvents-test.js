@@ -2041,7 +2041,6 @@ describe( "Next Gen feature: contexts serialization" , function() {
 		bus.emit( 'barbaz' ) ;
 		expect( stats.count ).to.eql( { foobar: 1 } ) ;
 	} ) ;
-	
 } ) ;
 
 
@@ -2428,6 +2427,58 @@ describe( "Next Gen feature: completion callback" , function() {
 		} ) ;
 		
 		expect( triggered ).to.eql( { foo1: 0 , foo2: 0 , foo3: 0 , fooCb: 0 , qux1: 0 , qux2: 0 , qux3: 0 , quxCb: 0 } ) ;
+	} ) ;
+	
+	it.skip( "Deadlock prevention" , function( done ) {
+		
+		var bus = Object.create( NextGenEvents.prototype ) ;
+		bus.setInterruptible( true ) ;
+		
+		var onFoo1 , onFoo2 , onFoo3 ;
+		var onFoo1 , onFoo2 , onFoo3 ;
+		var triggered = { foo1: 0 , foo2: 0 , fooCb: 0 , qux1: 0 , qux2: 0 , quxCb: 0 } ;
+		
+		onFoo1 = function( callback ) {
+			bus.emit( 'qux' , () => {
+				setTimeout( function() {
+					triggered.foo1 ++ ;
+					callback() ;
+				} , 10 ) ;
+			} ) ;
+		} ;
+		onFoo2 = function( callback ) {
+			setTimeout( function() {
+				triggered.foo2 ++ ;
+				callback() ;
+			} , 10 ) ;
+		} ;
+		onQux1 = function( callback ) {
+			setTimeout( function() {
+				triggered.qux1 ++ ;
+				callback() ;
+			} , 20 ) ;
+		} ;
+		onQux2 = function( callback ) {
+			setTimeout( function() {
+				triggered.qux2 ++ ;
+				callback() ;
+			} , 20 ) ;
+		} ;
+		
+		bus.on( 'foo' , onFoo1 , { async: true , context: 'ctx' } ) ;
+		bus.on( 'foo' , onFoo2 , { async: true , context: 'ctx' } ) ;
+		bus.on( 'qux' , onQux1 , { async: true , context: 'ctx' } ) ;
+		bus.on( 'qux' , onQux2 , { async: true , context: 'ctx' } ) ;
+		bus.serializeListenerContext( 'ctx' ) ;
+		
+		bus.emit( 'foo' , function() {
+			triggered.fooCb ++ ;
+			expect( arguments.length ).to.be( 2 ) ;
+			expect( triggered ).to.eql( { foo1: 1 , foo2: 1 , fooCb: 1 , qux1: 1 , qux2: 1 , quxCb: 1 } ) ;
+			done() ;
+		} ) ;
+		
+		expect( triggered ).to.eql( { foo1: 0 , foo2: 0 , fooCb: 0 , qux1: 0 , qux2: 0 , quxCb: 0 } ) ;
 	} ) ;
 } ) ;
 
