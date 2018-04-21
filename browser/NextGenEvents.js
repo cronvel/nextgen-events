@@ -105,12 +105,13 @@ NextGenEvents.Internal = function Internal( from ) {
 		// Copy all contexts
 		Object.keys( from.contexts ).forEach( contextName => {
 			var context = from.contexts[ contextName ] ;
-
-			this.addListenerContext( contextName , {
+			this.contexts[ contextName ] = {
 				nice: context.nice ,
+				ready: true ,
 				status: context.status ,
-				serial: context.serial
-			} ) ;
+				serial: context.serial ,
+				scopes: {}
+			} ;
 		} ) ;
 	}
 } ;
@@ -944,6 +945,7 @@ NextGenEvents.prototype.addListenerContext = function addListenerContext( contex
 			nice: NextGenEvents.SYNC ,
 			ready: true ,
 			status: NextGenEvents.CONTEXT_ENABLED ,
+			serial: false ,
 			scopes: {}
 		} ;
 	}
