@@ -431,6 +431,44 @@ describe( "Basic synchronous event-emitting (node-compatible)" , function() {
 		expect( triggered ).to.eql( { foo1: 1 , bar1: 2 , bar2: 1 , baz1: 2 , baz2: 3 , qux: 0 } ) ;
 	} ) ;
 	
+	it( ".waitFor() should work as the Promise-returning counterpart of .once(), only the first event arg is returned" , async function( done ) {
+		
+		var bus = Object.create( NextGenEvents.prototype ) ;
+		
+		try {
+			setTimeout( () => bus.emit( 'foo' , 'bar' , 'baz' , 'qux' ) , 100 ) ;
+		
+			var result = await bus.waitFor( 'foo' ) ;
+		
+			expect( result ).to.be( 'bar' ) ;
+		}
+		catch ( error ) {
+			done( error ) ;
+			return ;
+		}
+		
+		done() ;
+	} ) ;
+	
+	it( ".waitForAll() should work as the Promise-returning counterpart of .once(), the event arguments as an array is returned" , async function( done ) {
+		
+		var bus = Object.create( NextGenEvents.prototype ) ;
+		
+		try {
+			setTimeout( () => bus.emit( 'foo' , 'bar' , 'baz' , 'qux' ) , 100 ) ;
+		
+			var result = await bus.waitForAll( 'foo' ) ;
+		
+			expect( result ).to.eql( [ 'bar' , 'baz' , 'qux' ] ) ;
+		}
+		catch ( error ) {
+			done( error ) ;
+			return ;
+		}
+		
+		done() ;
+	} ) ;
+	
 	it( "unhandled 'error' event should throw whatever is passed to it" , function() {
 		
 		var throwed = 0 , triggered = 0 ;

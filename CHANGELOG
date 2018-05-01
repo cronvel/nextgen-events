@@ -1,4 +1,10 @@
 
+v0.14.0
+-------
+
+New: .waitFor() and .waitForAll()
+
+
 v0.13.1
 -------
 

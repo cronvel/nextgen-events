@@ -20,6 +20,7 @@ Next generation of events handling for node.js
 * A context can be in *queue* mode: events for its listeners are stored, they will be *resumed* when the context is enabled again
 * Context serialization: async listeners can be run one after the other is fully completed
 * **NEW: proxy services!** Abstract away your network: emit and listen to emitter on the other side of the plug!
+* **NEW: .waitFor()/.waitForAll()** a Promise returning variant of .once()!
 
 Emitting events asynchronously or registering a listener that will be triggered asynchronously because it performs
 non-critical tasks has some virtues: it gives some breath to the event-loop, so important I/O can be processed as soon as possible.
@@ -130,6 +131,8 @@ are few differences with the built-in Node.js EventEmitter.
 * [Events](#ref.events)
 	* [.addListener() / .on()](#ref.events.addListener)
 	* [.once()](#ref.events.once)
+	* [.waitFor()](#ref.events.waitFor)
+	* [.waitForAll()](#ref.events.waitForAll)
 	* [.removeListener() / .off()](#ref.events.removeListener)
 	* [.removeAllListeners()](#ref.events.removeAllListeners)
 	* [.setMaxListeners()](#ref.events.setMaxListeners)
@@ -137,6 +140,9 @@ are few differences with the built-in Node.js EventEmitter.
 	* [.listenerCount()](#ref.events.listenerCount)
 	* [.setNice()](#ref.events.setNice)
 	* [.emit()](#ref.events.emit)
+	* [.defineStates()](#ref.events.defineStates)
+	* [.hasState()](#ref.events.hasState)
+	* [.getAllStates()](#ref.events.getAllStates)
 	* [.addListenerContext()](#ref.events.addListenerContext)
 	* [.disableListenerContext()](#ref.events.disableListenerContext)
 	* [.queueListenerContext()](#ref.events.queueListenerContext)
@@ -256,6 +262,30 @@ server.on( 'connection' , {
 	once: true
 } ) ;
 ```
+
+
+
+<a name="ref.events.waitFor"></a>
+### .waitFor( eventName )
+
+* eventName `string` the name of the event to wait for
+
+This is a *Promise-returning* variant of .once(), it returns a `Promise` that resolve once the event triggered, to value
+of the first argument of the event.
+
+It's even better to use it with [.defineStates](ref.events.defineStates).
+
+
+
+<a name="ref.events.waitForAll"></a>
+### .waitForAll( eventName )
+
+* eventName `string` the name of the event to wait for
+
+This is a *Promise-returning* variant of .once(), it returns a `Promise` that resolve once the event triggered, to value
+of the array of all arguments of the event.
+
+It's even better to use it with [.defineStates](ref.events.defineStates).
 
 
 
@@ -397,6 +427,40 @@ Node.js documentation:
 
 **It does not returns the emitter!**
 
+
+
+
+<a name="ref.events.defineStates"></a>
+### .defineStates( exclusiveState1 , [exclusiveState2] , [exclusiveState3] , ... )
+
+* exclusiveState* `string` mutually exclusive states
+
+A *state* is the name of an event.
+Once the event fire, the state is *on*.
+If `.defineStates()` was called with multiple arguments, every other states of the group are turned *off*.
+
+When a listener is added to the *Emitter* for an event, if its state is on, the listener will fire immediately,
+using as arguments the last time it has been emitted.
+
+A common use-case is the *ready* event: one may want that a late listener do not wait forever for a *ready* event
+that had already fired, and will never fire again.
+With *state-event*, a late listener will fire immediately!
+
+
+
+<a name="ref.events.hasState"></a>
+### .hasState( state )
+
+* state `string` a state name
+
+Return true if the Emitter has the state.
+
+
+
+<a name="ref.events.getAllStates"></a>
+### .getAllStates()
+
+Return a list of states the *Emitter* has.
 
 
 

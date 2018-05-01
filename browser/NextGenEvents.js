@@ -275,7 +275,7 @@ NextGenEvents.prototype.on = NextGenEvents.prototype.addListener ;
 
 
 
-// Shortcut
+// Short-hand
 // .once( eventName , [fn] , [options] )
 NextGenEvents.prototype.once = function once( eventName , fn , options ) {
 	if ( fn && typeof fn === 'object' ) { fn.once = true ; }
@@ -283,6 +283,26 @@ NextGenEvents.prototype.once = function once( eventName , fn , options ) {
 	else { options = { once: true } ; }
 
 	return this.addListener( eventName , fn , options ) ;
+} ;
+
+
+
+// .waitFor( eventName )
+// A Promise-returning .once() variant, only the first arg is returned
+NextGenEvents.prototype.waitFor = function waitFor( eventName ) {
+	return new Promise( resolve => {
+		this.addListener( eventName , ( firstArg ) => resolve( firstArg ) , { once: true } ) ;
+	} ) ;
+} ;
+
+
+
+// .waitForAll( eventName )
+// A Promise-returning .once() variant, all args are returned as an array
+NextGenEvents.prototype.waitForAll = function waitForAll( eventName ) {
+	return new Promise( resolve => {
+		this.addListener( eventName , ( ... args ) => resolve( args ) , { once: true } ) ;
+	} ) ;
 } ;
 
 
@@ -1922,7 +1942,7 @@ process.umask = function() { return 0; };
 },{}],5:[function(require,module,exports){
 module.exports={
   "name": "nextgen-events",
-  "version": "0.13.0",
+  "version": "0.13.1",
   "description": "The next generation of events handling for javascript! New: abstract away the network!",
   "main": "lib/NextGenEvents.js",
   "engines": {
