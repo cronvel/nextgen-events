@@ -540,10 +540,11 @@ Set the default *nice value* of the current emitter.
 <a name="ref.events.desyncUseNextTick"></a>
 ### .desyncUseNextTick( useNextTick )
 
-* useNextTick `boolean` true: use *nextTick*, false: use *setImmediate* (or a polyfill for it)
+* useNextTick `boolean` true: use *nextTick*, false: use *setImmediate* (or its polyfill)
 
 Internally, *NextGen Events* will desync listener when needed.
-This method allows you to choose between *nextTick* or *setImmediate* for that task.
+This method allows you to choose between *nextTick()* or *setImmediate()* (or its polyfill) for that task.
+By default, *setImmediate()* is used, which let the event-loop breathe.
 
 
 
@@ -750,38 +751,6 @@ Any queued listener's calls will be lost.
 
 
 
-<a name="incompatibilities"></a>
-## Incompatibilities with the built-in Node.js EventEmitter
-
-NextGen Events is almost compatible with Node.js' EventEmitter, except for few things:
-
-* .emit() does not return the emitter, but an object representing the current event.
-
-* If the last argument passed to .emit() is a function, it is not passed to listeners, instead it is a completion callback
-  triggered when all listeners have done their job. If one want to pass function to listeners as the final argument, it is easy
-  to add an extra `null` or `undefined` argument to .emit().
-
-* There are more reserved event names: 'interrupt', 'emitted'.
-
-* There is no such concept of *max listener* in NextGen Events, .setMaxListeners() function exists only to not break compatibility
-  for people that want to make the switch, but it does nothing (it's an empty function).
-
-* .removeListener() will remove all matching listener, not only the first listener found.
-
-* 'newListener'/'removeListener' event listener will receive an array of new/removed *listener object*, instead of only one
-  *listener function*.
-  E.g: it will be fired only once per .removeListener()/.removeAllListener() call, even if that one call removes
-  multiple listeners at once.
-  It's also true for recursive/cascading removal.
-  A *listener object* contains a property called 'fn' that hold the actual *listener function*.
-
-* `.removeAllListeners()` without any argument does not trigger 'removeListener' listener, because they are actually removed too.
-  The same apply to `.removeAllListeners( 'removeListener' )`.
-
-* .listeners() same here: rather than providing an array of *listener function* an array of *listener object* is provided.
-
-
-
 <a name="ref.events.reset"></a>
 ### NextGenEvents.reset( emitter )
 
@@ -927,6 +896,38 @@ Here is how this is resolved:
   the *emit nice value* (see above), the listener *nice value* (defined with [.addListener()](#ref.events.addListener)), and
   if the listener is tied to a context, the context *nice value* (defined with [.addListenerContext()](#ref.events.addListenerContext)
   or [.setListenerContextNice](#ref.events.setListenerContextNice))
+
+
+
+<a name="incompatibilities"></a>
+## Incompatibilities with the built-in Node.js EventEmitter
+
+NextGen Events is almost compatible with Node.js' EventEmitter, except for few things:
+
+* .emit() does not return the emitter, but an object representing the current event.
+
+* If the last argument passed to .emit() is a function, it is not passed to listeners, instead it is a completion callback
+  triggered when all listeners have done their job. If one want to pass function to listeners as the final argument, it is easy
+  to add an extra `null` or `undefined` argument to .emit().
+
+* There are more reserved event names: 'interrupt'.
+
+* There is no such concept of *max listener* in NextGen Events, .setMaxListeners() function exists only to not break compatibility
+  for people that want to make the switch, but it does nothing (it's an empty function).
+
+* .removeListener() will remove all matching listener, not only the first listener found.
+
+* 'newListener'/'removeListener' event listener will receive an array of new/removed *listener object*, instead of only one
+  *listener function*.
+  E.g: it will be fired only once per .removeListener()/.removeAllListener() call, even if that one call removes
+  multiple listeners at once.
+  It's also true for recursive/cascading removal.
+  A *listener object* contains a property called 'fn' that hold the actual *listener function*.
+
+* `.removeAllListeners()` without any argument does not trigger 'removeListener' listener, because they are actually removed too.
+  The same apply to `.removeAllListeners( 'removeListener' )`.
+
+* .listeners() same here: rather than providing an array of *listener function* an array of *listener object* is provided.
 
 
 

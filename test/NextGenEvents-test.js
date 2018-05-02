@@ -132,7 +132,7 @@ describe( "Basic synchronous event-emitting (node-compatible)" , function() {
 	
 	it( "should add one listener and emit should trigger it, using 'Object.create()'" , function() {
 		
-		var bus = Object.create( NextGenEvents.prototype ) ;
+		var bus = new NextGenEvents() ;
 		
 		var triggered = 0 ;
 		
@@ -145,7 +145,7 @@ describe( "Basic synchronous event-emitting (node-compatible)" , function() {
 	
 	it( "should emit without argument" , function() {
 		
-		var bus = Object.create( NextGenEvents.prototype ) ;
+		var bus = new NextGenEvents() ;
 		
 		var triggered = 0 ;
 		
@@ -161,7 +161,7 @@ describe( "Basic synchronous event-emitting (node-compatible)" , function() {
 	
 	it( "should emit with argument" , function() {
 		
-		var bus = Object.create( NextGenEvents.prototype ) ;
+		var bus = new NextGenEvents() ;
 		
 		var triggered = 0 ;
 		
@@ -178,7 +178,7 @@ describe( "Basic synchronous event-emitting (node-compatible)" , function() {
 	
 	it( "should emit synchronously (nice =-2) with argument" , function() {
 		
-		var bus = Object.create( NextGenEvents.prototype ) ;
+		var bus = new NextGenEvents() ;
 		
 		var triggered = 0 ;
 		
@@ -195,7 +195,7 @@ describe( "Basic synchronous event-emitting (node-compatible)" , function() {
 	
 	it( "should emit asynchronously (setTimeout 10ms) with argument" , function( done ) {
 		
-		var bus = Object.create( NextGenEvents.prototype ) ;
+		var bus = new NextGenEvents() ;
 		
 		var triggered = 0 ;
 		
@@ -211,7 +211,7 @@ describe( "Basic synchronous event-emitting (node-compatible)" , function() {
 	
 	it( "should emit asynchronously (setTimeout 0ms) with argument" , function( done ) {
 		
-		var bus = Object.create( NextGenEvents.prototype ) ;
+		var bus = new NextGenEvents() ;
 		
 		var triggered = 0 ;
 		
@@ -227,7 +227,7 @@ describe( "Basic synchronous event-emitting (node-compatible)" , function() {
 	
 	it( "should emit asynchronously (setImmediate) with argument" , function( done ) {
 		
-		var bus = Object.create( NextGenEvents.prototype ) ;
+		var bus = new NextGenEvents() ;
 		
 		var triggered = 0 ;
 		
@@ -243,7 +243,7 @@ describe( "Basic synchronous event-emitting (node-compatible)" , function() {
 	
 	it( "should add many basic listeners for many events, and multiple emits should trigger only relevant listener" , function() {
 		
-		var bus = Object.create( NextGenEvents.prototype ) ;
+		var bus = new NextGenEvents() ;
 		
 		var onFoo1 , onBar1 , onBar2 , onBaz1 , onBaz2 , onBaz3 ;
 		var triggered = { foo1: 0 , bar1: 0 , bar2: 0 , baz1: 0 , baz2: 0 , baz3: 0 , qux: 0 } ;
@@ -287,7 +287,7 @@ describe( "Basic synchronous event-emitting (node-compatible)" , function() {
 	
 	it( "should add and remove listeners" , function() {
 		
-		var bus = Object.create( NextGenEvents.prototype ) ;
+		var bus = new NextGenEvents() ;
 		
 		var onFoo1 , onBar1 , onBar2 , onBaz1 , onBaz2 , onBaz3 ;
 		var triggered = { foo1: 0 , bar1: 0 , bar2: 0 , baz1: 0 , baz2: 0 , baz3: 0 , qux: 0 } ;
@@ -327,7 +327,7 @@ describe( "Basic synchronous event-emitting (node-compatible)" , function() {
 	
 	it( ".removeAllListeners() should remove all listeners for an event" , function() {
 		
-		var bus = Object.create( NextGenEvents.prototype ) ;
+		var bus = new NextGenEvents() ;
 		
 		var onFoo1 , onBar1 , onBar2 , onBaz1 , onBaz2 , onBaz3 ;
 		var triggered = { foo1: 0 , bar1: 0 , bar2: 0 , baz1: 0 , baz2: 0 , baz3: 0 , qux: 0 } ;
@@ -365,7 +365,7 @@ describe( "Basic synchronous event-emitting (node-compatible)" , function() {
 	
 	it( ".removeAllListeners() without argument should remove all listeners for all events" , function() {
 		
-		var bus = Object.create( NextGenEvents.prototype ) ;
+		var bus = new NextGenEvents() ;
 		
 		var onFoo1 , onBar1 , onBar2 , onBaz1 , onBaz2 , onBaz3 ;
 		var triggered = { foo1: 0 , bar1: 0 , bar2: 0 , baz1: 0 , baz2: 0 , baz3: 0 , qux: 0 } ;
@@ -397,7 +397,7 @@ describe( "Basic synchronous event-emitting (node-compatible)" , function() {
 	
 	it( ".once() should add one time listener for an event, the event should stop listening after being triggered once" , function() {
 		
-		var bus = Object.create( NextGenEvents.prototype ) ;
+		var bus = new NextGenEvents() ;
 		
 		var onFoo1 , onBar1 , onBar2 , onBaz1 , onBaz2 , onBaz3 ;
 		var triggered = { foo1: 0 , bar1: 0 , bar2: 0 , baz1: 0 , baz2: 0 , qux: 0 } ;
@@ -433,7 +433,7 @@ describe( "Basic synchronous event-emitting (node-compatible)" , function() {
 	
 	it( ".waitFor() should work as the Promise-returning counterpart of .once(), only the first event arg is returned" , async function( done ) {
 		
-		var bus = Object.create( NextGenEvents.prototype ) ;
+		var bus = new NextGenEvents() ;
 		
 		try {
 			setTimeout( () => bus.emit( 'foo' , 'bar' , 'baz' , 'qux' ) , 100 ) ;
@@ -452,7 +452,7 @@ describe( "Basic synchronous event-emitting (node-compatible)" , function() {
 	
 	it( ".waitForAll() should work as the Promise-returning counterpart of .once(), the event arguments as an array is returned" , async function( done ) {
 		
-		var bus = Object.create( NextGenEvents.prototype ) ;
+		var bus = new NextGenEvents() ;
 		
 		try {
 			setTimeout( () => bus.emit( 'foo' , 'bar' , 'baz' , 'qux' ) , 100 ) ;
@@ -471,7 +471,7 @@ describe( "Basic synchronous event-emitting (node-compatible)" , function() {
 	
 	it( ".waitForEmit() should work as the Promise-returning counterpart of .emit() with completion callback" , async function( done ) {
 		
-		var bus = Object.create( NextGenEvents.prototype ) ;
+		var bus = new NextGenEvents() ;
 		
 		bus.setInterruptible( true ) ;
 		
@@ -516,7 +516,7 @@ describe( "Basic synchronous event-emitting (node-compatible)" , function() {
 	it( "unhandled 'error' event should throw whatever is passed to it" , function() {
 		
 		var throwed = 0 , triggered = 0 ;
-		var bus = Object.create( NextGenEvents.prototype ) ;
+		var bus = new NextGenEvents() ;
 		var testError = new Error( 'Some error occurs!' ) ;
 		
 		var onError = function( error ) {
@@ -553,7 +553,7 @@ describe( "Basic synchronous event-emitting (node-compatible)" , function() {
 	
 	it( "NextGenEvents.listenerCount() and .listenerCount() should count listeners for an event" , function() {
 		
-		var bus = Object.create( NextGenEvents.prototype ) ;
+		var bus = new NextGenEvents() ;
 		
 		var onFoo1 ;
 		
@@ -601,7 +601,7 @@ describe( "Basic synchronous event-emitting (NOT compatible with node)" , functi
 	
 	it( "should remove every occurences of a listener for one event" , function() {
 		
-		var bus = Object.create( NextGenEvents.prototype ) ;
+		var bus = new NextGenEvents() ;
 		
 		var onFoo1 , onBar1 , onBar2 ;
 		var triggered = { foo1: 0 , bar1: 0 , bar2: 0 } ;
@@ -632,7 +632,7 @@ describe( "Basic synchronous event-emitting (NOT compatible with node)" , functi
 	
 	it( "should emit 'newListener' every time a new listener is added, with an array of listener object" , function() {
 		
-		var bus = Object.create( NextGenEvents.prototype ) ;
+		var bus = new NextGenEvents() ;
 		
 		var stats = { count: {} , orders: [] } ;
 		
@@ -700,7 +700,7 @@ describe( "Basic synchronous event-emitting (NOT compatible with node)" , functi
 	
 	it( "should emit 'removeListener' every time a new listener is removed (one time listener count as well once triggered), with an array of listener object" , function() {
 		
-		var bus = Object.create( NextGenEvents.prototype ) ;
+		var bus = new NextGenEvents() ;
 		
 		var stats = { count: {} , orders: [] } ;
 		
@@ -800,7 +800,7 @@ describe( "Basic synchronous event-emitting (NOT compatible with node)" , functi
 	
 	it( ".listeners() should return all the listeners for an event" , function() {
 		
-		var bus = Object.create( NextGenEvents.prototype ) ;
+		var bus = new NextGenEvents() ;
 		
 		var listeners , onFoo1 ;
 		
@@ -853,7 +853,7 @@ describe( "Edge cases" , function() {
 	it( "inside a 'newListener' listener, the .listenerCount() should report correctly" , function() {
 		
 		var triggered = 0 ,
-			bus = Object.create( NextGenEvents.prototype ) ;
+			bus = new NextGenEvents() ;
 		
 		bus.on( 'newListener' , function( listeners ) {
 			triggered ++ ;
@@ -876,7 +876,7 @@ describe( "Next Gen feature: listener in 'eventObject' mode" , function() {
 	it( "listener using 'eventObject' option" , function() {
 		
 		var triggered = 0 ,
-			bus = Object.create( NextGenEvents.prototype ) ;
+			bus = new NextGenEvents() ;
 		
 		bus.once( 'hello' , function( event ) {
 			triggered ++ ;
@@ -897,7 +897,7 @@ describe( "Next Gen feature: listener in 'eventObject' mode" , function() {
 	it( "listener using 'eventObject' option and emit() with completion callback" , function() {
 		
 		var triggered = 0 , emitCallbackTriggered = 0 ,
-			bus = Object.create( NextGenEvents.prototype ) ;
+			bus = new NextGenEvents() ;
 		
 		var emitCallback = function() {
 			emitCallbackTriggered ++ ;
@@ -921,7 +921,7 @@ describe( "Next Gen feature: listener in 'eventObject' mode" , function() {
 	it( "listener using 'eventObject' option and emit() with completion callback in non-SYNC mode" , function( done ) {
 		
 		var triggered = 0 , emitCallbackTriggered = 0 ,
-			bus = Object.create( NextGenEvents.prototype ) ;
+			bus = new NextGenEvents() ;
 		
 		bus.setNice( -1000 ) ;
 		
@@ -948,7 +948,7 @@ describe( "Next Gen feature: listener in 'eventObject' mode" , function() {
 	it( "listener using 'eventObject' and 'async' options, and emit() with completion callback" , function( done ) {
 		
 		var triggered = 0 , emitCallbackTriggered = 0 ,
-			bus = Object.create( NextGenEvents.prototype ) ;
+			bus = new NextGenEvents() ;
 		
 		var emitCallback = function() {
 			emitCallbackTriggered ++ ;
@@ -1218,9 +1218,9 @@ describe( "Next Gen feature: emitter group actions" , function() {
 	it( "should emit on a group of emitters" , function() {
 		
 		var busList = [
-			Object.create( NextGenEvents.prototype ) ,
-			Object.create( NextGenEvents.prototype ) ,
-			Object.create( NextGenEvents.prototype )
+			new NextGenEvents() ,
+			new NextGenEvents() ,
+			new NextGenEvents()
 		] ;
 		
 		var triggered = 0 ;
@@ -1251,9 +1251,9 @@ describe( "Next Gen feature: emitter group actions" , function() {
 	it( "should listen to a group of emitters" , function() {
 		
 		var busList = [
-			Object.create( NextGenEvents.prototype ) ,
-			Object.create( NextGenEvents.prototype ) ,
-			Object.create( NextGenEvents.prototype )
+			new NextGenEvents() ,
+			new NextGenEvents() ,
+			new NextGenEvents()
 		] ;
 		
 		var triggered = 0 ;
@@ -1276,9 +1276,9 @@ describe( "Next Gen feature: emitter group actions" , function() {
 	it( "should listen to a group of emitters then stop listening" , function() {
 		
 		var busList = [
-			Object.create( NextGenEvents.prototype ) ,
-			Object.create( NextGenEvents.prototype ) ,
-			Object.create( NextGenEvents.prototype )
+			new NextGenEvents() ,
+			new NextGenEvents() ,
+			new NextGenEvents()
 		] ;
 		
 		var triggered = 0 ;
@@ -1303,9 +1303,9 @@ describe( "Next Gen feature: emitter group actions" , function() {
 	it( "should add multiple listeners to a group of emitters then remove all of them at once" , function() {
 		
 		var busList = [
-			Object.create( NextGenEvents.prototype ) ,
-			Object.create( NextGenEvents.prototype ) ,
-			Object.create( NextGenEvents.prototype )
+			new NextGenEvents() ,
+			new NextGenEvents() ,
+			new NextGenEvents()
 		] ;
 		
 		var triggered = 0 ;
@@ -1339,9 +1339,9 @@ describe( "Next Gen feature: emitter group actions" , function() {
 	it( "should listen once to each emitters of a group" , function() {
 		
 		var busList = [
-			Object.create( NextGenEvents.prototype ) ,
-			Object.create( NextGenEvents.prototype ) ,
-			Object.create( NextGenEvents.prototype )
+			new NextGenEvents() ,
+			new NextGenEvents() ,
+			new NextGenEvents()
 		] ;
 		
 		var triggered = 0 ;
@@ -1364,9 +1364,9 @@ describe( "Next Gen feature: emitter group actions" , function() {
 	it( "should listen once to a whole group of emitters" , function() {
 		
 		var busList = [
-			Object.create( NextGenEvents.prototype ) ,
-			Object.create( NextGenEvents.prototype ) ,
-			Object.create( NextGenEvents.prototype )
+			new NextGenEvents() ,
+			new NextGenEvents() ,
+			new NextGenEvents()
 		] ;
 		
 		var triggered = 0 ;
@@ -1392,9 +1392,9 @@ describe( "Next Gen feature: emitter group actions" , function() {
 	it( "should listen once the last emitter to emit from whole group" , function() {
 		
 		var busList = [
-			Object.create( NextGenEvents.prototype ) ,
-			Object.create( NextGenEvents.prototype ) ,
-			Object.create( NextGenEvents.prototype )
+			new NextGenEvents() ,
+			new NextGenEvents() ,
+			new NextGenEvents()
 		] ;
 		
 		var triggered = 0 ;
@@ -1436,9 +1436,9 @@ describe( "Next Gen feature: emitter group actions" , function() {
 	it( "should emit with a completion callback that should be triggered once all emitters have finished" , function( done ) {
 		
 		var busList = [
-			Object.create( NextGenEvents.prototype ) ,
-			Object.create( NextGenEvents.prototype ) ,
-			Object.create( NextGenEvents.prototype )
+			new NextGenEvents() ,
+			new NextGenEvents() ,
+			new NextGenEvents()
 		] ;
 		
 		var triggered = 0 , timeoutTriggered = 0 , callbackTriggered = 0 ;
@@ -1491,9 +1491,9 @@ describe( "Next Gen feature: emitter group actions" , function() {
 	it( "using interruptible emitters, it should trigger the completion callback once one of them is interrupted" , function( done ) {
 		
 		var busList = [
-			Object.create( NextGenEvents.prototype ) ,
-			Object.create( NextGenEvents.prototype ) ,
-			Object.create( NextGenEvents.prototype )
+			new NextGenEvents() ,
+			new NextGenEvents() ,
+			new NextGenEvents()
 		] ;
 		
 		busList.forEach( function( bus ) { bus.setInterruptible( true ) ; } ) ;
@@ -1548,9 +1548,9 @@ describe( "Next Gen feature: emitter group actions" , function() {
 	it( "should define states on a group of emitters and use it" , function() {
 		
 		var busList = [
-			Object.create( NextGenEvents.prototype ) ,
-			Object.create( NextGenEvents.prototype ) ,
-			Object.create( NextGenEvents.prototype )
+			new NextGenEvents() ,
+			new NextGenEvents() ,
+			new NextGenEvents()
 		] ;
 		
 		var triggered = 0 ;
@@ -1707,7 +1707,7 @@ describe( "Next Gen feature: contexts" , function() {
 	
 	it( "when a listener is tied to a context, it should stop receiving events if the context is disabled (implicit context declaration)" , function() {
 		
-		var bus = Object.create( NextGenEvents.prototype ) ;
+		var bus = new NextGenEvents() ;
 		
 		var triggered = 0 ;
 		
@@ -1732,7 +1732,7 @@ describe( "Next Gen feature: contexts" , function() {
 	
 	it( "when a listener is tied to a context, it should stop receiving events if the context is disabled (explicit context declaration)" , function() {
 		
-		var bus = Object.create( NextGenEvents.prototype ) ;
+		var bus = new NextGenEvents() ;
 		
 		var triggered = 0 ;
 		
@@ -1763,7 +1763,7 @@ describe( "Next Gen feature: contexts" , function() {
 	
 	it( ".destroyListenerContext() should destroy a context and all listeners tied to it" , function() {
 		
-		var bus = Object.create( NextGenEvents.prototype ) ;
+		var bus = new NextGenEvents() ;
 		
 		var stats = { count: {} , orders: [] } ;
 		
@@ -1817,7 +1817,7 @@ describe( "Next Gen feature: contexts queue" , function() {
 	
 	it( ".queueListenerContext() should pause the context, queueing events, .enableListenerContext() should resume pending events emitting" , function() {
 		
-		var bus = Object.create( NextGenEvents.prototype ) ;
+		var bus = new NextGenEvents() ;
 		
 		var stats = { count: {} , orders: [] } ;
 		
@@ -1896,7 +1896,7 @@ describe( "Next Gen feature: contexts serialization" , function() {
 	
 	it( "3 async listeners for an event, tied to a serial context, each listener should be triggered one after the other" , function( done ) {
 		
-		var bus = Object.create( NextGenEvents.prototype ) ;
+		var bus = new NextGenEvents() ;
 		
 		var stats = { count: {} , orders: [] } ;
 		
@@ -1942,7 +1942,7 @@ describe( "Next Gen feature: contexts serialization" , function() {
 	
 	it( "3 async listeners for 3 events, tied to a serial context, each listener should be triggered one after the other" , function( done ) {
 		
-		var bus = Object.create( NextGenEvents.prototype ) ;
+		var bus = new NextGenEvents() ;
 		
 		var stats = { count: {} , orders: [] } ;
 		
@@ -1990,7 +1990,7 @@ describe( "Next Gen feature: contexts serialization" , function() {
 	
 	it( "mixing sync and async listeners tied to a serial context, sync event should not block (test 1)" , function( done ) {
 		
-		var bus = Object.create( NextGenEvents.prototype ) ;
+		var bus = new NextGenEvents() ;
 		
 		var stats = { count: {} , orders: [] } ;
 		
@@ -2031,7 +2031,7 @@ describe( "Next Gen feature: contexts serialization" , function() {
 	
 	it( "mixing sync and async listeners tied to a serial context, sync event should not block (test 2)" , function( done ) {
 		
-		var bus = Object.create( NextGenEvents.prototype ) ;
+		var bus = new NextGenEvents() ;
 		
 		var stats = { count: {} , orders: [] } ;
 		
@@ -2076,7 +2076,7 @@ describe( "Next Gen feature: contexts serialization" , function() {
 	
 	it( "mixing sync and async listeners tied to a serial context, sync event should not block (test 3)" , function( done ) {
 		
-		var bus = Object.create( NextGenEvents.prototype ) ;
+		var bus = new NextGenEvents() ;
 		
 		var stats = { count: {} , orders: [] } ;
 		
@@ -2131,7 +2131,7 @@ describe( "Next Gen feature: interrupt event emitting, and 'interrupt' event" , 
 	
 	it( "should fire an event, the first listener should interrupt it, thus firing an 'interrupt' event" , function() {
 		
-		var bus = Object.create( NextGenEvents.prototype ) ;
+		var bus = new NextGenEvents() ;
 		bus.setInterruptible( true ) ;
 		
 		var onFoo1 , onFoo2 , onFoo3 , onInterrupt1 , onInterrupt2 ;
@@ -2158,7 +2158,7 @@ describe( "Next Gen feature: interrupt event emitting, and 'interrupt' event" , 
 	
 	it( "should fire asynchronously an event, the first listener should interrupt it, thus firing an 'interrupt' event" , function( done ) {
 		
-		var bus = Object.create( NextGenEvents.prototype ) ;
+		var bus = new NextGenEvents() ;
 		bus.setInterruptible( true ) ;
 		
 		var onFoo1 , onFoo2 , onFoo3 , onInterrupt1 , onInterrupt2 ;
@@ -2187,7 +2187,7 @@ describe( "Next Gen feature: interrupt event emitting, and 'interrupt' event" , 
 	
 	it( "should fire asynchronously an event, the first listener should interrupt it using its callback, thus firing an 'interrupt' event" , function( done ) {
 		
-		var bus = Object.create( NextGenEvents.prototype ) ;
+		var bus = new NextGenEvents() ;
 		bus.setInterruptible( true ) ;
 		
 		var onFoo1 , onFoo2 , onFoo3 , onInterrupt1 , onInterrupt2 ;
@@ -2225,7 +2225,7 @@ describe( "Next Gen feature: completion callback" , function() {
 	
 	it( "should emit an event with a completion callback, triggered when all synchronous listener have finished running" , function( done ) {
 		
-		var bus = Object.create( NextGenEvents.prototype ) ;
+		var bus = new NextGenEvents() ;
 		bus.setInterruptible( true ) ;
 		
 		var onFoo1 , onFoo2 , onFoo3 ;
@@ -2255,7 +2255,7 @@ describe( "Next Gen feature: completion callback" , function() {
 	
 	it( "if the event is interrupted, the completion callback should be triggered with the 'interrupt' value" , function( done ) {
 		
-		var bus = Object.create( NextGenEvents.prototype ) ;
+		var bus = new NextGenEvents() ;
 		bus.setInterruptible( true ) ;
 		
 		var onFoo1 , onFoo2 , onFoo3 ;
@@ -2288,7 +2288,7 @@ describe( "Next Gen feature: completion callback" , function() {
 	
 	it( "the completion callback should work with asynchronous listener" , function( done ) {
 		
-		var bus = Object.create( NextGenEvents.prototype ) ;
+		var bus = new NextGenEvents() ;
 		bus.setInterruptible( true ) ;
 		
 		var onFoo1 , onFoo2 , onFoo3 ;
@@ -2324,7 +2324,7 @@ describe( "Next Gen feature: completion callback" , function() {
 	
 	it( "the completion callback should work with listeners asynchronously interrupting the event" , function( done ) {
 		
-		var bus = Object.create( NextGenEvents.prototype ) ;
+		var bus = new NextGenEvents() ;
 		bus.setInterruptible( true ) ;
 		
 		var onFoo1 , onFoo2 , onFoo3 ;
@@ -2363,7 +2363,7 @@ describe( "Next Gen feature: completion callback" , function() {
 	
 	it( "the completion callback should work with an async listeners synchronously interrupting the event with its callback" , function( done ) {
 		
-		var bus = Object.create( NextGenEvents.prototype ) ;
+		var bus = new NextGenEvents() ;
 		bus.setInterruptible( true ) ;
 		
 		var onFoo1 , onFoo2 , onFoo3 ;
@@ -2400,7 +2400,7 @@ describe( "Next Gen feature: completion callback" , function() {
 	
 	it( "the completion callback should work with an async listeners synchronously interrupting the event using return" , function( done ) {
 		
-		var bus = Object.create( NextGenEvents.prototype ) ;
+		var bus = new NextGenEvents() ;
 		bus.setInterruptible( true ) ;
 		
 		var onFoo1 , onFoo2 , onFoo3 ;
@@ -2441,7 +2441,7 @@ describe( "Next Gen feature: completion callback" , function() {
 	
 	it( "Context serialization, emitter callback and deadlock prevention (case #1)" , function( done ) {
 		
-		var bus = Object.create( NextGenEvents.prototype ) ;
+		var bus = new NextGenEvents() ;
 		bus.setInterruptible( true ) ;
 		
 		var onFoo1 , onFoo2 , onFoo3 ;
@@ -2493,7 +2493,7 @@ describe( "Next Gen feature: completion callback" , function() {
 	
 	it( "Context serialization, emitter callback and deadlock prevention (case #2)" , function( done ) {
 		
-		var bus = Object.create( NextGenEvents.prototype ) ;
+		var bus = new NextGenEvents() ;
 		bus.setInterruptible( true ) ;
 		
 		var onFoo1 , onFoo2 , onFoo3 ;
@@ -2545,7 +2545,7 @@ describe( "Next Gen feature: completion callback" , function() {
 	
 	it( "Context serialization, emitter callback and deadlock prevention (case #3)" , function( done ) {
 		
-		var bus = Object.create( NextGenEvents.prototype ) ;
+		var bus = new NextGenEvents() ;
 		bus.setInterruptible( true ) ;
 		
 		var onFoo1 , onFoo2 , onFoo3 ;
