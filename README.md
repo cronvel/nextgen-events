@@ -13,18 +13,19 @@ Next generation of events handling for node.js
 ## Feature highlights:
 
 * Standard event-handling 99% compatible with Node.js built-in events
-* .emit() support a completion callback
+* `.emit()` supports a completion callback
 * Support for asynchronous event-handling
 * Multiple listeners can be tied to a single context
 * A context can be temporarly *disabled*
 * A context can be in *queue* mode: events for its listeners are stored, they will be *resumed* when the context is enabled again
-* A context can be in serialization mode: async listeners are queued and run once the previous listener has fully completed
+* A context can be in serialization mode: each sync/async listener run once the previous sync/async listener has fully completed
 * Interruptible event emitting: if the emitter is interruptible, a listener can stop downstream propagation,
   thus emitting an 'interrupt' event
-* **NEW: *state-events*: so late listeners will never miss the *ready event* again!
-* **NEW: handling group of emitters
+* **NEW: state-events**: so late listeners will never miss the *ready* event again!
+* **NEW: handling group of emitters**
 * **NEW: proxy services!** Abstract away your network: emit and listen to emitter on the other side of the plug!
-* **NEW: .waitFor()/.waitForAll()** a Promise returning variant of .once()!
+* **NEW: .waitFor()/.waitForAll()** the Promise returning variant of `.once()`!
+* **NEW: .waitForEmit()** the Promise returning variant of `.emit()` + *completion callback*
 
 Emitting events asynchronously or registering a listener that will be triggered asynchronously because it performs
 non-critical tasks has some virtues: it gives some breath to the event-loop, so important I/O can be processed as soon as possible.
@@ -38,8 +39,8 @@ your event again!**
 
 Contexts are really useful, it handles a collection of listeners.
 At first glance, it looks like a sort of namespace for listeners.
-But it can do more than that: you can turn a context off, so every listener tied to this context will not be triggered anymore,
-then turn it on and they will be available again. 
+But it can do more than that: you can turn a context off, so every listener tied to this context will not be triggered anymore.
+Then turn it on and they will be available again. 
 
 You can even switch a context into queue mode: the listeners tied to it will not be triggered, but events for those
 listeners will be stored in the context. When the context is resumed, all retained events will trigger their listeners.
@@ -150,6 +151,7 @@ are few differences with the built-in Node.js EventEmitter.
 	* [.listeners()](#ref.events.listeners)
 	* [.listenerCount()](#ref.events.listenerCount)
 	* [.emit()](#ref.events.emit)
+	* [.waitForEmit()](#ref.events.waitForEmit)
 	* [.defineStates()](#ref.events.defineStates)
 	* [.hasState()](#ref.events.hasState)
 	* [.getAllStates()](#ref.events.getAllStates)
@@ -288,7 +290,7 @@ server.on( 'connection' , {
 
 * eventName `string` the name of the event to wait for
 
-This is a *Promise-returning* variant of .once(), it returns a `Promise` that resolve once the event triggered, to value
+This is the *Promise-returning* variant of `.once()`, it returns a `Promise` that resolve once the event triggered, to value
 of the first argument of the event.
 
 It's even better to use it with [.defineStates](ref.events.defineStates).
@@ -315,7 +317,7 @@ var remote = await emitter.waitFor( 'connect' ) ;
 
 * eventName `string` the name of the event to wait for
 
-This is a *Promise-returning* variant of .once(), it returns a `Promise` that resolve once the event triggered, to value
+This is the *Promise-returning* variant of `.once()`, it returns a `Promise` that resolve once the event triggered, to value
 of the array of all arguments of the event.
 
 It's even better to use it with [.defineStates](ref.events.defineStates).
@@ -439,7 +441,7 @@ Node.js documentation:
 * arg1 `any type` (optional) first argument to transmit
 * arg2 `any type` (optional) second argument to transmit
 * ...
-* callback `function` (optional) a completion callback triggered when all listener have done, accepting arguments:
+* callback `function` (optional) a completion callback triggered when all listener have finished, accepting arguments:
 	* interruption `any type` if truthy, then emit was interrupted with this interrupt value (provided by userland)
 	* event `Object` representing the current event
 
@@ -449,8 +451,29 @@ Node.js documentation:
 
 > Execute each of the listeners in order with the supplied arguments.
 
-**It does not returns the emitter!**
+**Unlike Node.js** `EventEmitter`, **it does not returns the emitter!**
+Instead, it returns an event object.
 
+The *callback* can be used in conjunction with async listener: it is triggered once all listeners have finished.
+If one listener interrupts the event emitting sequence (see [.setInterruptible()](#ref.events.setInterruptible)),
+the callback is triggered immediately with the *interruption value*.
+
+
+
+<a name="ref.events.waitForEmit"></a>
+### .waitForEmit( [nice] , eventName , [arg1] , [arg2] , [...] )
+
+* nice `integer` (default: -Infinity) see [the nice feature](#ref.note.nice) for details
+* eventName `string` (optional) the name of the event to emit
+* arg1 `any type` (optional) first argument to transmit
+* arg2 `any type` (optional) second argument to transmit
+* ...
+
+This is the *Promise-returning* variant of `.emit()` + *completionCallback*.
+It returns a `Promise` that resolves once all sync/async listeners have finished, or once one listener has interrupted
+the event emitting sequence (see [.setInterruptible()](#ref.events.setInterruptible)).
+
+The promise resolve to `null` or eventually to the *interruption value*.
 
 
 
