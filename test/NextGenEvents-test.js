@@ -469,6 +469,50 @@ describe( "Basic synchronous event-emitting (node-compatible)" , function() {
 		done() ;
 	} ) ;
 	
+	it( ".waitForEmit() should work as the Promise-returning counterpart of .emit() with completion callback" , async function( done ) {
+		
+		var bus = Object.create( NextGenEvents.prototype ) ;
+		
+		bus.setInterruptible( true ) ;
+		
+		bus.on( 'foo' , {
+			id: 'foobar' ,
+			async: true ,
+			fn: ( ... args ) => {
+				var callback = args[ args.length - 1 ] ;
+				setTimeout( callback , 30 ) ;
+			}
+		} ) ;
+		
+		bus.on( 'foo' , {
+			id: 'foobaz' ,
+			async: true ,
+			fn: ( ... args ) => {
+				var callback = args[ args.length - 1 ] ;
+				setTimeout( () => callback( "qbar" ) , 30 ) ;
+			}
+		} ) ;
+		
+		bus.on( 'foo' , {
+			id: 'foobarbaz' ,
+			async: true ,
+			fn: ( ... args ) => {
+				var callback = args[ args.length - 1 ] ;
+				setTimeout( callback , 3000 ) ;
+			}
+		} ) ;
+		
+		var interrupt = await bus.waitForEmit( 'foo' ) ;
+		
+		try {
+			expect( interrupt ).to.be( "qbar" ) ;
+			done() ;
+		}
+		catch ( error ) {
+			done( error ) ;
+		}
+	} ) ;
+	
 	it( "unhandled 'error' event should throw whatever is passed to it" , function() {
 		
 		var throwed = 0 , triggered = 0 ;
@@ -2554,4 +2598,9 @@ describe( "Next Gen feature: completion callback" , function() {
 	} ) ;
 } ) ;
 
+
+
+describe( "Proxies" , function() {
+	it( "TODO..." ) ;
+} ) ;		
 

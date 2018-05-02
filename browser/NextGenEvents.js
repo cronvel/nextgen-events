@@ -133,6 +133,8 @@ NextGenEvents.initFrom = function initFrom( from ) {
 	Merge listeners of duplicated event bus:
 		* listeners that are present locally but not in all foreigner are removed (one of the foreigner has removed it)
 		* listeners that are not present locally but present in at least one foreigner are copied
+
+	Not sure if it will ever go public, it was a very specific use-case (Spellcast).
 */
 NextGenEvents.mergeListeners = function mergeListeners( foreigners ) {
 	if ( ! this.__ngev ) { NextGenEvents.init.call( this ) ; }
@@ -482,6 +484,14 @@ NextGenEvents.prototype.emit = function emit( ... args ) {
 
 
 
+NextGenEvents.prototype.waitForEmit = function waitForEmit( ... args ) {
+	return new Promise( resolve => {
+		this.emit( ... args , ( interrupt ) => resolve( interrupt ) ) ;
+	} ) ;
+} ;
+
+
+
 /*
 	At this stage, 'event' should be an object having those properties:
 		* emitter: the event emitter
@@ -699,11 +709,11 @@ NextGenEvents.prototype.desyncUseNextTick = function desyncUseNextTick( useNextT
 
 
 
-NextGenEvents.prototype.setInterruptible = function setInterruptible( value ) {
+NextGenEvents.prototype.setInterruptible = function setInterruptible( isInterruptible ) {
 	if ( ! this.__ngev ) { NextGenEvents.init.call( this ) ; }
 	//if ( typeof nice !== 'number' ) { throw new TypeError( ".setNice(): argument #0 should be a number" ) ; }
 
-	this.__ngev.interruptible = !! value ;
+	this.__ngev.interruptible = !! isInterruptible ;
 } ;
 
 
@@ -1191,8 +1201,12 @@ NextGenEvents.Proxy = require( './Proxy.js' ) ;
 
 
 
-// Create the object && export it
-function Proxy() { return Proxy.create() ; }
+function Proxy() {
+	this.localServices = {} ;
+	this.remoteServices = {} ;
+	this.nextAckId = 1 ;
+}
+
 module.exports = Proxy ;
 
 var NextGenEvents = require( './NextGenEvents.js' ) ;
@@ -1202,15 +1216,8 @@ function noop() {}
 
 
 
-Proxy.create = function create() {
-	var self = Object.create( Proxy.prototype , {
-		localServices: { value: {} , enumerable: true } ,
-		remoteServices: { value: {} , enumerable: true } ,
-		nextAckId: { value: 1 , writable: true , enumerable: true }
-	} ) ;
-
-	return self ;
-} ;
+// Backward compatibility
+Proxy.create = ( ... args ) => new Proxy( ... args ) ;
 
 
 
@@ -1942,7 +1949,7 @@ process.umask = function() { return 0; };
 },{}],5:[function(require,module,exports){
 module.exports={
   "name": "nextgen-events",
-  "version": "0.13.1",
+  "version": "0.14.1",
   "description": "The next generation of events handling for javascript! New: abstract away the network!",
   "main": "lib/NextGenEvents.js",
   "engines": {
@@ -1955,13 +1962,11 @@ module.exports={
   "devDependencies": {
     "browserify": "^14.4.0",
     "expect.js": "^0.3.1",
-    "jshint": "^2.9.2",
-    "mocha": "^2.5.3",
     "uglify-js-es6": "^2.8.9",
     "ws": "^3.2.0"
   },
   "scripts": {
-    "test": "mocha -R dot"
+    "test": "tea-time -R dot"
   },
   "repository": {
     "type": "git",

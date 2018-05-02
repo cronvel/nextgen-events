@@ -12,18 +12,29 @@ Next generation of events handling for node.js
 
 ## Feature highlights:
 
-* Standard event-handling almost compatible with Node.js built-in events
+* Standard event-handling 99% compatible with Node.js built-in events
 * .emit() support a completion callback
 * Support for asynchronous event-handling
 * Multiple listeners can be tied to a single context
 * A context can be temporarly *disabled*
 * A context can be in *queue* mode: events for its listeners are stored, they will be *resumed* when the context is enabled again
-* Context serialization: async listeners can be run one after the other is fully completed
+* A context can be in serialization mode: async listeners are queued and run once the previous listener has fully completed
+* Interruptible event emitting: if the emitter is interruptible, a listener can stop downstream propagation,
+  thus emitting an 'interrupt' event
+* **NEW: *state-events*: so late listeners will never miss the *ready event* again!
+* **NEW: handling group of emitters
 * **NEW: proxy services!** Abstract away your network: emit and listen to emitter on the other side of the plug!
 * **NEW: .waitFor()/.waitForAll()** a Promise returning variant of .once()!
 
 Emitting events asynchronously or registering a listener that will be triggered asynchronously because it performs
 non-critical tasks has some virtues: it gives some breath to the event-loop, so important I/O can be processed as soon as possible.
+
+You will love the *state-event* concept: you define a *state* bounded to the event of the same name, and when the bounded event fire,
+that state is *turned on*.
+If a new listener is added for that event and the bounded state is *on*, the new listener is triggered immediately with
+the same arguments that was previously *emitted*.
+You will typically make events like *ready*, *open*, *end* or *close*, etc, *state-events*, **so late listeners will never miss
+your event again!**
 
 Contexts are really useful, it handles a collection of listeners.
 At first glance, it looks like a sort of namespace for listeners.
@@ -36,7 +47,7 @@ This allow one to postpone some operations, while performing some other high pri
 depending on your application nature, the queue may grow fast and consumes a lot of memory very quickly.
 
 One of the top feature of this lib is the context serialization: it greatly eases the flow of the code!
-When differents events can fire at the same time, there are use cases when one does not want that async listener run concurrently.
+When differents events can fire at the same time, there are use cases when one does not want that async listeners run concurrently.
 The context serialization feature will ensure you that no concurrency will happen for listeners tied to it.
 You do not have to code fancy or complicated tests to cover all cases anymore: just let *NextGen Events* do it for you!
 
@@ -138,11 +149,13 @@ are few differences with the built-in Node.js EventEmitter.
 	* [.setMaxListeners()](#ref.events.setMaxListeners)
 	* [.listeners()](#ref.events.listeners)
 	* [.listenerCount()](#ref.events.listenerCount)
-	* [.setNice()](#ref.events.setNice)
 	* [.emit()](#ref.events.emit)
 	* [.defineStates()](#ref.events.defineStates)
 	* [.hasState()](#ref.events.hasState)
 	* [.getAllStates()](#ref.events.getAllStates)
+	* [.setNice()](#ref.events.setNice)
+	* [.desyncUseNextTick()](#ref.events.desyncUseNextTick)
+	* [.setInterruptible()](#ref.events.setInterruptible)
 	* [.addListenerContext()](#ref.events.addListenerContext)
 	* [.disableListenerContext()](#ref.events.disableListenerContext)
 	* [.queueListenerContext()](#ref.events.queueListenerContext)
@@ -150,6 +163,16 @@ are few differences with the built-in Node.js EventEmitter.
 	* [.setListenerContextNice()](#ref.events.setListenerContextNice)
 	* [.serializeListenerContext()](#ref.events.serializeListenerContext)
 	* [.destroyListenerContext()](#ref.events.destroyListenerContext)
+	* [NextGenEvents.reset()](#ref.events.reset)
+	* [NextGenEvents.share()](#ref.events.share)
+	* [NextGenEvents.groupAddListener() / NextGenEvents.groupOn()](#ref.events.groupAddListener)
+	* [NextGenEvents.groupOnce()](#ref.events.groupOnce)
+	* [NextGenEvents.groupGlobalOnce()](#ref.events.groupGlobalOnce)
+	* [NextGenEvents.groupGlobalOnceAll()](#ref.events.groupGlobalOnceAll)
+	* [NextGenEvents.groupRemoveListener() / NextGenEvents.groupOff()](#ref.events.groupRemoveListener)
+	* [NextGenEvents.groupRemoveAllListener()](#ref.events.groupRemoveAllListener)
+	* [NextGenEvents.groupEmit()](#ref.events.groupEmit)
+	* [NextGenEvents.groupDefineStates()](#ref.events.groupDefineStates)
 	* [the *nice feature*](#ref.note.nice)
 	* [incompatibilities](#incompatibilities)
 * [Proxy Services](#ref.proxy)
@@ -227,16 +250,11 @@ supplied to [.emit()](#ref.events.emit) for any listeners with *async = true*.
 
 
 <a name="ref.events.once"></a>
-### .once( eventName , listener )
+### .once( eventName , [fn] , [options] )
 
 * eventName `string` the name of the event to bind to
-* listener `Function` or `Object` the listener that will listen to this event, it can be a function or an object where:
-	* fn `Function` (mandatory) the listener function
-	* id `any type` (default to the provided *fn* function) the identifier of the listener, useful if we have to remove it later
-	* context `string` (default: undefined - no context) a non-empty string identifying a context, if defined the listener
-	  will be tied to this context, if this context is unexistant, it will be implicitly defined with default behaviour
-	* nice `integer` (default: -Infinity) see [the nice feature](#ref.note.nice) for details
-	* async `boolean` (default: false) set it to *true* if the listener is async by nature and a context serialization is wanted
+* fn `Function` the callback function for this event, this argument is optional: it can be passed to the `fn` property of `options`
+* options `Object` see [.addListener()](#ref.events.addListener) for details.
 
 Node.js documentation:
 
@@ -274,6 +292,21 @@ This is a *Promise-returning* variant of .once(), it returns a `Promise` that re
 of the first argument of the event.
 
 It's even better to use it with [.defineStates](ref.events.defineStates).
+
+Example:
+```js
+var emitter = new NextGenEvents() ;
+
+emitter.defineStates( 'connect' ) ;
+emitter.emit( 'connect' , remote ) ;
+
+// ... somewhere else or in another file...
+
+var remote = await emitter.waitFor( 'connect' ) ;
+
+// Now we are sure that we are ready!
+// We can connect to the DB or whatever your emitter is for...
+```
 
 
 
@@ -398,15 +431,6 @@ Node.js documentation:
 
 
 
-<a name="ref.events.setNice"></a>
-### .setNice( nice )
-
-* nice `integer` (default: -Infinity) see [the nice feature](#ref.note.nice) for details
-
-Set the default *nice value* of the current emitter.
-
-
-
 <a name="ref.events.emit"></a>
 ### .emit( [nice] , eventName , [arg1] , [arg2] , [...] , [callback] )
 
@@ -433,18 +457,35 @@ Node.js documentation:
 <a name="ref.events.defineStates"></a>
 ### .defineStates( exclusiveState1 , [exclusiveState2] , [exclusiveState3] , ... )
 
-* exclusiveState* `string` mutually exclusive states
+* exclusiveState* `string` the state name, bounded to the event of the same name
 
-A *state* is the name of an event.
-Once the event fire, the state is *on*.
-If `.defineStates()` was called with multiple arguments, every other states of the group are turned *off*.
+A *state* is bounded to an event of the same name.
+This make the said event a *state-event*.
+All states are *off* at creation.
+Once its bounded-event fires, that state is turned *on*.
 
-When a listener is added to the *Emitter* for an event, if its state is on, the listener will fire immediately,
-using as arguments the last time it has been emitted.
+Calling `.defineStates()` with multiple arguments define a group of mutually exclusive *states*:
+whenever a *state* is turned on, every other states of the group are turned *off*.
 
-A common use-case is the *ready* event: one may want that a late listener do not wait forever for a *ready* event
-that had already fired, and will never fire again.
-With *state-event*, a late listener will fire immediately!
+If a new listener is added for an event and its bounded state is *on*, the new listener is triggered immediately with
+the same arguments that was previously *emitted*.
+
+You will typically make events like *ready*, *open*, *end* or *close*, etc, *state-events*,
+**so late listeners will never miss your event again!**
+
+Example:
+```js
+var emitter = new NextGenEvents() ;
+
+emitter.defineStates( 'ready' ) ;
+emitter.emit( 'ready' ) ;
+
+// ... later... ... ...
+
+emitter.once( 'ready' , () => {
+  // Your listener code fire immediately
+} ) ;
+```
 
 
 
@@ -453,45 +494,72 @@ With *state-event*, a late listener will fire immediately!
 
 * state `string` a state name
 
-Return true if the Emitter has the state.
+It returns true if that *state* is turned *on* on the *emitter*.
 
 
 
 <a name="ref.events.getAllStates"></a>
 ### .getAllStates()
 
-Return a list of states the *Emitter* has.
+It returns an array containing all states turned *on* on the *emitter*.
 
 
 
-<a name="ref.note.nice"></a>
-### A note about the *nice feature*
+<a name="ref.events.setNice"></a>
+### .setNice( nice )
 
-The *nice value* represent the *niceness* of the event-emitting processing.
-This concept is inspired by the UNIX *nice* concept for processus (see the man page for the *nice* and *renice* command).
+* nice `integer` (default: -Infinity) see [the nice feature](#ref.note.nice) for details
 
-In this lib, this represents the asyncness of the event-emitting processing.
+Set the default *nice value* of the current emitter.
 
-The constant `require( 'nextgen-events' ).SYNC` can be used to have synchronous event emitting, its value is `-Infinity`
-and it's the default value.
 
-* any nice value *N* greater than or equals to 0 will be emitted asynchronously using setTimeout() with a *N* ms timeout
-  to call the listeners
-* any nice value *N* lesser than 0 will emit event synchronously until *-N* recursion is reached, after that, setImmediate()
-  will be used to call the listeners, the first event count as 1 recursion, so if nice=-1, all events will be asynchronously emitted,
-  if nice=-2 the initial event will call the listener synchronously, but if the listener emits events on the same emitter object,
-  the sub-listener will be called through setImmediate(), breaking the recursion... and so on...
 
-They are many elements that can define their own *nice value*.
+<a name="ref.events.desyncUseNextTick"></a>
+### .desyncUseNextTick( useNextTick )
 
-Here is how this is resolved:
+* useNextTick `boolean` true: use *nextTick*, false: use *setImmediate* (or a polyfill for it)
 
-* First the *emit nice value* will be the one passed to the `.emit()` method if given, or the default *emitter nice value*
-  defined with [.setNice()](#ref.events.setNice).
-* For each listener to be called, the real *nice value* for the current listener will be the **HIGHEST** *nice value* of
-  the *emit nice value* (see above), the listener *nice value* (defined with [.addListener()](#ref.events.addListener)), and
-  if the listener is tied to a context, the context *nice value* (defined with [.addListenerContext()](#ref.events.addListenerContext)
-  or [.setListenerContextNice](#ref.events.setListenerContextNice))
+Internally, *NextGen Events* will desync listener when needed.
+This method allows you to choose between *nextTick* or *setImmediate* for that task.
+
+
+
+<a name="ref.events.setInterruptible"></a>
+### .setInterruptible( isInterruptible )
+
+* isInterruptible `boolean` true if the *emitter* should be interruptible
+
+Turn *on/off* interruption for that *emitter*.
+If the *emitter* is interruptible, a listener can stop downstream propagation: it just needs to return a *truthy* value.
+
+If the listener is async, it can either return a *truthy* value or call its callback with that *truthy* value.
+By the way, interrupting asynchronously only stop other listeners from running inside a serialized context
+(see [context serialization](#ref.events.serializeListenerContext)).
+
+
+When doing so, an 'interrupt' event is emitted with the value (always truthy) of the interruption.
+
+If `emit()` was called with a *completion callback* as its last argument, that callback will receive the interruption value as well.
+
+```js
+var emitter = new NextGenEvents() ;
+
+emitter.on( 'foo' , () => {
+  return new Error( 'Dang!' )
+} ) ;
+
+emitter.on( 'foo' , () => {
+  // Never ever called...
+} ) ;
+
+emitter.on( 'interrupt' , ( interruption ) => {
+  // interruption is eql to Error( 'Dang!' )
+} ) ;
+
+emitter.emit( 'foo' , ( interruption ) => {
+  // interruption is eql to Error( 'Dang!' )
+} ) ;
+```
 
 
 
@@ -691,6 +759,154 @@ NextGen Events is almost compatible with Node.js' EventEmitter, except for few t
 
 
 
+<a name="ref.events.reset"></a>
+### NextGenEvents.reset( emitter )
+
+* emitter `NextGenEvents` the *emitter* to reset
+
+It reset an *emitter*, removing all listeners and all options.
+
+
+
+<a name="ref.events.share"></a>
+### NextGenEvents.share( source, target )
+
+* source `NextGenEvents` the source *emitter*
+* target `NextGenEvents` the target *emitter*
+
+It makes two different *emitter* object sharing the same event bus, i.e.: everything is shared, listeners are shared, options
+are shared, when one emits it emits on the other, as if it was the very same *emitter*.
+The *target emitter* is reset beforehand.
+
+
+
+<a name="ref.events.groupAddListener"></a>
+### NextGenEvents.groupAddListener( emitters , eventName , [fn] , [options] )  *or*  NextGenEvents.groupOn( emitters , eventName , [fn] , [options] )
+
+* emitters `array` of emitter
+* eventName `string` the name of the event to bind to
+* fn `Function` the callback function for this event, this argument is optional: it can be passed to the `fn` property of `options`
+* options `Object` see [.addListener()](#ref.events.addListener) for details.
+
+Adds a listener to a group of emitter.
+
+
+
+<a name="ref.events.groupOnce"></a>
+### NextGenEvents.groupOnce( emitters , eventName , [fn] , [options] )
+
+* emitters `array` of emitter
+* eventName `string` the name of the event to bind to
+* fn `Function` the callback function for this event, this argument is optional: it can be passed to the `fn` property of `options`
+* options `Object` see [.addListener()](#ref.events.addListener) for details.
+
+Adds a **one time** listener to a group of emitter, the listener can be called once per emitter.
+
+
+
+<a name="ref.events.groupGlobalOnce"></a>
+### NextGenEvents.groupGlobalOnce( emitters , eventName , [fn] , [options] )
+
+* emitters `array` of emitter
+* eventName `string` the name of the event to bind to
+* fn `Function` the callback function for this event, this argument is optional: it can be passed to the `fn` property of `options`
+* options `Object` see [.addListener()](#ref.events.addListener) for details.
+
+Adds a **one time** listener to a group of emitter, the listener will be called only once, by the first emitter to emit.
+
+
+
+<a name="ref.events.groupGlobalOnceAll"></a>
+### NextGenEvents.groupGlobalOnceAll( emitters , eventName , [fn] , [options] )
+
+* emitters `array` of emitter
+* eventName `string` the name of the event to bind to
+* fn `Function` the callback function for this event, this argument is optional: it can be passed to the `fn` property of `options`
+* options `Object` see [.addListener()](#ref.events.addListener) for details.
+
+Adds a **one time** listener to a group of emitter, the listener will be called only once, once all emitter have emitted.
+The listener receive the argument from the last event to be emitted.
+
+
+
+<a name="ref.events.groupRemoveListener"></a>
+### NextGenEvents.groupRemoveListener( emitters , eventName , listenerID )  *or*  NextGenEvents.groupOff( emitters , eventName , listenerID )
+
+* emitters `array` of emitter
+* eventName `string` the name of the event the listener to remove is binded to
+* listenerID `any type` the identifier of the listener to remove
+
+Removes a listener from all emitters.
+
+
+
+<a name="ref.events.groupRemoveAllListener"></a>
+### NextGenEvents.groupRemoveAllListener( emitters , eventName )
+
+* emitters `array` of emitter
+* eventName `string` the name of the event the listener to remove is binded to
+
+Removes all listeners from all emitters.
+
+
+
+<a name="ref.events.groupEmit"></a>
+### NextGenEvents.groupEmit( emitters , [nice] , eventName , [arg1] , [arg2] , [...] , [callback] )
+
+* emitters `array` of emitter
+* nice `integer` (default: -Infinity) see [the nice feature](#ref.note.nice) for details
+* eventName `string` (optional) the name of the event to emit
+* arg1 `any type` (optional) first argument to transmit
+* arg2 `any type` (optional) second argument to transmit
+* ...
+* callback `function` (optional) a completion callback triggered when all listener have done, accepting arguments:
+	* interruption `any type` if truthy, then emit was interrupted with this interrupt value (provided by userland)
+	* event `Object` representing the current event
+
+Emit an event on all emitters, see [.emit()](#ref.events.emit).
+
+
+
+<a name="ref.events.groupDefineStates"></a>
+### NextGenEvents.groupDefineStates( exclusiveState1 , [exclusiveState2] , [exclusiveState3] , ... )
+
+* exclusiveState* `string` the state name, bounded to the event of the same name
+
+Defines states for a group of emitters, see [.defineStates()](#ref.events.defineStates).
+
+
+
+<a name="ref.note.nice"></a>
+### A note about the *nice feature*
+
+The *nice value* represent the *niceness* of the event-emitting processing.
+This concept is inspired by the UNIX *nice* concept for processus (see the man page for the *nice* and *renice* command).
+
+In this lib, this represents the asyncness of the event-emitting processing.
+
+The constant `require( 'nextgen-events' ).SYNC` can be used to have synchronous event emitting, its value is `-Infinity`
+and it's the default value.
+
+* any nice value *N* greater than or equals to 0 will be emitted asynchronously using setTimeout() with a *N* ms timeout
+  to call the listeners
+* any nice value *N* lesser than 0 will emit event synchronously until *-N* recursion is reached, after that, setImmediate()
+  will be used to call the listeners, the first event count as 1 recursion, so if nice=-1, all events will be asynchronously emitted,
+  if nice=-2 the initial event will call the listener synchronously, but if the listener emits events on the same emitter object,
+  the sub-listener will be called through setImmediate(), breaking the recursion... and so on...
+
+They are many elements that can define their own *nice value*.
+
+Here is how this is resolved:
+
+* First the *emit nice value* will be the one passed to the `.emit()` method if given, or the default *emitter nice value*
+  defined with [.setNice()](#ref.events.setNice).
+* For each listener to be called, the real *nice value* for the current listener will be the **HIGHEST** *nice value* of
+  the *emit nice value* (see above), the listener *nice value* (defined with [.addListener()](#ref.events.addListener)), and
+  if the listener is tied to a context, the context *nice value* (defined with [.addListenerContext()](#ref.events.addListenerContext)
+  or [.setListenerContextNice](#ref.events.setListenerContextNice))
+
+
+
 <a name="ref.proxy"></a>
 ## Proxy Services
 
@@ -819,7 +1035,7 @@ Options passed to `.addLocalService()`:
 
 
 
-NextGen Events features available in proxy services:
+*NextGen Events* features available in proxy services:
 
 * All the basic API is supported (the node-compatible API)
 * Emit completion callback supported
