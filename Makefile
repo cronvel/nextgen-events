@@ -66,10 +66,6 @@ log/jshint.log: log/npm-dev-install.log lib/*.js test/*.js
 log/mocha.log: log/npm-dev-install.log lib/*.js test/*.js
 	${MOCHA} test/*.js -R spec | tee log/mocha.log ; exit $${PIPESTATUS[0]}
 
-# README
-README.md: documentation.md
-	cat documentation.md > README.md
-
 # Mocha Markdown BDD spec
 bdd-spec.md: log/npm-dev-install.log lib/*.js test/*.js
 	${MOCHA} test/*.js -R markdown > bdd-spec.md
@@ -100,7 +96,7 @@ log/npm-dev-install.log: package.json
 
 # Delete files, mostly log and non-versioned files
 clean-all:
-	rm -rf log/*.log README.md bdd-spec.md node_modules
+	rm -rf log/*.log bdd-spec.md node_modules
 
 # This will fail if we are not on master branch (grep exit 1 if nothing found)
 check-if-master-branch:
