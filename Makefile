@@ -31,9 +31,6 @@ unit: log/mocha.log
 # Performs the browser tests
 #browser-test: log/_.log
 
-# This build the doc and README.md
-doc: README.md
-
 # This publish to NPM and push to Github, if we are on master branch only
 publish: check-if-commited browser README.md build-commit log/npm-publish.log log/github-push.log
 
