@@ -24,8 +24,7 @@
 	SOFTWARE.
 */
 
-/* jshint unused:false */
-/* global describe, it, before, after */
+"use strict" ;
 
 
 
@@ -40,9 +39,6 @@ else
 	NextGenEvents = require( '../lib/NextGenEvents.js' ) ;
 }
 
-
-
-var expect = require( 'expect.js' ) ;
 
 
 
@@ -431,45 +427,21 @@ describe( "Basic synchronous event-emitting (node-compatible)" , function() {
 		expect( triggered ).to.eql( { foo1: 1 , bar1: 2 , bar2: 1 , baz1: 2 , baz2: 3 , qux: 0 } ) ;
 	} ) ;
 	
-	it( ".waitFor() should work as the Promise-returning counterpart of .once(), only the first event arg is returned" , async function( done ) {
-		
+	it( ".waitFor() should work as the Promise-returning counterpart of .once(), only the first event arg is returned" , async function() {
 		var bus = new NextGenEvents() ;
-		
-		try {
-			setTimeout( () => bus.emit( 'foo' , 'bar' , 'baz' , 'qux' ) , 100 ) ;
-		
-			var result = await bus.waitFor( 'foo' ) ;
-		
-			expect( result ).to.be( 'bar' ) ;
-		}
-		catch ( error ) {
-			done( error ) ;
-			return ;
-		}
-		
-		done() ;
+		setTimeout( () => bus.emit( 'foo' , 'bar' , 'baz' , 'qux' ) , 100 ) ;
+		var result = await bus.waitFor( 'foo' ) ;
+		expect( result ).to.be( 'bar' ) ;
 	} ) ;
 	
-	it( ".waitForAll() should work as the Promise-returning counterpart of .once(), the event arguments as an array is returned" , async function( done ) {
-		
+	it( ".waitForAll() should work as the Promise-returning counterpart of .once(), the event arguments as an array is returned" , async function() {
 		var bus = new NextGenEvents() ;
-		
-		try {
-			setTimeout( () => bus.emit( 'foo' , 'bar' , 'baz' , 'qux' ) , 100 ) ;
-		
-			var result = await bus.waitForAll( 'foo' ) ;
-		
-			expect( result ).to.eql( [ 'bar' , 'baz' , 'qux' ] ) ;
-		}
-		catch ( error ) {
-			done( error ) ;
-			return ;
-		}
-		
-		done() ;
+		setTimeout( () => bus.emit( 'foo' , 'bar' , 'baz' , 'qux' ) , 100 ) ;
+		var result = await bus.waitForAll( 'foo' ) ;
+		expect( result ).to.eql( [ 'bar' , 'baz' , 'qux' ] ) ;
 	} ) ;
 	
-	it( ".waitForEmit() should work as the Promise-returning counterpart of .emit() with completion callback" , async function( done ) {
+	it( ".waitForEmit() should work as the Promise-returning counterpart of .emit() with completion callback" , async function() {
 		
 		var bus = new NextGenEvents() ;
 		
@@ -504,13 +476,7 @@ describe( "Basic synchronous event-emitting (node-compatible)" , function() {
 		
 		var interrupt = await bus.waitForEmit( 'foo' ) ;
 		
-		try {
-			expect( interrupt ).to.be( "qbar" ) ;
-			done() ;
-		}
-		catch ( error ) {
-			done( error ) ;
-		}
+		expect( interrupt ).to.be( "qbar" ) ;
 	} ) ;
 	
 	it( "unhandled 'error' event should throw whatever is passed to it" , function() {
@@ -1642,10 +1608,12 @@ describe( "Next Gen feature: async emitting" , function() {
 	
 	it( "should emit asynchronously, with an asynchronous flow, with minimal delay (nice = 0)" , function( done ) {
 		asyncEventTest( 0 , undefined , undefined , undefined , function( order ) {
+			/*
 			try {
 				expect( order ).to.eql( [ 'flow' , 'setImmediate' , 'listener' , 'setTimeout25' , 'setTimeout50' ] ) ;
 			}
 			catch( error ) {
+			*/
 				// Sometime setImmediate() is unpredictable and is slower than setTimeout(fn,0)
 				// It is a bug of V8, not a bug of the async lib
 				try {
@@ -1655,7 +1623,7 @@ describe( "Next Gen feature: async emitting" , function() {
 					// Or even slower than setTimeout(fn,25)... -_-'
 					expect( order ).to.eql( [ 'flow' , 'listener' , 'setTimeout25' , 'setImmediate' , 'setTimeout50' ] ) ;
 				}
-			}
+			//}
 			done() ;
 		} ) ;
 	} ) ;
@@ -2444,8 +2412,8 @@ describe( "Next Gen feature: completion callback" , function() {
 		var bus = new NextGenEvents() ;
 		bus.setInterruptible( true ) ;
 		
-		var onFoo1 , onFoo2 , onFoo3 ;
-		var onFoo1 , onFoo2 , onFoo3 ;
+		var onFoo1 , onFoo2 ;
+		var onQux1 , onQux2 ;
 		var triggered = { foo1: 0 , foo2: 0 , fooCb: 0 , qux1: 0 , qux2: 0 } ;
 		
 		onFoo1 = function( callback ) {
@@ -2496,8 +2464,8 @@ describe( "Next Gen feature: completion callback" , function() {
 		var bus = new NextGenEvents() ;
 		bus.setInterruptible( true ) ;
 		
-		var onFoo1 , onFoo2 , onFoo3 ;
-		var onFoo1 , onFoo2 , onFoo3 ;
+		var onFoo1 , onFoo2 ;
+		var onQux1 , onQux2 ;
 		var triggered = { foo1: 0 , foo2: 0 , fooCb: 0 , qux1: 0 , qux2: 0 } ;
 		
 		onFoo1 = function( callback ) {
@@ -2548,8 +2516,8 @@ describe( "Next Gen feature: completion callback" , function() {
 		var bus = new NextGenEvents() ;
 		bus.setInterruptible( true ) ;
 		
-		var onFoo1 , onFoo2 , onFoo3 ;
-		var onFoo1 , onFoo2 , onFoo3 ;
+		var onFoo1 , onFoo2 ;
+		var onQux1 , onQux2 ;
 		var triggered = { foo1: 0 , foo2: 0 , fooCb: 0 , qux1: 0 , qux2: 0 } ;
 		
 		onFoo1 = function( callback ) {
