@@ -172,7 +172,7 @@ describe( "Basic synchronous event-emitting (node-compatible)" , function() {
 		expect( triggered ).to.be( 1 ) ;
 	} ) ;
 	
-	it( "should emit synchronously (nice =-2) with argument" , function() {
+	it( "should emit synchronously (nice =-10) with argument" , function() {
 		
 		var bus = new NextGenEvents() ;
 		
@@ -184,7 +184,7 @@ describe( "Basic synchronous event-emitting (node-compatible)" , function() {
 			expect( arg2 ).to.be( '!' ) ;
 		} ) ;
 		
-		bus.emit( -2 , 'hello' , 'world' , '!' ) ;
+		bus.emit( -10 , 'hello' , 'world' , '!' ) ;
 		
 		expect( triggered ).to.be( 1 ) ;
 	} ) ;
@@ -1606,7 +1606,7 @@ describe( "Next Gen feature: async emitting" , function() {
 		} ) ;
 	} ) ;
 	
-	it( "should emit asynchronously, with an asynchronous flow, with minimal delay (nice = 0)" , function( done ) {
+	it.optional( "should emit asynchronously, with an asynchronous flow, with minimal delay (nice = 0)" , function( done ) {
 		asyncEventTest( 0 , undefined , undefined , undefined , function( order ) {
 			/*
 			try {
