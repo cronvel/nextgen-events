@@ -1,6 +1,6 @@
 {
   "name": "nextgen-events",
-  "version": "0.15.0",
+  "version": "1.0.0",
   "description": "The next generation of events handling for javascript! New: abstract away the network!",
   "main": "lib/NextGenEvents.js",
   "engines": {
