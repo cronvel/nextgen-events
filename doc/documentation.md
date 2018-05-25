@@ -12,6 +12,7 @@
 	* [.removeListener() / .off()](#ref.events.removeListener)
 	* [.removeAllListeners()](#ref.events.removeAllListeners)
 	* [.setMaxListeners()](#ref.events.setMaxListeners)
+	* [.getMaxListeners()](#ref.events.getMaxListeners)
 	* [.listeners()](#ref.events.listeners)
 	* [.listenerCount()](#ref.events.listenerCount)
 	* [.emit()](#ref.events.emit)
@@ -260,13 +261,25 @@ Node.js documentation:
 
 
 <a name="ref.events.setMaxListeners"></a>
-### .setMaxListeners()
+### .setMaxListeners( n )
 
-Only available for compatibility with the built-in Node.js emitter, so it does not break the code for people that want
-to make the switch.
+* n `integer` the maximum number of listener.
 
-But please note that **there is no such concept of max listener in NextGen Events**, this method does nothing
-(it's an empty function).
+Similar to Node.js, an emitter will print a warning when the number of listener surpass the `maxListeners` value.
+This method allows the limit to be modified for this specific instance.
+
+There is no maximum value by default.
+To use a different global default value for `maxListener`, e.g. set it to 10 (the Node.js events limit),
+set directly this class member: `NgEvents.defaultMaxListener = 10`.
+
+Returns a reference to the emitter, so that calls can be chained.
+
+
+
+<a name="ref.events.getMaxListeners"></a>
+### .getMaxListeners()
+
+It get the `maxListeners` value for this emitter, see [.setMaxListeners()](#ref.events.setMaxListeners) for details.
 
 
 
@@ -822,8 +835,7 @@ NextGen Events is almost compatible with Node.js' EventEmitter, except for few t
 
 * There are more reserved event names: 'interrupt'.
 
-* There is no such concept of *max listener* in NextGen Events, .setMaxListeners() function exists only to not break compatibility
-  for people that want to make the switch, but it does nothing (it's an empty function).
+* By default, the *listeners limit warning* is turned off (i.e.: `maxListeners` is set to Infinity).
 
 * .removeListener() will remove all matching listener, not only the first listener found.
 

@@ -1,4 +1,4 @@
-(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.NextGenEvents = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.NextGenEvents = f()}})(function(){var define,module,exports;return (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 (function (process,global){
 /*
 	Next-Gen Events
@@ -59,6 +59,10 @@ NextGenEvents.prototype.__prototypeVersion__ = require( '../package.json' ).vers
 NextGenEvents.SYNC = -Infinity ;
 NextGenEvents.DESYNC = -1 ;
 
+NextGenEvents.defaultMaxListeners = Infinity ;
+
+
+
 // Not part of the prototype, because it should not pollute userland's prototype.
 // It has an eventEmitter as 'this' anyway (always called using call()).
 NextGenEvents.init = function init() {
@@ -91,6 +95,8 @@ NextGenEvents.Internal = function Internal( from ) {
 		newListener: [] ,
 		removeListener: []
 	} ;
+
+	this.maxListeners = NextGenEvents.defaultMaxListeners ;
 
 	if ( from ) {
 		this.nice = from.nice ;
@@ -268,6 +274,14 @@ NextGenEvents.prototype.addListener = function addListener( eventName , fn , opt
 
 	this.__ngev.listeners[ eventName ].push( listener ) ;
 
+	if ( this.__ngev.listeners[ eventName ].length === this.__ngev.maxListeners + 1 ) {
+		process.emitWarning(
+			"Possible NextGenEvents memory leak detected. " + this.__ngev.listeners[ eventName ].length + ' ' +
+			eventName + " listeners added. Use emitter.setMaxListeners() to increase limit" ,
+			{ type: "MaxListenersExceededWarning" }
+		) ;
+	}
+
 	if ( this.__ngev.states[ eventName ] ) { NextGenEvents.emitToOneListener( this.__ngev.states[ eventName ] , listener ) ; }
 
 	return this ;
@@ -364,7 +378,13 @@ NextGenEvents.prototype.removeAllListeners = function removeAllListeners( eventN
 	else {
 		// Remove all listeners for any events
 		// 'removeListener' listeners cannot be triggered: they are already deleted
-		this.__ngev.listeners = {} ;
+		this.__ngev.listeners = {
+			// Special events
+			error: [] ,
+			interrupt: [] ,
+			newListener: [] ,
+			removeListener: []
+		} ;
 	}
 
 	return this ;
@@ -743,8 +763,20 @@ NextGenEvents.reset = function reset( emitter ) {
 
 
 
-// There is no such thing in NextGenEvents, however, we need to be compatible with node.js events at best
-NextGenEvents.prototype.setMaxListeners = function() {} ;
+NextGenEvents.prototype.getMaxListeners = function() {
+	if ( ! this.__ngev ) { NextGenEvents.init.call( this ) ; }
+	return this.__ngev.maxListeners ;
+} ;
+
+
+
+NextGenEvents.prototype.setMaxListeners = function( n ) {
+	if ( ! this.__ngev ) { NextGenEvents.init.call( this ) ; }
+	this.__ngev.maxListeners = typeof n === 'number' && ! Number.isNaN( n ) ? Math.floor( n ) : NextGenEvents.defaultMaxListeners ;
+	return this ;
+} ;
+
+
 
 // Sometime useful as a no-op callback...
 NextGenEvents.noop = function() {} ;
@@ -1719,6 +1751,7 @@ RemoteService.prototype.receiveAckEmit = function receiveAckEmit( message ) {
 
 
 },{"./NextGenEvents.js":1}],3:[function(require,module,exports){
+(function (process){
 /*
 	Next-Gen Events
 
@@ -1747,8 +1780,6 @@ RemoteService.prototype.receiveAckEmit = function receiveAckEmit( message ) {
 
 "use strict" ;
 
-/* global window */
-
 
 
 if ( typeof window.setImmediate !== 'function' ) {
@@ -1757,10 +1788,16 @@ if ( typeof window.setImmediate !== 'function' ) {
 	} ;
 }
 
+if ( ! process.emitWarning ) {
+	// Looks like browserify don't have this
+	process.emitWarning = function() {} ;
+}
+
 module.exports = require( './NextGenEvents.js' ) ;
 module.exports.isBrowser = true ;
 
-},{"./NextGenEvents.js":1}],4:[function(require,module,exports){
+}).call(this,require('_process'))
+},{"./NextGenEvents.js":1,"_process":4}],4:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -1949,7 +1986,7 @@ process.umask = function() { return 0; };
 },{}],5:[function(require,module,exports){
 module.exports={
   "name": "nextgen-events",
-  "version": "0.14.1",
+  "version": "0.14.6",
   "description": "The next generation of events handling for javascript! New: abstract away the network!",
   "main": "lib/NextGenEvents.js",
   "engines": {
@@ -1960,10 +1997,9 @@ module.exports={
   },
   "dependencies": {},
   "devDependencies": {
-    "browserify": "^14.4.0",
-    "expect.js": "^0.3.1",
+    "browserify": "^16.2.2",
     "uglify-js-es6": "^2.8.9",
-    "ws": "^3.2.0"
+    "ws": "^5.1.1"
   },
   "scripts": {
     "test": "tea-time -R dot"
@@ -2005,5 +2041,6 @@ module.exports={
     "owner": "Cédric Ronvel"
   }
 }
+
 },{}]},{},[3])(3)
 });

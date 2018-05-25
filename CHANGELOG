@@ -1,4 +1,10 @@
 
+v0.15.0
+-------
+
+.removeAllListeners() bug fixed ; finally added supports for setMaxListeners() and .getMaxListeners()
+
+
 v0.14.6
 -------
 

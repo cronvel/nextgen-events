@@ -30,12 +30,10 @@
 
 var NextGenEvents ;
 
-if ( process.browser )   
-{
+if ( process.browser ) {
 	NextGenEvents = require( '../lib/browser.js' ) ;
 }
-else
-{
+else {
 	NextGenEvents = require( '../lib/NextGenEvents.js' ) ;
 }
 
@@ -559,6 +557,42 @@ describe( "Basic synchronous event-emitting (node-compatible)" , function() {
 		expect( NextGenEvents.listenerCount( bus , 'bar' ) ).to.be( 0 ) ;
 		
 	} ) ;
+	
+	it( "should emit a warning when the max listener limit is reached" , function( done ) {
+		var count = 0 ,
+			catched = 0 ,
+			bus = new NextGenEvents() ;
+		
+		process.on( 'warning' , warning => {
+			// Looks like this event is emitted asynchronously by Node.js -_-'
+			//expect( count ).to.be( 1 ) ;
+			catched ++ ;
+		} ) ;
+		
+		bus.setMaxListeners( 1 ) ;
+		expect( bus.getMaxListeners() ).to.be( 1 ) ;
+		
+		count ++ ;
+		bus.on( 'foo' , function() {} ) ;
+		
+		count ++ ;
+		bus.on( 'foo' , function() {} ) ;
+		
+		count ++ ;
+		bus.on( 'foo' , function() {} ) ;
+		
+		if ( process.browser ) {
+			// Browsers don't have event-emitter process, so nothing will happened.
+			// We still run most of the test so we can detect unexpected throw in the browser.
+			done() ;
+			return ;
+		}
+		
+		setTimeout( () => {
+			expect( catched ).to.be( 1 ) ;
+			done() ;
+		} , 30 ) ;
+	} ) ;
 } ) ;
 
 
@@ -814,29 +848,6 @@ describe( "Basic synchronous event-emitting (NOT compatible with node)" , functi
 
 
 
-describe( "Edge cases" , function() {
-	
-	it( "inside a 'newListener' listener, the .listenerCount() should report correctly" , function() {
-		
-		var triggered = 0 ,
-			bus = new NextGenEvents() ;
-		
-		bus.on( 'newListener' , function( listeners ) {
-			triggered ++ ;
-			expect( listeners.length ).to.be( 1 ) ;
-			expect( listeners[ 0 ].event ).to.be( 'ready' ) ;
-			
-			// This is the tricky condition
-			expect( bus.listenerCount( 'ready' ) ).to.be( 1 ) ;
-		} ) ;
-		
-		bus.on( 'ready' , function() {} ) ;
-		expect( triggered ).to.be( 1 ) ;
-	} ) ;
-} ) ;
-
-
-		
 describe( "Next Gen feature: listener in 'eventObject' mode" , function() {
 	
 	it( "listener using 'eventObject' option" , function() {
@@ -2571,4 +2582,40 @@ describe( "Next Gen feature: completion callback" , function() {
 describe( "Proxies" , function() {
 	it( "TODO..." ) ;
 } ) ;		
+
+
+
+describe( "Edge cases" , function() {
+	
+	it( "inside a 'newListener' listener, the .listenerCount() should report correctly" , function() {
+		
+		var triggered = 0 ,
+			bus = new NextGenEvents() ;
+		
+		bus.on( 'newListener' , function( listeners ) {
+			triggered ++ ;
+			expect( listeners.length ).to.be( 1 ) ;
+			expect( listeners[ 0 ].event ).to.be( 'ready' ) ;
+			
+			// This is the tricky condition
+			expect( bus.listenerCount( 'ready' ) ).to.be( 1 ) ;
+		} ) ;
+		
+		bus.on( 'ready' , function() {} ) ;
+		expect( triggered ).to.be( 1 ) ;
+	} ) ;
+} ) ;
+
+
+
+describe( "Historical bugs" , function() {
+	
+	it( "should not throw when adding a new listener after .removeAllListeners()" , function() {
+		var bus = new NextGenEvents() ;
+		bus.removeAllListeners() ;
+		bus.on( 'foo' , function() {} ) ;
+	} ) ;
+} ) ;
+
+
 
