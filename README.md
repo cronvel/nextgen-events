@@ -5,7 +5,7 @@
 The next generation of events handling!
 
 * License: MIT
-* Current status: very close to release
+* Current status: stable
 * Platform: Node.js and browsers
 
 *NextGen Events* solves common trouble that one may encounter when dealing with events and listeners.
