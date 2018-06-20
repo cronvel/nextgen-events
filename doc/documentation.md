@@ -34,11 +34,18 @@
 	* [NextGenEvents.share()](#ref.events.share)
 	* [NextGenEvents.groupAddListener() / NextGenEvents.groupOn()](#ref.events.groupAddListener)
 	* [NextGenEvents.groupOnce()](#ref.events.groupOnce)
-	* [NextGenEvents.groupGlobalOnce()](#ref.events.groupGlobalOnce)
-	* [NextGenEvents.groupGlobalOnceAll()](#ref.events.groupGlobalOnceAll)
+	* [NextGenEvents.groupWaitFor()](#ref.events.groupWaitFor)
+	* [NextGenEvents.groupWaitForAll()](#ref.events.groupWaitForAll)
+	* [NextGenEvents.groupOnceFirst()](#ref.events.groupOnceFirst)
+	* [NextGenEvents.groupWaitForFirst()](#ref.events.groupWaitForFirst)
+	* [NextGenEvents.groupWaitForFirstAll()](#ref.events.groupWaitForFirstAll)
+	* [NextGenEvents.groupOnceLast()](#ref.events.groupOnceLast)
+	* [NextGenEvents.groupWaitForLast()](#ref.events.groupWaitForLast)
+	* [NextGenEvents.groupWaitForLastAll()](#ref.events.groupWaitForLastAll)
 	* [NextGenEvents.groupRemoveListener() / NextGenEvents.groupOff()](#ref.events.groupRemoveListener)
 	* [NextGenEvents.groupRemoveAllListener()](#ref.events.groupRemoveAllListener)
 	* [NextGenEvents.groupEmit()](#ref.events.groupEmit)
+	* [NextGenEvents.groupWaitForEmit()](#ref.events.groupWaitForEmit)
 	* [NextGenEvents.groupDefineStates()](#ref.events.groupDefineStates)
 	* [Built-in events](#ref.builtin-events)
 		* [Error event](#ref.builtin-events.error)
@@ -657,7 +664,7 @@ The *target emitter* is reset beforehand.
 <a name="ref.events.groupAddListener"></a>
 ### NextGenEvents.groupAddListener( emitters , eventName , [fn] , [options] )  *or*  NextGenEvents.groupOn( emitters , eventName , [fn] , [options] )
 
-* emitters `array` of emitter
+* emitters `array` of emitters
 * eventName `string` the name of the event to bind to
 * fn `Function` the callback function for this event, this argument is optional: it can be passed to the `fn` property of `options`
 * options `Object` see [.addListener()](#ref.events.addListener) for details.
@@ -669,7 +676,7 @@ Adds a listener to a group of emitter.
 <a name="ref.events.groupOnce"></a>
 ### NextGenEvents.groupOnce( emitters , eventName , [fn] , [options] )
 
-* emitters `array` of emitter
+* emitters `array` of emitters
 * eventName `string` the name of the event to bind to
 * fn `Function` the callback function for this event, this argument is optional: it can be passed to the `fn` property of `options`
 * options `Object` see [.addListener()](#ref.events.addListener) for details.
@@ -678,10 +685,30 @@ Adds a **one time** listener to a group of emitter, the listener can be called o
 
 
 
-<a name="ref.events.groupGlobalOnce"></a>
-### NextGenEvents.groupGlobalOnce( emitters , eventName , [fn] , [options] )
+<a name="ref.events.groupWaitFor"></a>
+### NextGenEvents.groupWaitFor( emitters , eventName )
 
-* emitters `array` of emitter
+* emitters `array` of emitters
+* eventName `string` the name of the event to bind to
+
+A Promise-returning `.groupOnce()` variant, it returns an array with the first argument for each emitter's event.
+
+
+
+<a name="ref.events.groupWaitForAll"></a>
+### NextGenEvents.groupWaitForAll( emitters , eventName )
+
+* emitters `array` of emitters
+* eventName `string` the name of the event to bind to
+
+A Promise-returning `.groupOnce()` variant, it returns an array of array of all arguments for each emitter's event.
+
+
+
+<a name="ref.events.groupOnceFirst"></a>
+### NextGenEvents.groupOnceFirst( emitters , eventName , [fn] , [options] )
+
+* emitters `array` of emitters
 * eventName `string` the name of the event to bind to
 * fn `Function` the callback function for this event, this argument is optional: it can be passed to the `fn` property of `options`
 * options `Object` see [.addListener()](#ref.events.addListener) for details.
@@ -690,10 +717,30 @@ Adds a **one time** listener to a group of emitter, the listener will be called 
 
 
 
-<a name="ref.events.groupGlobalOnceAll"></a>
-### NextGenEvents.groupGlobalOnceAll( emitters , eventName , [fn] , [options] )
+<a name="ref.events.groupWaitForFirst"></a>
+### NextGenEvents.groupWaitForFirst( emitters , eventName )
 
-* emitters `array` of emitter
+* emitters `array` of emitters
+* eventName `string` the name of the event to bind to
+
+A Promise-returning `.groupOnceFirst()` variant, it returns the first arguments of the first emitted event.
+
+
+
+<a name="ref.events.groupWaitForFirstAll"></a>
+### NextGenEvents.groupWaitForFirstAll( emitters , eventName )
+
+* emitters `array` of emitters
+* eventName `string` the name of the event to bind to
+
+A Promise-returning `.groupOnceFirst()` variant, it returns an array of all arguments of the first emitted event.
+
+
+
+<a name="ref.events.groupOnceLast"></a>
+### NextGenEvents.groupOnceLast( emitters , eventName , [fn] , [options] )
+
+* emitters `array` of emitters
 * eventName `string` the name of the event to bind to
 * fn `Function` the callback function for this event, this argument is optional: it can be passed to the `fn` property of `options`
 * options `Object` see [.addListener()](#ref.events.addListener) for details.
@@ -703,10 +750,30 @@ The listener receive the argument from the last event to be emitted.
 
 
 
+<a name="ref.events.groupWaitForLast"></a>
+### NextGenEvents.groupWaitForLast( emitters , eventName )
+
+* emitters `array` of emitters
+* eventName `string` the name of the event to bind to
+
+A Promise-returning `.groupOnceLast()` variant, it returns the first arguments of the last emitted event.
+
+
+
+<a name="ref.events.groupWaitForLastAll"></a>
+### NextGenEvents.groupWaitForLastAll( emitters , eventName )
+
+* emitters `array` of emitters
+* eventName `string` the name of the event to bind to
+
+A Promise-returning `.groupOnceLast()` variant, it returns an array of all arguments of the last emitted event.
+
+
+
 <a name="ref.events.groupRemoveListener"></a>
 ### NextGenEvents.groupRemoveListener( emitters , eventName , listenerID )  *or*  NextGenEvents.groupOff( emitters , eventName , listenerID )
 
-* emitters `array` of emitter
+* emitters `array` of emitters
 * eventName `string` the name of the event the listener to remove is binded to
 * listenerID `any type` the identifier of the listener to remove
 
@@ -717,7 +784,7 @@ Removes a listener from all emitters.
 <a name="ref.events.groupRemoveAllListener"></a>
 ### NextGenEvents.groupRemoveAllListener( emitters , eventName )
 
-* emitters `array` of emitter
+* emitters `array` of emitters
 * eventName `string` the name of the event the listener to remove is binded to
 
 Removes all listeners from all emitters.
@@ -727,7 +794,7 @@ Removes all listeners from all emitters.
 <a name="ref.events.groupEmit"></a>
 ### NextGenEvents.groupEmit( emitters , [nice] , eventName , [arg1] , [arg2] , [...] , [callback] )
 
-* emitters `array` of emitter
+* emitters `array` of emitters
 * nice `integer` (default: -Infinity) see [the nice feature](#ref.note.nice) for details
 * eventName `string` (optional) the name of the event to emit
 * arg1 `any type` (optional) first argument to transmit
@@ -738,6 +805,24 @@ Removes all listeners from all emitters.
 	* event `Object` representing the current event
 
 Emit an event on all emitters, see [.emit()](#ref.events.emit).
+
+
+
+<a name="ref.events.groupWaitForEmit"></a>
+### .groupWaitForEmit( emitters , [nice] , eventName , [arg1] , [arg2] , [...] )
+
+* emitters `array` of emitters
+* nice `integer` (default: -Infinity) see [the nice feature](#ref.note.nice) for details
+* eventName `string` (optional) the name of the event to emit
+* arg1 `any type` (optional) first argument to transmit
+* arg2 `any type` (optional) second argument to transmit
+* ...
+
+This is the *Promise-returning* variant of `.groupEmit()` + *completionCallback*.
+It returns a `Promise` that resolves once all sync/async listeners have finished, or once one listener has interrupted
+the event emitting sequence (see [.setInterruptible()](#ref.events.setInterruptible)).
+
+The promise resolve to `null` or eventually to the *interruption value*.
 
 
 

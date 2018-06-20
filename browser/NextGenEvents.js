@@ -852,8 +852,22 @@ NextGenEvents.groupOnce = function groupOnce( emitters , eventName , fn , option
 
 
 
+// A Promise-returning .groupOnce() variant, it returns an array with only the first arg for each emitter's event
+NextGenEvents.groupWaitFor = function groupWaitFor( emitters , eventName ) {
+	return Promise.all( emitters.map( emitter => emitter.waitFor( eventName ) ) ) ;
+} ;
+
+
+
+// A Promise-returning .groupOnce() variant, it returns an array of array for each emitter's event
+NextGenEvents.groupWaitForAll = function groupWaitForAll( emitters , eventName ) {
+	return Promise.all( emitters.map( emitter => emitter.waitForAll( eventName ) ) ) ;
+} ;
+
+
+
 // Globally once, only one event could be emitted, by the first emitter to emit
-NextGenEvents.groupGlobalOnce = function groupGlobalOnce( emitters , eventName , fn , options ) {
+NextGenEvents.groupOnceFirst = function groupOnceFirst( emitters , eventName , fn , options ) {
 	var fnWrapper , triggered = false ;
 
 	// Manage arguments
@@ -880,8 +894,26 @@ NextGenEvents.groupGlobalOnce = function groupGlobalOnce( emitters , eventName ,
 
 
 
+// A Promise-returning .groupOnceFirst() variant, only the first arg is returned
+NextGenEvents.groupWaitForFirst = function groupWaitForFirst( emitters , eventName ) {
+	return new Promise( resolve => {
+		NextGenEvents.groupOnceFirst( emitters , eventName , ( firstArg ) => resolve( firstArg ) ) ;
+	} ) ;
+} ;
+
+
+
+// A Promise-returning .groupOnceFirst() variant, all args are returned as an array
+NextGenEvents.groupWaitForFirstAll = function groupWaitForFirstAll( emitters , eventName ) {
+	return new Promise( resolve => {
+		NextGenEvents.groupOnceFirst( emitters , eventName , ( ... args ) => resolve( args ) ) ;
+	} ) ;
+} ;
+
+
+
 // Globally once, only one event could be emitted, by the last emitter to emit
-NextGenEvents.groupGlobalOnceAll = function groupGlobalOnceAll( emitters , eventName , fn , options ) {
+NextGenEvents.groupOnceLast = function groupOnceLast( emitters , eventName , fn , options ) {
 	var fnWrapper , triggered = false , count = emitters.length ;
 
 	// Manage arguments
@@ -908,6 +940,24 @@ NextGenEvents.groupGlobalOnceAll = function groupGlobalOnceAll( emitters , event
 
 	emitters.forEach( ( emitter ) => {
 		emitter.once( eventName , fnWrapper.bind( undefined , emitter ) , options ) ;
+	} ) ;
+} ;
+
+
+
+// A Promise-returning .groupGlobalWaitFor() variant, only the first arg is returned
+NextGenEvents.groupWaitForLast = function groupWaitForLast( emitters , eventName ) {
+	return new Promise( resolve => {
+		NextGenEvents.groupOnceLast( emitters , eventName , ( firstArg ) => resolve( firstArg ) ) ;
+	} ) ;
+} ;
+
+
+
+// A Promise-returning .groupGlobalWaitFor() variant, all args are returned as an array
+NextGenEvents.groupWaitForLastAll = function groupWaitForLastAll( emitters , eventName ) {
+	return new Promise( resolve => {
+		NextGenEvents.groupOnceLast( emitters , eventName , ( ... args ) => resolve( args ) ) ;
 	} ) ;
 } ;
 
@@ -974,11 +1024,26 @@ NextGenEvents.groupEmit = function groupEmit( emitters , ... args ) {
 
 
 
+NextGenEvents.groupWaitForEmit = function groupWaitForEmit( emitters , ... args ) {
+	return new Promise( resolve => {
+		NextGenEvents.groupEmit( emitters , ... args , ( interrupt ) => resolve( interrupt ) ) ;
+	} ) ;
+} ;
+
+
+
 NextGenEvents.groupDefineStates = function groupDefineStates( emitters , ... args ) {
 	emitters.forEach( ( emitter ) => {
 		emitter.defineStates( ... args ) ;
 	} ) ;
 } ;
+
+
+
+// Bad names, but since they make their way through the API documentation,
+// it should be kept for backward compatibility, but they are DEPRECATED.
+NextGenEvents.groupGlobalOnce = NextGenEvents.groupOnceFirst ;
+NextGenEvents.groupGlobalOnceAll = NextGenEvents.groupOnceLast ;
 
 
 
@@ -1986,7 +2051,7 @@ process.umask = function() { return 0; };
 },{}],5:[function(require,module,exports){
 module.exports={
   "name": "nextgen-events",
-  "version": "0.14.6",
+  "version": "1.0.1",
   "description": "The next generation of events handling for javascript! New: abstract away the network!",
   "main": "lib/NextGenEvents.js",
   "engines": {
@@ -2041,6 +2106,5 @@ module.exports={
     "owner": "Cédric Ronvel"
   }
 }
-
 },{}]},{},[3])(3)
 });

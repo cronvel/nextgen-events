@@ -1348,7 +1348,7 @@ describe( "Next Gen feature: emitter group actions" , function() {
 		
 		var triggered = 0 ;
 		
-		NextGenEvents.groupGlobalOnce( busList , 'hello' , function( emitter , arg1 , arg2 ) {
+		NextGenEvents.groupOnceFirst( busList , 'hello' , function( emitter , arg1 , arg2 ) {
 			triggered ++ ;
 			emitter.triggered = ( emitter.triggered || 0 ) + 1 ;
 			expect( arg1 ).to.be( 'world' ) ;
@@ -1376,7 +1376,7 @@ describe( "Next Gen feature: emitter group actions" , function() {
 		
 		var triggered = 0 ;
 		
-		NextGenEvents.groupGlobalOnceAll( busList , 'hello' , function( emitter , arg1 , arg2 ) {
+		NextGenEvents.groupOnceLast( busList , 'hello' , function( emitter , arg1 , arg2 ) {
 			triggered ++ ;
 			emitter.triggered = ( emitter.triggered || 0 ) + 1 ;
 			expect( arg1 ).to.be( 'world' ) ;
@@ -1562,6 +1562,8 @@ describe( "Next Gen feature: emitter group actions" , function() {
 		
 		expect( triggered ).to.be( 6 ) ;
 	} ) ;
+	
+	it( "all .groupWaitFor*() static methods" ) ;
 	
 	it( "using interruptible emitters, once one of them is interrupted, should all other emitter be interrupted too?" ) ;
 } ) ;
