@@ -1,6 +1,6 @@
 {
   "name": "nextgen-events",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "The next generation of events handling for javascript! New: abstract away the network!",
   "main": "lib/NextGenEvents.js",
   "engines": {
@@ -50,7 +50,7 @@
     "title": "Next-Gen Events",
     "years": [
       2015,
-      2018
+      2019
     ],
     "owner": "Cédric Ronvel"
   }

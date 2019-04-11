@@ -3,7 +3,7 @@
 /*
 	Next-Gen Events
 
-	Copyright (c) 2015 - 2018 Cédric Ronvel
+	Copyright (c) 2015 - 2019 Cédric Ronvel
 
 	The MIT License (MIT)
 
@@ -65,7 +65,7 @@ NextGenEvents.defaultMaxListeners = Infinity ;
 
 // Not part of the prototype, because it should not pollute userland's prototype.
 // It has an eventEmitter as 'this' anyway (always called using call()).
-NextGenEvents.init = function init() {
+NextGenEvents.init = function() {
 	Object.defineProperty( this , '__ngev' , {
 		configurable: true ,
 		value: new NextGenEvents.Internal()
@@ -74,7 +74,7 @@ NextGenEvents.init = function init() {
 
 
 
-NextGenEvents.Internal = function Internal( from ) {
+NextGenEvents.Internal = function( from ) {
 	this.nice = NextGenEvents.SYNC ;
 	this.interruptible = false ;
 	this.contexts = {} ;
@@ -124,7 +124,7 @@ NextGenEvents.Internal = function Internal( from ) {
 
 
 
-NextGenEvents.initFrom = function initFrom( from ) {
+NextGenEvents.initFrom = function( from ) {
 	if ( ! from.__ngev ) { NextGenEvents.init.call( from ) ; }
 
 	Object.defineProperty( this , '__ngev' , {
@@ -142,7 +142,7 @@ NextGenEvents.initFrom = function initFrom( from ) {
 
 	Not sure if it will ever go public, it was a very specific use-case (Spellcast).
 */
-NextGenEvents.mergeListeners = function mergeListeners( foreigners ) {
+NextGenEvents.mergeListeners = function( foreigners ) {
 	if ( ! this.__ngev ) { NextGenEvents.init.call( this ) ; }
 
 	// Backup the current listeners...
@@ -205,7 +205,7 @@ NextGenEvents.filterOutCallback = function( what , currentElement ) { return wha
 
 
 // .addListener( eventName , [fn] , [options] )
-NextGenEvents.prototype.addListener = function addListener( eventName , fn , options ) {
+NextGenEvents.prototype.addListener = function( eventName , fn , options ) {
 	var listener = {} , newListenerListeners ;
 
 	if ( ! this.__ngev ) { NextGenEvents.init.call( this ) ; }
@@ -293,7 +293,7 @@ NextGenEvents.prototype.on = NextGenEvents.prototype.addListener ;
 
 // Short-hand
 // .once( eventName , [fn] , [options] )
-NextGenEvents.prototype.once = function once( eventName , fn , options ) {
+NextGenEvents.prototype.once = function( eventName , fn , options ) {
 	if ( fn && typeof fn === 'object' ) { fn.once = true ; }
 	else if ( options && typeof options === 'object' ) { options.once = true ; }
 	else { options = { once: true } ; }
@@ -305,7 +305,7 @@ NextGenEvents.prototype.once = function once( eventName , fn , options ) {
 
 // .waitFor( eventName )
 // A Promise-returning .once() variant, only the first arg is returned
-NextGenEvents.prototype.waitFor = function waitFor( eventName ) {
+NextGenEvents.prototype.waitFor = function( eventName ) {
 	return new Promise( resolve => {
 		this.addListener( eventName , ( firstArg ) => resolve( firstArg ) , { once: true } ) ;
 	} ) ;
@@ -315,7 +315,7 @@ NextGenEvents.prototype.waitFor = function waitFor( eventName ) {
 
 // .waitForAll( eventName )
 // A Promise-returning .once() variant, all args are returned as an array
-NextGenEvents.prototype.waitForAll = function waitForAll( eventName ) {
+NextGenEvents.prototype.waitForAll = function( eventName ) {
 	return new Promise( resolve => {
 		this.addListener( eventName , ( ... args ) => resolve( args ) , { once: true } ) ;
 	} ) ;
@@ -323,7 +323,7 @@ NextGenEvents.prototype.waitForAll = function waitForAll( eventName ) {
 
 
 
-NextGenEvents.prototype.removeListener = function removeListener( eventName , id ) {
+NextGenEvents.prototype.removeListener = function( eventName , id ) {
 	var i , length , newListeners = [] , removedListeners = [] ;
 
 	if ( ! eventName || typeof eventName !== 'string' ) { throw new TypeError( ".removeListener(): argument #0 should be a non-empty string" ) ; }
@@ -356,7 +356,7 @@ NextGenEvents.prototype.off = NextGenEvents.prototype.removeListener ;
 
 
 
-NextGenEvents.prototype.removeAllListeners = function removeAllListeners( eventName ) {
+NextGenEvents.prototype.removeAllListeners = function( eventName ) {
 	var removedListeners ;
 
 	if ( ! this.__ngev ) { NextGenEvents.init.call( this ) ; }
@@ -392,7 +392,7 @@ NextGenEvents.prototype.removeAllListeners = function removeAllListeners( eventN
 
 
 
-NextGenEvents.listenerWrapper = function listenerWrapper( listener , event , contextScope , serial ) {
+NextGenEvents.listenerWrapper = function( listener , event , contextScope , serial ) {
 	var returnValue , listenerCallback ;
 
 	if ( event.interrupt ) { return ; }
@@ -456,7 +456,7 @@ var nextEventId = 0 ;
 /*
 	emit( [nice] , eventName , [arg1] , [arg2] , [...] , [emitCallback] )
 */
-NextGenEvents.prototype.emit = function emit( ... args ) {
+NextGenEvents.prototype.emit = function( ... args ) {
 	var event ;
 
 	event = {
@@ -504,7 +504,7 @@ NextGenEvents.prototype.emit = function emit( ... args ) {
 
 
 
-NextGenEvents.prototype.waitForEmit = function waitForEmit( ... args ) {
+NextGenEvents.prototype.waitForEmit = function( ... args ) {
 	return new Promise( resolve => {
 		this.emit( ... args , ( interrupt ) => resolve( interrupt ) ) ;
 	} ) ;
@@ -521,7 +521,7 @@ NextGenEvents.prototype.waitForEmit = function waitForEmit( ... args ) {
 		* callback: (optional) a callback for emit
 		* listeners: (optional) override the listeners array stored in __ngev
 */
-NextGenEvents.emitEvent = function emitEvent( event ) {
+NextGenEvents.emitEvent = function( event ) {
 	var self = event.emitter ,
 		i , iMax , count = 0 , state , removedListeners ;
 
@@ -598,7 +598,7 @@ NextGenEvents.emitEvent = function emitEvent( event ) {
 
 // If removedListeners is not given, then one-time listener emit the 'removeListener' event,
 // if given: that's the caller business to do it
-NextGenEvents.emitToOneListener = function emitToOneListener( event , listener , removedListeners ) {
+NextGenEvents.emitToOneListener = function( event , listener , removedListeners ) {
 	var self = event.emitter ,
 		context , contextScope , serial , currentNice , emitRemoveListener = false ;
 
@@ -662,7 +662,7 @@ NextGenEvents.emitToOneListener = function emitToOneListener( event , listener ,
 
 
 
-NextGenEvents.emitCallback = function emitCallback( event ) {
+NextGenEvents.emitCallback = function( event ) {
 	var callback = event.callback ;
 	delete event.callback ;
 
@@ -681,7 +681,7 @@ NextGenEvents.emitCallback = function emitCallback( event ) {
 
 
 
-NextGenEvents.prototype.listeners = function listeners( eventName ) {
+NextGenEvents.prototype.listeners = function( eventName ) {
 	if ( ! eventName || typeof eventName !== 'string' ) { throw new TypeError( ".listeners(): argument #0 should be a non-empty string" ) ; }
 
 	if ( ! this.__ngev ) { NextGenEvents.init.call( this ) ; }
@@ -711,7 +711,7 @@ NextGenEvents.prototype.listenerCount = function( eventName ) {
 
 
 
-NextGenEvents.prototype.setNice = function setNice( nice ) {
+NextGenEvents.prototype.setNice = function( nice ) {
 	if ( ! this.__ngev ) { NextGenEvents.init.call( this ) ; }
 	//if ( typeof nice !== 'number' ) { throw new TypeError( ".setNice(): argument #0 should be a number" ) ; }
 
@@ -720,7 +720,7 @@ NextGenEvents.prototype.setNice = function setNice( nice ) {
 
 
 
-NextGenEvents.prototype.desyncUseNextTick = function desyncUseNextTick( useNextTick ) {
+NextGenEvents.prototype.desyncUseNextTick = function( useNextTick ) {
 	if ( ! this.__ngev ) { NextGenEvents.init.call( this ) ; }
 	//if ( typeof nice !== 'number' ) { throw new TypeError( ".setNice(): argument #0 should be a number" ) ; }
 
@@ -729,7 +729,7 @@ NextGenEvents.prototype.desyncUseNextTick = function desyncUseNextTick( useNextT
 
 
 
-NextGenEvents.prototype.setInterruptible = function setInterruptible( isInterruptible ) {
+NextGenEvents.prototype.setInterruptible = function( isInterruptible ) {
 	if ( ! this.__ngev ) { NextGenEvents.init.call( this ) ; }
 	//if ( typeof nice !== 'number' ) { throw new TypeError( ".setNice(): argument #0 should be a number" ) ; }
 
@@ -754,7 +754,7 @@ NextGenEvents.share = function( source , target ) {
 
 
 
-NextGenEvents.reset = function reset( emitter ) {
+NextGenEvents.reset = function( emitter ) {
 	Object.defineProperty( emitter , '__ngev' , {
 		configurable: true ,
 		value: null
@@ -779,7 +779,7 @@ NextGenEvents.prototype.setMaxListeners = function( n ) {
 
 
 // Sometime useful as a no-op callback...
-NextGenEvents.noop = function() {} ;
+NextGenEvents.noop = () => undefined ;
 
 
 
@@ -790,7 +790,7 @@ NextGenEvents.noop = function() {} ;
 
 
 // .defineStates( exclusiveState1 , [exclusiveState2] , [exclusiveState3] , ... )
-NextGenEvents.prototype.defineStates = function defineStates( ... states ) {
+NextGenEvents.prototype.defineStates = function( ... states ) {
 	if ( ! this.__ngev ) { NextGenEvents.init.call( this ) ; }
 
 	states.forEach( ( state ) => {
@@ -801,14 +801,14 @@ NextGenEvents.prototype.defineStates = function defineStates( ... states ) {
 
 
 
-NextGenEvents.prototype.hasState = function hasState( state ) {
+NextGenEvents.prototype.hasState = function( state ) {
 	if ( ! this.__ngev ) { NextGenEvents.init.call( this ) ; }
 	return !! this.__ngev.states[ state ] ;
 } ;
 
 
 
-NextGenEvents.prototype.getAllStates = function getAllStates() {
+NextGenEvents.prototype.getAllStates = function() {
 	if ( ! this.__ngev ) { NextGenEvents.init.call( this ) ; }
 	return Object.keys( this.__ngev.states ).filter( e => this.__ngev.states[ e ] ) ;
 } ;
@@ -821,7 +821,7 @@ NextGenEvents.prototype.getAllStates = function getAllStates() {
 
 
 
-NextGenEvents.groupAddListener = function groupAddListener( emitters , eventName , fn , options ) {
+NextGenEvents.groupAddListener = function( emitters , eventName , fn , options ) {
 	// Manage arguments
 	if ( typeof fn !== 'function' ) { options = fn ; fn = undefined ; }
 	if ( ! options || typeof options !== 'object' ) { options = {} ; }
@@ -842,7 +842,7 @@ NextGenEvents.groupOn = NextGenEvents.groupAddListener ;
 
 
 // Once per emitter
-NextGenEvents.groupOnce = function groupOnce( emitters , eventName , fn , options ) {
+NextGenEvents.groupOnce = function( emitters , eventName , fn , options ) {
 	if ( fn && typeof fn === 'object' ) { fn.once = true ; }
 	else if ( options && typeof options === 'object' ) { options.once = true ; }
 	else { options = { once: true } ; }
@@ -853,21 +853,21 @@ NextGenEvents.groupOnce = function groupOnce( emitters , eventName , fn , option
 
 
 // A Promise-returning .groupOnce() variant, it returns an array with only the first arg for each emitter's event
-NextGenEvents.groupWaitFor = function groupWaitFor( emitters , eventName ) {
+NextGenEvents.groupWaitFor = function( emitters , eventName ) {
 	return Promise.all( emitters.map( emitter => emitter.waitFor( eventName ) ) ) ;
 } ;
 
 
 
 // A Promise-returning .groupOnce() variant, it returns an array of array for each emitter's event
-NextGenEvents.groupWaitForAll = function groupWaitForAll( emitters , eventName ) {
+NextGenEvents.groupWaitForAll = function( emitters , eventName ) {
 	return Promise.all( emitters.map( emitter => emitter.waitForAll( eventName ) ) ) ;
 } ;
 
 
 
 // Globally once, only one event could be emitted, by the first emitter to emit
-NextGenEvents.groupOnceFirst = function groupOnceFirst( emitters , eventName , fn , options ) {
+NextGenEvents.groupOnceFirst = function( emitters , eventName , fn , options ) {
 	var fnWrapper , triggered = false ;
 
 	// Manage arguments
@@ -895,7 +895,7 @@ NextGenEvents.groupOnceFirst = function groupOnceFirst( emitters , eventName , f
 
 
 // A Promise-returning .groupOnceFirst() variant, only the first arg is returned
-NextGenEvents.groupWaitForFirst = function groupWaitForFirst( emitters , eventName ) {
+NextGenEvents.groupWaitForFirst = function( emitters , eventName ) {
 	return new Promise( resolve => {
 		NextGenEvents.groupOnceFirst( emitters , eventName , ( firstArg ) => resolve( firstArg ) ) ;
 	} ) ;
@@ -904,7 +904,7 @@ NextGenEvents.groupWaitForFirst = function groupWaitForFirst( emitters , eventNa
 
 
 // A Promise-returning .groupOnceFirst() variant, all args are returned as an array
-NextGenEvents.groupWaitForFirstAll = function groupWaitForFirstAll( emitters , eventName ) {
+NextGenEvents.groupWaitForFirstAll = function( emitters , eventName ) {
 	return new Promise( resolve => {
 		NextGenEvents.groupOnceFirst( emitters , eventName , ( ... args ) => resolve( args ) ) ;
 	} ) ;
@@ -913,7 +913,7 @@ NextGenEvents.groupWaitForFirstAll = function groupWaitForFirstAll( emitters , e
 
 
 // Globally once, only one event could be emitted, by the last emitter to emit
-NextGenEvents.groupOnceLast = function groupOnceLast( emitters , eventName , fn , options ) {
+NextGenEvents.groupOnceLast = function( emitters , eventName , fn , options ) {
 	var fnWrapper , triggered = false , count = emitters.length ;
 
 	// Manage arguments
@@ -946,7 +946,7 @@ NextGenEvents.groupOnceLast = function groupOnceLast( emitters , eventName , fn 
 
 
 // A Promise-returning .groupGlobalWaitFor() variant, only the first arg is returned
-NextGenEvents.groupWaitForLast = function groupWaitForLast( emitters , eventName ) {
+NextGenEvents.groupWaitForLast = function( emitters , eventName ) {
 	return new Promise( resolve => {
 		NextGenEvents.groupOnceLast( emitters , eventName , ( firstArg ) => resolve( firstArg ) ) ;
 	} ) ;
@@ -955,7 +955,7 @@ NextGenEvents.groupWaitForLast = function groupWaitForLast( emitters , eventName
 
 
 // A Promise-returning .groupGlobalWaitFor() variant, all args are returned as an array
-NextGenEvents.groupWaitForLastAll = function groupWaitForLastAll( emitters , eventName ) {
+NextGenEvents.groupWaitForLastAll = function( emitters , eventName ) {
 	return new Promise( resolve => {
 		NextGenEvents.groupOnceLast( emitters , eventName , ( ... args ) => resolve( args ) ) ;
 	} ) ;
@@ -963,7 +963,7 @@ NextGenEvents.groupWaitForLastAll = function groupWaitForLastAll( emitters , eve
 
 
 
-NextGenEvents.groupRemoveListener = function groupRemoveListener( emitters , eventName , id ) {
+NextGenEvents.groupRemoveListener = function( emitters , eventName , id ) {
 	emitters.forEach( ( emitter ) => {
 		emitter.removeListener( eventName , id ) ;
 	} ) ;
@@ -973,7 +973,7 @@ NextGenEvents.groupOff = NextGenEvents.groupRemoveListener ;
 
 
 
-NextGenEvents.groupRemoveAllListeners = function groupRemoveAllListeners( emitters , eventName ) {
+NextGenEvents.groupRemoveAllListeners = function( emitters , eventName ) {
 	emitters.forEach( ( emitter ) => {
 		emitter.removeAllListeners( eventName ) ;
 	} ) ;
@@ -981,7 +981,7 @@ NextGenEvents.groupRemoveAllListeners = function groupRemoveAllListeners( emitte
 
 
 
-NextGenEvents.groupEmit = function groupEmit( emitters , ... args ) {
+NextGenEvents.groupEmit = function( emitters , ... args ) {
 	var eventName , nice , argStart = 1 , argEnd , count = emitters.length ,
 		callback , callbackWrapper , callbackTriggered = false ;
 
@@ -1024,7 +1024,7 @@ NextGenEvents.groupEmit = function groupEmit( emitters , ... args ) {
 
 
 
-NextGenEvents.groupWaitForEmit = function groupWaitForEmit( emitters , ... args ) {
+NextGenEvents.groupWaitForEmit = function( emitters , ... args ) {
 	return new Promise( resolve => {
 		NextGenEvents.groupEmit( emitters , ... args , ( interrupt ) => resolve( interrupt ) ) ;
 	} ) ;
@@ -1032,7 +1032,7 @@ NextGenEvents.groupWaitForEmit = function groupWaitForEmit( emitters , ... args 
 
 
 
-NextGenEvents.groupDefineStates = function groupDefineStates( emitters , ... args ) {
+NextGenEvents.groupDefineStates = function( emitters , ... args ) {
 	emitters.forEach( ( emitter ) => {
 		emitter.defineStates( ... args ) ;
 	} ) ;
@@ -1059,7 +1059,7 @@ NextGenEvents.CONTEXT_QUEUED = 2 ;
 
 
 
-NextGenEvents.prototype.addListenerContext = function addListenerContext( contextName , options ) {
+NextGenEvents.prototype.addListenerContext = function( contextName , options ) {
 	if ( ! this.__ngev ) { NextGenEvents.init.call( this ) ; }
 
 	if ( ! contextName || typeof contextName !== 'string' ) { throw new TypeError( ".addListenerContext(): argument #0 should be a non-empty string" ) ; }
@@ -1086,7 +1086,7 @@ NextGenEvents.prototype.addListenerContext = function addListenerContext( contex
 
 
 
-NextGenEvents.getContextScope = function getContextScope( context , scopeName ) {
+NextGenEvents.getContextScope = function( context , scopeName ) {
 	var scope = context.scopes[ scopeName ] ;
 
 	if ( ! scope ) {
@@ -1101,7 +1101,7 @@ NextGenEvents.getContextScope = function getContextScope( context , scopeName ) 
 
 
 
-NextGenEvents.prototype.disableListenerContext = function disableListenerContext( contextName ) {
+NextGenEvents.prototype.disableListenerContext = function( contextName ) {
 	if ( ! this.__ngev ) { NextGenEvents.init.call( this ) ; }
 	if ( ! contextName || typeof contextName !== 'string' ) { throw new TypeError( ".disableListenerContext(): argument #0 should be a non-empty string" ) ; }
 	if ( ! this.__ngev.contexts[ contextName ] ) { this.addListenerContext( contextName ) ; }
@@ -1113,7 +1113,7 @@ NextGenEvents.prototype.disableListenerContext = function disableListenerContext
 
 
 
-NextGenEvents.prototype.enableListenerContext = function enableListenerContext( contextName ) {
+NextGenEvents.prototype.enableListenerContext = function( contextName ) {
 	if ( ! this.__ngev ) { NextGenEvents.init.call( this ) ; }
 	if ( ! contextName || typeof contextName !== 'string' ) { throw new TypeError( ".enableListenerContext(): argument #0 should be a non-empty string" ) ; }
 	if ( ! this.__ngev.contexts[ contextName ] ) { this.addListenerContext( contextName ) ; }
@@ -1131,7 +1131,7 @@ NextGenEvents.prototype.enableListenerContext = function enableListenerContext( 
 
 
 
-NextGenEvents.prototype.queueListenerContext = function queueListenerContext( contextName ) {
+NextGenEvents.prototype.queueListenerContext = function( contextName ) {
 	if ( ! this.__ngev ) { NextGenEvents.init.call( this ) ; }
 	if ( ! contextName || typeof contextName !== 'string' ) { throw new TypeError( ".queueListenerContext(): argument #0 should be a non-empty string" ) ; }
 	if ( ! this.__ngev.contexts[ contextName ] ) { this.addListenerContext( contextName ) ; }
@@ -1143,7 +1143,7 @@ NextGenEvents.prototype.queueListenerContext = function queueListenerContext( co
 
 
 
-NextGenEvents.prototype.serializeListenerContext = function serializeListenerContext( contextName , value ) {
+NextGenEvents.prototype.serializeListenerContext = function( contextName , value ) {
 	if ( ! this.__ngev ) { NextGenEvents.init.call( this ) ; }
 	if ( ! contextName || typeof contextName !== 'string' ) { throw new TypeError( ".serializeListenerContext(): argument #0 should be a non-empty string" ) ; }
 	if ( ! this.__ngev.contexts[ contextName ] ) { this.addListenerContext( contextName ) ; }
@@ -1155,7 +1155,7 @@ NextGenEvents.prototype.serializeListenerContext = function serializeListenerCon
 
 
 
-NextGenEvents.prototype.setListenerContextNice = function setListenerContextNice( contextName , nice ) {
+NextGenEvents.prototype.setListenerContextNice = function( contextName , nice ) {
 	if ( ! this.__ngev ) { NextGenEvents.init.call( this ) ; }
 	if ( ! contextName || typeof contextName !== 'string' ) { throw new TypeError( ".setListenerContextNice(): argument #0 should be a non-empty string" ) ; }
 	if ( ! this.__ngev.contexts[ contextName ] ) { this.addListenerContext( contextName ) ; }
@@ -1167,7 +1167,7 @@ NextGenEvents.prototype.setListenerContextNice = function setListenerContextNice
 
 
 
-NextGenEvents.prototype.destroyListenerContext = function destroyListenerContext( contextName ) {
+NextGenEvents.prototype.destroyListenerContext = function( contextName ) {
 	var i , length , eventName , newListeners , removedListeners = [] ;
 
 	if ( ! contextName || typeof contextName !== 'string' ) { throw new TypeError( ".disableListenerContext(): argument #0 should be a non-empty string" ) ; }
@@ -1204,7 +1204,7 @@ NextGenEvents.prototype.destroyListenerContext = function destroyListenerContext
 
 
 
-NextGenEvents.processScopeQueue = function processScopeQueue( self , contextScope , serial , isCompletionCallback ) {
+NextGenEvents.processScopeQueue = function( self , contextScope , serial , isCompletionCallback ) {
 	var job ;
 
 	if ( isCompletionCallback ) { contextScope.ready = true ; }
@@ -1271,7 +1271,7 @@ NextGenEvents.Proxy = require( './Proxy.js' ) ;
 /*
 	Next-Gen Events
 
-	Copyright (c) 2015 - 2018 Cédric Ronvel
+	Copyright (c) 2015 - 2019 Cédric Ronvel
 
 	The MIT License (MIT)
 
@@ -1319,7 +1319,7 @@ Proxy.create = ( ... args ) => new Proxy( ... args ) ;
 
 
 // Add a local service accessible remotely
-Proxy.prototype.addLocalService = function addLocalService( id , emitter , options ) {
+Proxy.prototype.addLocalService = function( id , emitter , options ) {
 	this.localServices[ id ] = LocalService.create( this , id , emitter , options ) ;
 	return this.localServices[ id ] ;
 } ;
@@ -1327,7 +1327,7 @@ Proxy.prototype.addLocalService = function addLocalService( id , emitter , optio
 
 
 // Add a remote service accessible locally
-Proxy.prototype.addRemoteService = function addRemoteService( id ) {
+Proxy.prototype.addRemoteService = function( id ) {
 	this.remoteServices[ id ] = RemoteService.create( this , id ) ;
 	return this.remoteServices[ id ] ;
 } ;
@@ -1335,7 +1335,7 @@ Proxy.prototype.addRemoteService = function addRemoteService( id ) {
 
 
 // Destroy the proxy
-Proxy.prototype.destroy = function destroy() {
+Proxy.prototype.destroy = function() {
 	Object.keys( this.localServices ).forEach( ( id ) => {
 		this.localServices[ id ].destroy() ;
 		delete this.localServices[ id ] ;
@@ -1352,7 +1352,7 @@ Proxy.prototype.destroy = function destroy() {
 
 
 // Push an event message.
-Proxy.prototype.push = function push( message ) {
+Proxy.prototype.push = function( message ) {
 	if (
 		message.__type !== MESSAGE_TYPE ||
 		! message.service || typeof message.service !== 'string' ||
@@ -1388,7 +1388,7 @@ Proxy.prototype.push = function push( message ) {
 
 // This is the method to receive and decode data from the other side of the communication channel, most of time another proxy.
 // In most case, this should be overwritten.
-Proxy.prototype.receive = function receive( raw ) {
+Proxy.prototype.receive = function( raw ) {
 	this.push( raw ) ;
 } ;
 
@@ -1396,7 +1396,7 @@ Proxy.prototype.receive = function receive( raw ) {
 
 // This is the method used to send data to the other side of the communication channel, most of time another proxy.
 // This MUST be overwritten in any case.
-Proxy.prototype.send = function send() {
+Proxy.prototype.send = function() {
 	throw new Error( 'The send() method of the Proxy MUST be extended/overwritten' ) ;
 } ;
 
@@ -1411,7 +1411,7 @@ Proxy.LocalService = LocalService ;
 
 
 
-LocalService.create = function create( proxy , id , emitter , options ) {
+LocalService.create = function( proxy , id , emitter , options ) {
 	var self = Object.create( LocalService.prototype , {
 		proxy: { value: proxy , enumerable: true } ,
 		id: { value: id , enumerable: true } ,
@@ -1431,7 +1431,7 @@ LocalService.create = function create( proxy , id , emitter , options ) {
 
 
 // Destroy a service
-LocalService.prototype.destroy = function destroy() {
+LocalService.prototype.destroy = function() {
 	Object.keys( this.events ).forEach( ( eventName ) => {
 		this.emitter.off( eventName , this.events[ eventName ] ) ;
 		delete this.events[ eventName ] ;
@@ -1444,7 +1444,7 @@ LocalService.prototype.destroy = function destroy() {
 
 
 // Remote want to emit on the local service
-LocalService.prototype.receiveEmit = function receiveEmit( message ) {
+LocalService.prototype.receiveEmit = function( message ) {
 	if ( this.destroyed || ! this.canEmit || ( message.ack && ! this.canAck ) ) { return ; }
 
 	var event = {
@@ -1473,7 +1473,7 @@ LocalService.prototype.receiveEmit = function receiveEmit( message ) {
 
 
 // Remote want to listen to an event of the local service
-LocalService.prototype.receiveListen = function receiveListen( message ) {
+LocalService.prototype.receiveListen = function( message ) {
 	if ( this.destroyed || ! this.canListen || ( message.ack && ! this.canAck ) ) { return ; }
 
 	if ( message.ack ) {
@@ -1506,7 +1506,7 @@ LocalService.prototype.receiveListen = function receiveListen( message ) {
 
 
 // Remote do not want to listen to that event of the local service anymore
-LocalService.prototype.receiveIgnore = function receiveIgnore( message ) {
+LocalService.prototype.receiveIgnore = function( message ) {
 	if ( this.destroyed || ! this.canListen ) { return ; }
 
 	if ( ! this.events[ message.event ] ) { return ; }
@@ -1518,7 +1518,7 @@ LocalService.prototype.receiveIgnore = function receiveIgnore( message ) {
 
 
 //
-LocalService.prototype.receiveAckEvent = function receiveAckEvent( message ) {
+LocalService.prototype.receiveAckEvent = function( message ) {
 	if (
 		this.destroyed || ! this.canListen || ! this.canAck || ! message.ack ||
 		! this.events[ message.event ] || ! this.events[ message.event ].ack
@@ -1532,7 +1532,7 @@ LocalService.prototype.receiveAckEvent = function receiveAckEvent( message ) {
 
 
 // Send an event from the local service to remote
-LocalService.forward = function forward( event ) {
+LocalService.forward = function( event ) {
 	if ( this.destroyed ) { return ; }
 
 	this.proxy.send( {
@@ -1549,7 +1549,7 @@ LocalService.forward.ack = false ;
 
 
 // Send an event from the local service to remote, with ACK
-LocalService.forwardWithAck = function forwardWithAck( event , callback ) {
+LocalService.forwardWithAck = function( event , callback ) {
 	if ( this.destroyed ) { return ; }
 
 	if ( ! event.callback ) {
@@ -1609,7 +1609,7 @@ var EVENT_ACK = 2 ;
 
 
 
-RemoteService.create = function create( proxy , id ) {
+RemoteService.create = function( proxy , id ) {
 	var self = Object.create( RemoteService.prototype , {
 		proxy: { value: proxy , enumerable: true } ,
 		id: { value: id , enumerable: true } ,
@@ -1633,7 +1633,7 @@ RemoteService.create = function create( proxy , id ) {
 
 
 // Destroy a service
-RemoteService.prototype.destroy = function destroy() {
+RemoteService.prototype.destroy = function() {
 	this.emitter.removeAllListeners() ;
 	this.emitter = null ;
 	Object.keys( this.events ).forEach( ( eventName ) => { delete this.events[ eventName ] ; } ) ;
@@ -1643,7 +1643,7 @@ RemoteService.prototype.destroy = function destroy() {
 
 
 // Local code want to emit to remote service
-RemoteService.prototype.emit = function emit( eventName , ... args ) {
+RemoteService.prototype.emit = function( eventName , ... args ) {
 	if ( this.destroyed ) { return ; }
 
 	var callback , ackId , triggered ;
@@ -1689,7 +1689,7 @@ RemoteService.prototype.emit = function emit( eventName , ... args ) {
 
 
 // Local code want to listen to an event of remote service
-RemoteService.prototype.addListener = function addListener( eventName , fn , options ) {
+RemoteService.prototype.addListener = function( eventName , fn , options ) {
 	if ( this.destroyed ) { return ; }
 
 	// Manage arguments the same way NextGenEvents#addListener() does
@@ -1736,7 +1736,7 @@ RemoteService.prototype.once = NextGenEvents.prototype.once ;
 
 
 // Local code want to ignore an event of remote service
-RemoteService.prototype.removeListener = function removeListener( eventName , id ) {
+RemoteService.prototype.removeListener = function( eventName , id ) {
 	if ( this.destroyed ) { return ; }
 
 	this.emitter.removeListener( eventName , id ) ;
@@ -1762,7 +1762,7 @@ RemoteService.prototype.off = RemoteService.prototype.removeListener ;
 
 
 // A remote service sent an event we are listening to, emit on the service representing the remote
-RemoteService.prototype.receiveEvent = function receiveEvent( message ) {
+RemoteService.prototype.receiveEvent = function( message ) {
 	if ( this.destroyed || ! this.events[ message.event ] ) { return ; }
 
 	var event = {
@@ -1805,7 +1805,7 @@ RemoteService.prototype.receiveEvent = function receiveEvent( message ) {
 
 
 //
-RemoteService.prototype.receiveAckEmit = function receiveAckEmit( message ) {
+RemoteService.prototype.receiveAckEmit = function( message ) {
 	if ( this.destroyed || ! message.ack || this.events[ message.event ] !== EVENT_ACK ) {
 		return ;
 	}
@@ -1814,13 +1814,12 @@ RemoteService.prototype.receiveAckEmit = function receiveAckEmit( message ) {
 } ;
 
 
-
 },{"./NextGenEvents.js":1}],3:[function(require,module,exports){
 (function (process){
 /*
 	Next-Gen Events
 
-	Copyright (c) 2015 - 2018 Cédric Ronvel
+	Copyright (c) 2015 - 2019 Cédric Ronvel
 
 	The MIT License (MIT)
 
@@ -1848,18 +1847,17 @@ RemoteService.prototype.receiveAckEmit = function receiveAckEmit( message ) {
 
 
 if ( typeof window.setImmediate !== 'function' ) {
-	window.setImmediate = function setImmediate( fn ) {
-		setTimeout( fn , 0 ) ;
-	} ;
+	window.setImmediate = fn => setTimeout( fn , 0 ) ;
 }
 
 if ( ! process.emitWarning ) {
 	// Looks like browserify don't have this
-	process.emitWarning = function() {} ;
+	process.emitWarning = () => undefined ;
 }
 
 module.exports = require( './NextGenEvents.js' ) ;
 module.exports.isBrowser = true ;
+
 
 }).call(this,require('_process'))
 },{"./NextGenEvents.js":1,"_process":4}],4:[function(require,module,exports){
@@ -2051,7 +2049,7 @@ process.umask = function() { return 0; };
 },{}],5:[function(require,module,exports){
 module.exports={
   "name": "nextgen-events",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "The next generation of events handling for javascript! New: abstract away the network!",
   "main": "lib/NextGenEvents.js",
   "engines": {
@@ -2101,7 +2099,7 @@ module.exports={
     "title": "Next-Gen Events",
     "years": [
       2015,
-      2018
+      2019
     ],
     "owner": "Cédric Ronvel"
   }
