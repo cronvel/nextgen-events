@@ -25,6 +25,7 @@
 	* [.setInterruptible()](#ref.events.setInterruptible)
 	* [.setListenerPriority()](#ref.events.setListenerPriority)
 	* [.addListenerContext()](#ref.events.addListenerContext)
+	* [.getListenerContext()](#ref.events.getListenerContext)
 	* [.disableListenerContext()](#ref.events.disableListenerContext)
 	* [.queueListenerContext()](#ref.events.queueListenerContext)
 	* [.enableListenerContext()](#ref.events.enableListenerContext)
@@ -498,9 +499,19 @@ If the *emitter* has listener priority, it will always call its listener accordi
 	  one after the other is fully completed
 
 Create a context using the given *contextName*.
+Return a *context*.
 
 Listeners can be tied to a context, enabling some grouping features like turning them on or off just by enabling/disabling
 the context, queuing them, resuming them, or forcing serialization of all async listeners.
+
+
+
+<a name="ref.events.getListenerContext"></a>
+### .getListenerContext( contextName )
+
+* contextName `string` a non-empty string identifying the context to retrieve
+
+Return the *context* matching the name or *undefined*.
 
 
 
