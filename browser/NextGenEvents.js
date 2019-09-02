@@ -207,28 +207,37 @@ NextGenEvents.filterOutCallback = function( what , currentElement ) { return wha
 
 // .addListener( eventName , [fn] , [options] )
 NextGenEvents.prototype.addListener = function( eventName , fn , options ) {
-	var listener = {} , newListenerListeners ;
+	var listener , newListenerListeners ;
 
 	if ( ! this.__ngev ) { NextGenEvents.init.call( this ) ; }
 	if ( ! this.__ngev.listeners[ eventName ] ) { this.__ngev.listeners[ eventName ] = [] ; }
 
+	// Argument management
 	if ( ! eventName || typeof eventName !== 'string' ) {
 		throw new TypeError( ".addListener(): argument #0 should be a non-empty string" ) ;
 	}
 
-	if ( typeof fn !== 'function' ) {
-		if ( options === true && fn && typeof fn === 'object' ) {
-			// We want to use the current object as the listener object (used by Spellcast's serializer)
-			options = listener = fn ;
-			fn = undefined ;
+	if ( typeof fn === 'function' ) {
+		listener = {} ;
+
+		if ( ! options || typeof options !== 'object' ) { options = {} ; }
+	}
+	else if ( options === true && fn && typeof fn === 'object' ) {
+		// We want to use the current object as the listener object (used by Spellcast's serializer)
+		options = listener = fn ;
+		fn = undefined ;
+	}
+	else {
+		options = fn ;
+
+		if ( ! options || typeof options !== 'object' ) {
+			throw new TypeError( ".addListener(): a function or an object with a 'fn' property which value is a function should be provided" ) ;
 		}
-		else {
-			options = fn ;
-			fn = undefined ;
-		}
+
+		fn = undefined ;
+		listener = {} ;
 	}
 
-	if ( ! options || typeof options !== 'object' ) { options = {} ; }
 
 	listener.fn = fn || options.fn ;
 	listener.id = options.id !== undefined ? options.id : listener.fn ;
@@ -2057,7 +2066,7 @@ process.umask = function() { return 0; };
 },{}],5:[function(require,module,exports){
 module.exports={
   "name": "nextgen-events",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "The next generation of events handling for javascript! New: abstract away the network!",
   "main": "lib/NextGenEvents.js",
   "engines": {
