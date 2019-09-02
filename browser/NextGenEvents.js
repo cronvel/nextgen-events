@@ -96,6 +96,7 @@ NextGenEvents.Internal = function( from ) {
 		removeListener: []
 	} ;
 
+	this.hasListenerPriority = false ;
 	this.maxListeners = NextGenEvents.defaultMaxListeners ;
 
 	if ( from ) {
@@ -235,6 +236,7 @@ NextGenEvents.prototype.addListener = function( eventName , fn , options ) {
 	listener.async = !! options.async ;
 	listener.eventObject = !! options.eventObject ;
 	listener.nice = options.nice !== undefined ? Math.floor( options.nice ) : NextGenEvents.SYNC ;
+	listener.priority = + options.priority || 0 ;
 	listener.context = typeof options.context === 'string' ? options.context : null ;
 
 	if ( typeof listener.fn !== 'function' ) {
@@ -273,6 +275,11 @@ NextGenEvents.prototype.addListener = function( eventName , fn , options ) {
 	}
 
 	this.__ngev.listeners[ eventName ].push( listener ) ;
+
+	if ( this.__ngev.hasListenerPriority ) {
+		// order higher priority first
+		this.__ngev.listeners[ eventName ].sort( ( a , b ) => b.priority - a.priority ) ;
+	}
 
 	if ( this.__ngev.listeners[ eventName ].length === this.__ngev.maxListeners + 1 ) {
 		process.emitWarning(
@@ -713,8 +720,6 @@ NextGenEvents.prototype.listenerCount = function( eventName ) {
 
 NextGenEvents.prototype.setNice = function( nice ) {
 	if ( ! this.__ngev ) { NextGenEvents.init.call( this ) ; }
-	//if ( typeof nice !== 'number' ) { throw new TypeError( ".setNice(): argument #0 should be a number" ) ; }
-
 	this.__ngev.nice = Math.floor( + nice || 0 ) ;
 } ;
 
@@ -722,8 +727,6 @@ NextGenEvents.prototype.setNice = function( nice ) {
 
 NextGenEvents.prototype.desyncUseNextTick = function( useNextTick ) {
 	if ( ! this.__ngev ) { NextGenEvents.init.call( this ) ; }
-	//if ( typeof nice !== 'number' ) { throw new TypeError( ".setNice(): argument #0 should be a number" ) ; }
-
 	this.__ngev.desync = useNextTick ? nextTick : setImmediate ;
 } ;
 
@@ -731,9 +734,14 @@ NextGenEvents.prototype.desyncUseNextTick = function( useNextTick ) {
 
 NextGenEvents.prototype.setInterruptible = function( isInterruptible ) {
 	if ( ! this.__ngev ) { NextGenEvents.init.call( this ) ; }
-	//if ( typeof nice !== 'number' ) { throw new TypeError( ".setNice(): argument #0 should be a number" ) ; }
-
 	this.__ngev.interruptible = !! isInterruptible ;
+} ;
+
+
+
+NextGenEvents.prototype.setListenerPriority = function( hasListenerPriority ) {
+	if ( ! this.__ngev ) { NextGenEvents.init.call( this ) ; }
+	this.__ngev.hasListenerPriority = !! hasListenerPriority ;
 } ;
 
 
@@ -2049,7 +2057,7 @@ process.umask = function() { return 0; };
 },{}],5:[function(require,module,exports){
 module.exports={
   "name": "nextgen-events",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "The next generation of events handling for javascript! New: abstract away the network!",
   "main": "lib/NextGenEvents.js",
   "engines": {

@@ -112,7 +112,6 @@ describe( "Basic synchronous event-emitting (node-compatible)" , () => {
 	//var NextGenEvents = require( 'events' ).EventEmitter ;
 
 	it( "should add one listener and emit should trigger it, using 'new'" , () => {
-
 		var bus = new NextGenEvents() ;
 
 		var triggered = 0 ;
@@ -125,7 +124,6 @@ describe( "Basic synchronous event-emitting (node-compatible)" , () => {
 	} ) ;
 
 	it( "should add one listener and emit should trigger it, using 'Object.create()'" , () => {
-
 		var bus = new NextGenEvents() ;
 
 		var triggered = 0 ;
@@ -138,7 +136,6 @@ describe( "Basic synchronous event-emitting (node-compatible)" , () => {
 	} ) ;
 
 	it( "should emit without argument" , () => {
-
 		var bus = new NextGenEvents() ;
 
 		var triggered = 0 ;
@@ -154,7 +151,6 @@ describe( "Basic synchronous event-emitting (node-compatible)" , () => {
 	} ) ;
 
 	it( "should emit with argument" , () => {
-
 		var bus = new NextGenEvents() ;
 
 		var triggered = 0 ;
@@ -171,7 +167,6 @@ describe( "Basic synchronous event-emitting (node-compatible)" , () => {
 	} ) ;
 
 	it( "should emit synchronously (nice =-10) with argument" , () => {
-
 		var bus = new NextGenEvents() ;
 
 		var triggered = 0 ;
@@ -188,7 +183,6 @@ describe( "Basic synchronous event-emitting (node-compatible)" , () => {
 	} ) ;
 
 	it( "should emit asynchronously (setTimeout 10ms) with argument" , ( done ) => {
-
 		var bus = new NextGenEvents() ;
 
 		var triggered = 0 ;
@@ -204,7 +198,6 @@ describe( "Basic synchronous event-emitting (node-compatible)" , () => {
 	} ) ;
 
 	it( "should emit asynchronously (setTimeout 0ms) with argument" , ( done ) => {
-
 		var bus = new NextGenEvents() ;
 
 		var triggered = 0 ;
@@ -220,7 +213,6 @@ describe( "Basic synchronous event-emitting (node-compatible)" , () => {
 	} ) ;
 
 	it( "should emit asynchronously (setImmediate) with argument" , ( done ) => {
-
 		var bus = new NextGenEvents() ;
 
 		var triggered = 0 ;
@@ -236,7 +228,6 @@ describe( "Basic synchronous event-emitting (node-compatible)" , () => {
 	} ) ;
 
 	it( "should add many basic listeners for many events, and multiple emits should trigger only relevant listener" , () => {
-
 		var bus = new NextGenEvents() ;
 
 		var onFoo1 , onBar1 , onBar2 , onBaz1 , onBaz2 , onBaz3 ;
@@ -296,7 +287,6 @@ describe( "Basic synchronous event-emitting (node-compatible)" , () => {
 	} ) ;
 
 	it( "should add and remove listeners" , () => {
-
 		var bus = new NextGenEvents() ;
 
 		var onFoo1 , onFoo2 , onBar1 , onBar2 , onBaz1 , onBaz2 , onBaz3 ;
@@ -355,7 +345,6 @@ describe( "Basic synchronous event-emitting (node-compatible)" , () => {
 	} ) ;
 
 	it( ".removeAllListeners() should remove all listeners for an event" , () => {
-
 		var bus = new NextGenEvents() ;
 
 		var onFoo1 , onBar1 , onBar2 , onBaz1 , onBaz2 , onBaz3 ;
@@ -403,7 +392,6 @@ describe( "Basic synchronous event-emitting (node-compatible)" , () => {
 	} ) ;
 
 	it( ".removeAllListeners() without argument should remove all listeners for all events" , () => {
-
 		var bus = new NextGenEvents() ;
 
 		var onFoo1 , onBar1 , onBar2 , onBaz1 , onBaz2 , onBaz3 ;
@@ -441,7 +429,6 @@ describe( "Basic synchronous event-emitting (node-compatible)" , () => {
 	} ) ;
 
 	it( ".once() should add one time listener for an event, the event should stop listening after being triggered once" , () => {
-
 		var bus = new NextGenEvents() ;
 
 		var onFoo1 , onBar1 , onBar2 , onBaz1 , onBaz2 , onBaz3 ;
@@ -501,7 +488,6 @@ describe( "Basic synchronous event-emitting (node-compatible)" , () => {
 	} ) ;
 
 	it( ".waitForEmit() should work as the Promise-returning counterpart of .emit() with completion callback" , async () => {
-
 		var bus = new NextGenEvents() ;
 
 		bus.setInterruptible( true ) ;
@@ -539,7 +525,6 @@ describe( "Basic synchronous event-emitting (node-compatible)" , () => {
 	} ) ;
 
 	it( "unhandled 'error' event should throw whatever is passed to it" , () => {
-
 		var throwed = 0 , triggered = 0 ;
 		var bus = new NextGenEvents() ;
 		var testError = new Error( 'Some error occurs!' ) ;
@@ -577,7 +562,6 @@ describe( "Basic synchronous event-emitting (node-compatible)" , () => {
 	} ) ;
 
 	it( "NextGenEvents.listenerCount() and .listenerCount() should count listeners for an event" , () => {
-
 		var bus = new NextGenEvents() ;
 
 		var onFoo1 ;
@@ -661,7 +645,6 @@ describe( "Basic synchronous event-emitting (node-compatible)" , () => {
 describe( "Basic synchronous event-emitting (NOT compatible with node)" , () => {
 
 	it( "should remove every occurences of a listener for one event" , () => {
-
 		var bus = new NextGenEvents() ;
 
 		var onFoo1 , onBar1 , onBar2 ;
@@ -692,11 +675,9 @@ describe( "Basic synchronous event-emitting (NOT compatible with node)" , () => 
 	} ) ;
 
 	it( "should emit 'newListener' every time a new listener is added, with an array of listener object" , () => {
-
 		var bus = new NextGenEvents() ;
 
 		var stats = { count: {} , orders: [] } ;
-
 
 		bus.on( 'newListener' , genericListener.bind( undefined , 'new1' , stats , ( listeners ) => {
 
@@ -760,7 +741,6 @@ describe( "Basic synchronous event-emitting (NOT compatible with node)" , () => 
 	} ) ;
 
 	it( "should emit 'removeListener' every time a new listener is removed (one time listener count as well once triggered), with an array of listener object" , () => {
-
 		var bus = new NextGenEvents() ;
 
 		var stats = { count: {} , orders: [] } ;
@@ -859,7 +839,6 @@ describe( "Basic synchronous event-emitting (NOT compatible with node)" , () => 
 	} ) ;
 
 	it( ".listeners() should return all the listeners for an event" , () => {
-
 		var bus = new NextGenEvents() ;
 
 		var listeners , onFoo1 ;
@@ -911,7 +890,6 @@ describe( "Basic synchronous event-emitting (NOT compatible with node)" , () => 
 describe( "Next Gen feature: listener in 'eventObject' mode" , () => {
 
 	it( "listener using 'eventObject' option" , () => {
-
 		var triggered = 0 ,
 			bus = new NextGenEvents() ;
 
@@ -932,7 +910,6 @@ describe( "Next Gen feature: listener in 'eventObject' mode" , () => {
 	} ) ;
 
 	it( "listener using 'eventObject' option and emit() with completion callback" , () => {
-
 		var triggered = 0 , emitCallbackTriggered = 0 ,
 			bus = new NextGenEvents() ;
 
@@ -956,7 +933,6 @@ describe( "Next Gen feature: listener in 'eventObject' mode" , () => {
 	} ) ;
 
 	it( "listener using 'eventObject' option and emit() with completion callback in non-SYNC mode" , ( done ) => {
-
 		var triggered = 0 , emitCallbackTriggered = 0 ,
 			bus = new NextGenEvents() ;
 
@@ -983,7 +959,6 @@ describe( "Next Gen feature: listener in 'eventObject' mode" , () => {
 	} ) ;
 
 	it( "listener using 'eventObject' and 'async' options, and emit() with completion callback" , ( done ) => {
-
 		var triggered = 0 , emitCallbackTriggered = 0 ,
 			bus = new NextGenEvents() ;
 
@@ -1015,10 +990,66 @@ describe( "Next Gen feature: listener in 'eventObject' mode" , () => {
 
 
 
+describe( "Next Gen feature: listener priority" , () => {
+
+	it( "should order the listener execution according to their descending priority" , () => {
+		var bus = new NextGenEvents() ;
+
+		var order = [] ;
+
+		bus.setListenerPriority( true ) ;
+
+		bus.on( 'foo' , ( arg ) => {
+				order.push( 1 ) ;
+			} , { priority: 1 }
+		) ;
+
+		bus.on( 'foo' , ( arg ) => {
+				order.push( 2 ) ;
+			} , { priority: 0 }
+		) ;
+
+		bus.on( 'foo' , ( arg ) => {
+				order.push( 3 ) ;
+			} , { priority: 2 }
+		) ;
+
+		bus.emit( 'foo' ) ;
+		expect( order ).to.equal( [ 3 , 1 , 2 ] ) ;
+	} ) ;
+
+	it( "undefined or non-numeric priority should be equivalent to 0" , () => {
+		var bus = new NextGenEvents() ;
+
+		var order = [] ;
+
+		bus.setListenerPriority( true ) ;
+
+		bus.on( 'foo' , ( arg ) => {
+				order.push( 1 ) ;
+			} , { priority: -1 }
+		) ;
+
+		bus.on( 'foo' , ( arg ) => {
+				order.push( 2 ) ;
+			}
+		) ;
+
+		bus.on( 'foo' , ( arg ) => {
+				order.push( 3 ) ;
+			} , { priority: "non-sensical string" }
+		) ;
+
+		bus.emit( 'foo' ) ;
+		expect( order ).to.equal( [ 2 , 3 , 1 ] ) ;
+	} ) ;
+} ) ;
+
+
+
 describe( "Next Gen feature: state-events" , () => {
 
 	it( "should emit a state-event, further listeners should receive the last emitted event immediately" , () => {
-
 		var bus = new NextGenEvents() ;
 
 		var triggered = 0 ;
@@ -1076,7 +1107,6 @@ describe( "Next Gen feature: state-events" , () => {
 	} ) ;
 
 	it( "when the state remains the same, nothing should be emitted" , () => {
-
 		var bus = new NextGenEvents() ;
 
 		var triggered = 0 ;
@@ -1153,7 +1183,6 @@ describe( "Next Gen feature: state-events" , () => {
 	} ) ;
 
 	it( "should define three exclusive states, emitting one should discard the two others" , () => {
-
 		var bus = new NextGenEvents() ;
 
 		var startingTriggered = 0 , runningTriggered = 0 , endingTriggered = 0 ;
@@ -1253,7 +1282,6 @@ describe( "Next Gen feature: state-events" , () => {
 describe( "Next Gen feature: emitter group actions" , () => {
 
 	it( "should emit on a group of emitters" , () => {
-
 		var busList = [
 			new NextGenEvents() ,
 			new NextGenEvents() ,
@@ -1286,7 +1314,6 @@ describe( "Next Gen feature: emitter group actions" , () => {
 	} ) ;
 
 	it( "should listen to a group of emitters" , () => {
-
 		var busList = [
 			new NextGenEvents() ,
 			new NextGenEvents() ,
@@ -1311,7 +1338,6 @@ describe( "Next Gen feature: emitter group actions" , () => {
 	} ) ;
 
 	it( "should listen to a group of emitters then stop listening" , () => {
-
 		var busList = [
 			new NextGenEvents() ,
 			new NextGenEvents() ,
@@ -1338,7 +1364,6 @@ describe( "Next Gen feature: emitter group actions" , () => {
 	} ) ;
 
 	it( "should add multiple listeners to a group of emitters then remove all of them at once" , () => {
-
 		var busList = [
 			new NextGenEvents() ,
 			new NextGenEvents() ,
@@ -1374,7 +1399,6 @@ describe( "Next Gen feature: emitter group actions" , () => {
 	} ) ;
 
 	it( "should listen once to each emitters of a group" , () => {
-
 		var busList = [
 			new NextGenEvents() ,
 			new NextGenEvents() ,
@@ -1399,7 +1423,6 @@ describe( "Next Gen feature: emitter group actions" , () => {
 	} ) ;
 
 	it( "should listen once to a whole group of emitters" , () => {
-
 		var busList = [
 			new NextGenEvents() ,
 			new NextGenEvents() ,
@@ -1427,7 +1450,6 @@ describe( "Next Gen feature: emitter group actions" , () => {
 	} ) ;
 
 	it( "should listen once the last emitter to emit from whole group" , () => {
-
 		var busList = [
 			new NextGenEvents() ,
 			new NextGenEvents() ,
@@ -1471,7 +1493,6 @@ describe( "Next Gen feature: emitter group actions" , () => {
 	} ) ;
 
 	it( "should emit with a completion callback that should be triggered once all emitters have finished" , ( done ) => {
-
 		var busList = [
 			new NextGenEvents() ,
 			new NextGenEvents() ,
@@ -1526,7 +1547,6 @@ describe( "Next Gen feature: emitter group actions" , () => {
 	} ) ;
 
 	it( "using interruptible emitters, it should trigger the completion callback once one of them is interrupted" , ( done ) => {
-
 		var busList = [
 			new NextGenEvents() ,
 			new NextGenEvents() ,
@@ -1583,7 +1603,6 @@ describe( "Next Gen feature: emitter group actions" , () => {
 	} ) ;
 
 	it( "should define states on a group of emitters and use it" , () => {
-
 		var busList = [
 			new NextGenEvents() ,
 			new NextGenEvents() ,
@@ -1746,7 +1765,6 @@ describe( "Next Gen feature: async emitting" , () => {
 describe( "Next Gen feature: contexts" , () => {
 
 	it( "when a listener is tied to a context, it should stop receiving events if the context is disabled (implicit context declaration)" , () => {
-
 		var bus = new NextGenEvents() ;
 
 		var triggered = 0 ;
@@ -1771,7 +1789,6 @@ describe( "Next Gen feature: contexts" , () => {
 	} ) ;
 
 	it( "when a listener is tied to a context, it should stop receiving events if the context is disabled (explicit context declaration)" , () => {
-
 		var bus = new NextGenEvents() ;
 
 		var triggered = 0 ;
@@ -1802,7 +1819,6 @@ describe( "Next Gen feature: contexts" , () => {
 	} ) ;
 
 	it( ".destroyListenerContext() should destroy a context and all listeners tied to it" , () => {
-
 		var bus = new NextGenEvents() ;
 
 		var stats = { count: {} , orders: [] } ;
@@ -1866,7 +1882,6 @@ describe( "Next Gen feature: contexts" , () => {
 describe( "Next Gen feature: contexts queue" , () => {
 
 	it( ".queueListenerContext() should pause the context, queueing events, .enableListenerContext() should resume pending events emitting" , () => {
-
 		var bus = new NextGenEvents() ;
 
 		var stats = { count: {} , orders: [] } ;
@@ -1943,7 +1958,6 @@ describe( "Next Gen feature: contexts queue" , () => {
 describe( "Next Gen feature: contexts serialization" , () => {
 
 	it( "3 async listeners for an event, tied to a serial context, each listener should be triggered one after the other" , ( done ) => {
-
 		var bus = new NextGenEvents() ;
 
 		var stats = { count: {} , orders: [] } ;
@@ -1989,7 +2003,6 @@ describe( "Next Gen feature: contexts serialization" , () => {
 	} ) ;
 
 	it( "3 async listeners for 3 events, tied to a serial context, each listener should be triggered one after the other" , ( done ) => {
-
 		var bus = new NextGenEvents() ;
 
 		var stats = { count: {} , orders: [] } ;
@@ -2037,7 +2050,6 @@ describe( "Next Gen feature: contexts serialization" , () => {
 	} ) ;
 
 	it( "mixing sync and async listeners tied to a serial context, sync event should not block (test 1)" , ( done ) => {
-
 		var bus = new NextGenEvents() ;
 
 		var stats = { count: {} , orders: [] } ;
@@ -2078,7 +2090,6 @@ describe( "Next Gen feature: contexts serialization" , () => {
 	} ) ;
 
 	it( "mixing sync and async listeners tied to a serial context, sync event should not block (test 2)" , ( done ) => {
-
 		var bus = new NextGenEvents() ;
 
 		var stats = { count: {} , orders: [] } ;
@@ -2123,7 +2134,6 @@ describe( "Next Gen feature: contexts serialization" , () => {
 	} ) ;
 
 	it( "mixing sync and async listeners tied to a serial context, sync event should not block (test 3)" , ( done ) => {
-
 		var bus = new NextGenEvents() ;
 
 		var stats = { count: {} , orders: [] } ;
@@ -2178,7 +2188,6 @@ describe( "Next Gen feature: contexts serialization" , () => {
 describe( "Next Gen feature: interrupt event emitting, and 'interrupt' event" , () => {
 
 	it( "should fire an event, the first listener should interrupt it, thus firing an 'interrupt' event" , () => {
-
 		var bus = new NextGenEvents() ;
 		bus.setInterruptible( true ) ;
 
@@ -2209,7 +2218,6 @@ describe( "Next Gen feature: interrupt event emitting, and 'interrupt' event" , 
 	} ) ;
 
 	it( "should fire asynchronously an event, the first listener should interrupt it, thus firing an 'interrupt' event" , ( done ) => {
-
 		var bus = new NextGenEvents() ;
 		bus.setInterruptible( true ) ;
 
@@ -2242,7 +2250,6 @@ describe( "Next Gen feature: interrupt event emitting, and 'interrupt' event" , 
 	} ) ;
 
 	it( "should fire asynchronously an event, the first listener should interrupt it using its callback, thus firing an 'interrupt' event" , ( done ) => {
-
 		var bus = new NextGenEvents() ;
 		bus.setInterruptible( true ) ;
 
@@ -2284,7 +2291,6 @@ describe( "Next Gen feature: interrupt event emitting, and 'interrupt' event" , 
 describe( "Next Gen feature: completion callback" , () => {
 
 	it( "should emit an event with a completion callback, triggered when all synchronous listener have finished running" , ( done ) => {
-
 		var bus = new NextGenEvents() ;
 		bus.setInterruptible( true ) ;
 
@@ -2314,7 +2320,6 @@ describe( "Next Gen feature: completion callback" , () => {
 	} ) ;
 
 	it( "if the event is interrupted, the completion callback should be triggered with the 'interrupt' value" , ( done ) => {
-
 		var bus = new NextGenEvents() ;
 		bus.setInterruptible( true ) ;
 
@@ -2347,7 +2352,6 @@ describe( "Next Gen feature: completion callback" , () => {
 	} ) ;
 
 	it( "the completion callback should work with asynchronous listener" , ( done ) => {
-
 		var bus = new NextGenEvents() ;
 		bus.setInterruptible( true ) ;
 
@@ -2383,7 +2387,6 @@ describe( "Next Gen feature: completion callback" , () => {
 	} ) ;
 
 	it( "the completion callback should work with listeners asynchronously interrupting the event" , ( done ) => {
-
 		var bus = new NextGenEvents() ;
 		bus.setInterruptible( true ) ;
 
@@ -2422,7 +2425,6 @@ describe( "Next Gen feature: completion callback" , () => {
 	} ) ;
 
 	it( "the completion callback should work with an async listeners synchronously interrupting the event with its callback" , ( done ) => {
-
 		var bus = new NextGenEvents() ;
 		bus.setInterruptible( true ) ;
 
@@ -2459,7 +2461,6 @@ describe( "Next Gen feature: completion callback" , () => {
 	} ) ;
 
 	it( "the completion callback should work with an async listeners synchronously interrupting the event using return" , ( done ) => {
-
 		var bus = new NextGenEvents() ;
 		bus.setInterruptible( true ) ;
 
@@ -2508,7 +2509,6 @@ describe( "Next Gen feature: completion callback" , () => {
 	} ) ;
 
 	it( "Context serialization, emitter callback and deadlock prevention (case #1)" , ( done ) => {
-
 		var bus = new NextGenEvents() ;
 		bus.setInterruptible( true ) ;
 
@@ -2566,7 +2566,6 @@ describe( "Next Gen feature: completion callback" , () => {
 	} ) ;
 
 	it( "Context serialization, emitter callback and deadlock prevention (case #2)" , ( done ) => {
-
 		var bus = new NextGenEvents() ;
 		bus.setInterruptible( true ) ;
 
@@ -2624,7 +2623,6 @@ describe( "Next Gen feature: completion callback" , () => {
 	} ) ;
 
 	it( "Context serialization, emitter callback and deadlock prevention (case #3)" , ( done ) => {
-
 		var bus = new NextGenEvents() ;
 		bus.setInterruptible( true ) ;
 
@@ -2695,7 +2693,6 @@ describe( "Proxies" , () => {
 describe( "Edge cases" , () => {
 
 	it( "inside a 'newListener' listener, the .listenerCount() should report correctly" , () => {
-
 		var triggered = 0 ,
 			bus = new NextGenEvents() ;
 
@@ -2723,6 +2720,4 @@ describe( "Historical bugs" , () => {
 		bus.on( 'foo' , () => {} ) ;
 	} ) ;
 } ) ;
-
-
 

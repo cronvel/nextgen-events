@@ -23,6 +23,7 @@
 	* [.setNice()](#ref.events.setNice)
 	* [.desyncUseNextTick()](#ref.events.desyncUseNextTick)
 	* [.setInterruptible()](#ref.events.setInterruptible)
+	* [.setListenerPriority()](#ref.events.setListenerPriority)
 	* [.addListenerContext()](#ref.events.addListenerContext)
 	* [.disableListenerContext()](#ref.events.disableListenerContext)
 	* [.queueListenerContext()](#ref.events.queueListenerContext)
@@ -73,6 +74,7 @@
 	* context `string` (default: undefined - no context) a non-empty string identifying a context, if defined the listener
 	  will be tied to this context, if this context is unexistant, it will be implicitly defined with default behaviour
 	* nice `integer` (default: -Infinity) see [the nice feature](#ref.note.nice) for details
+	* priority `integer` (default: 0) the listener priority, see [.setListenerPriority()](#ref.events.setListenerPriority) for details
 	* async `boolean` (default: false) set it to *true* if the listener is async by nature and a context serialization is wanted,
 	  when *async* is set for a listener, it **MUST** accept a completion callback as its last argument.
 	* eventObject `boolean` (default: false) if set, the listener will be passed an unique argument: the very same event object
@@ -473,6 +475,16 @@ emitter.emit( 'foo' , ( interruption ) => {
   // interruption is eql to Error( 'Dang!' )
 } ) ;
 ```
+
+
+
+<a name="ref.events.setListenerPriority"></a>
+### .setListenerPriority( hasListenerPriority )
+
+* hasListenerPriority `boolean` true if the *emitter* should call listener in descending order of priority
+
+Turn *on/off* listener priority for that *emitter*.
+If the *emitter* has listener priority, it will always call its listener according the descending order of priority.
 
 
 
