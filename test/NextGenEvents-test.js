@@ -1047,6 +1047,174 @@ describe( "Next Gen feature: listener priority" , () => {
 
 
 
+describe( "Next Gen feature: correlated emits with serialized, priorized and interruptible listener across emitter (Spellcast use-case)" , () => {
+
+	it( "zzz simple case: sync and no interrupt" , async () => {
+		var bus1 = new NextGenEvents() ,
+			bus2 = new NextGenEvents() ,
+			bus3 = new NextGenEvents() ;
+
+		var order = [] ;
+
+		bus1.on( 'foo' , ( arg ) => {
+				order.push( 'B1L1' ) ;
+			} , { priority: 1 }
+		) ;
+
+		bus1.on( 'foo' , ( arg ) => {
+				order.push( 'B1L2' ) ;
+			} , { priority: 0 }
+		) ;
+
+		bus2.on( 'bar' , ( arg ) => {
+				order.push( 'B2L1' ) ;
+			} , { priority: 2 }
+		) ;
+
+		bus3.on( 'baz' , ( arg ) => {
+				order.push( 'B3L1' ) ;
+			} , { priority: -1 }
+		) ;
+
+		bus3.on( 'baz' , ( arg ) => {
+				order.push( 'B3L2' ) ;
+			} , { priority: 3 }
+		) ;
+
+		var result = await new Promise( resolve =>
+			NextGenEvents.emitCorrelatedEvents(
+				[
+					[ bus1 , 'foo' ] ,
+					[ bus2 , 'bar' ] ,
+					[ bus3 , 'baz' ]
+				] ,
+				resolve
+			)
+		) ;
+		
+		expect( order ).to.equal( [ "B3L2" , "B2L1" , "B1L1" , "B1L2" , "B3L1" ] ) ;
+		expect( result ).to.be.null() ;
+	} ) ;
+
+	it( "zzz sync and interrupt" , async () => {
+		var bus1 = new NextGenEvents() ,
+			bus2 = new NextGenEvents() ,
+			bus3 = new NextGenEvents() ;
+
+		var order = [] ;
+
+		bus1.on( 'foo' , ( arg ) => {
+				order.push( 'B1L1' ) ;
+			} , { priority: 1 }
+		) ;
+
+		bus1.on( 'foo' , ( arg ) => {
+				order.push( 'B1L2' ) ;
+			} , { priority: 0 }
+		) ;
+
+		bus2.on( 'bar' , ( arg ) => {
+				order.push( 'B2L1' ) ;
+				return 'interrupted!' ;
+			} , { priority: 2 }
+		) ;
+
+		bus3.on( 'baz' , ( arg ) => {
+				order.push( 'B3L1' ) ;
+			} , { priority: -1 }
+		) ;
+
+		bus3.on( 'baz' , ( arg ) => {
+				order.push( 'B3L2' ) ;
+			} , { priority: 3 }
+		) ;
+
+		var result = await new Promise( resolve =>
+			NextGenEvents.emitCorrelatedEvents(
+				[
+					[ bus1 , 'foo' ] ,
+					[ bus2 , 'bar' ] ,
+					[ bus3 , 'baz' ]
+				] ,
+				resolve
+			)
+		) ;
+		
+		expect( order ).to.equal( [ "B3L2" , "B2L1" ] ) ;
+		expect( result ).to.be( 'interrupted!' ) ;
+	} ) ;
+
+	it( "zzz xxx async and no interrupt" , async () => {
+		var bus1 = new NextGenEvents() ,
+			bus2 = new NextGenEvents() ,
+			bus3 = new NextGenEvents() ;
+
+		var order = [] ;
+
+		bus1.on( 'foo' , ( arg , cb ) => {
+				order.push( 'B1L1-S' ) ;
+				setTimeout( () => {
+					order.push( 'B1L1-E' ) ;
+					cb() ;
+				} , 10 ) ;
+			} , { priority: 1 , async: true }
+		) ;
+
+		bus1.on( 'foo' , ( arg , cb ) => {
+				order.push( 'B1L2-S' ) ;
+				setTimeout( () => {
+					order.push( 'B1L2-E' ) ;
+					cb() ;
+				} , 10 ) ;
+			} , { priority: 0 , async: true }
+		) ;
+
+		bus2.on( 'bar' , ( arg , cb ) => {
+				order.push( 'B2L1-S' ) ;
+				setTimeout( () => {
+					order.push( 'B2L1-E' ) ;
+					cb() ;
+				} , 10 ) ;
+			} , { priority: 2 , async: true }
+		) ;
+
+		bus3.on( 'baz' , ( arg , cb ) => {
+				order.push( 'B3L1-S' ) ;
+				setTimeout( () => {
+					order.push( 'B3L1-E' ) ;
+					cb() ;
+				} , 10 ) ;
+			} , { priority: -1 , async: true }
+		) ;
+
+		bus3.on( 'baz' , ( arg , cb ) => {
+				order.push( 'B3L2-S' ) ;
+				setTimeout( () => {
+					order.push( 'B3L2-E' ) ;
+					cb() ;
+				} , 10 ) ;
+			} , { priority: 3 , async: true }
+		) ;
+
+		var result = await new Promise( resolve =>
+			NextGenEvents.emitCorrelatedEvents(
+				[
+					[ bus1 , 'foo' , 'arg1' ] ,
+					[ bus2 , 'bar' , 'arg2' ] ,
+					[ bus3 , 'baz' , 'arg3' ]
+				] ,
+				resolve
+			)
+		) ;
+		
+		expect( order ).to.equal( [ "B3L2-S" , "B3L2-E" , "B2L1-S" , "B2L1-E" , "B1L1-S" , "B1L1-E" , "B1L2-S" , "B1L2-E" , "B3L1-S" , "B3L1-E" ] ) ;
+		expect( result ).to.be.null() ;
+	} ) ;
+
+} ) ;
+
+
+
 describe( "Next Gen feature: state-events" , () => {
 
 	it( "should emit a state-event, further listeners should receive the last emitted event immediately" , () => {
@@ -1957,10 +2125,10 @@ describe( "Next Gen feature: contexts queue" , () => {
 
 describe( "Next Gen feature: contexts serialization" , () => {
 
-	it( "3 async listeners for an event, tied to a serial context, each listener should be triggered one after the other" , ( done ) => {
+	it( "yyy 3 async listeners for an event, tied to a serial context, each listener should be triggered one after the other" , ( done ) => {
 		var bus = new NextGenEvents() ;
 
-		var stats = { count: {} , orders: [] } ;
+		var stats = { count: {} , endCount: {} , orders: [] } ;
 
 		bus.on( 'foo' , {
 			id: 'foobar' ,
@@ -1968,7 +2136,14 @@ describe( "Next Gen feature: contexts serialization" , () => {
 			async: true ,
 			fn: genericListener.bind( undefined , 'foobar' , stats , function() {
 				var callback = arguments[ arguments.length - 1 ] ;
-				setTimeout( callback , 30 ) ;
+				expect( stats.count ).to.eql( { foobar: 1 } ) ;
+				expect( stats.endCount ).to.eql( {} ) ;
+				setTimeout( () => {
+					expect( stats.count ).to.eql( { foobar: 1 } ) ;
+					expect( stats.endCount ).to.eql( {} ) ;
+					stats.endCount.foobar = stats.endCount.foobar + 1 || 1 ;
+					callback() ;
+				} , 30 ) ;
 			} )
 		} ) ;
 
@@ -1977,9 +2152,15 @@ describe( "Next Gen feature: contexts serialization" , () => {
 			context: 'qux' ,
 			async: true ,
 			fn: genericListener.bind( undefined , 'foobaz' , stats , function() {
-				expect( stats.count ).to.eql( { foobar: 1 , foobaz: 1 } ) ;
 				var callback = arguments[ arguments.length - 1 ] ;
-				setTimeout( callback , 30 ) ;
+				expect( stats.count ).to.eql( { foobar: 1 , foobaz: 1 } ) ;
+				expect( stats.endCount ).to.eql( { foobar: 1 } ) ;
+				setTimeout( () => {
+					expect( stats.count ).to.eql( { foobar: 1 , foobaz: 1 } ) ;
+					expect( stats.endCount ).to.eql( { foobar: 1 } ) ;
+					stats.endCount.foobaz = stats.endCount.foobaz + 1 || 1 ;
+					callback() ;
+				} , 30 ) ;
 			} )
 		} ) ;
 
@@ -1988,9 +2169,12 @@ describe( "Next Gen feature: contexts serialization" , () => {
 			context: 'qux' ,
 			async: true ,
 			fn: genericListener.bind( undefined , 'foobarbaz' , stats , function() {
-				expect( stats.count ).to.eql( { foobar: 1 , foobaz: 1 , foobarbaz: 1 } ) ;
 				var callback = arguments[ arguments.length - 1 ] ;
+				expect( stats.count ).to.eql( { foobar: 1 , foobaz: 1 , foobarbaz: 1 } ) ;
+				expect( stats.endCount ).to.eql( { foobar: 1 , foobaz: 1 } ) ;
 				setTimeout( () => {
+					expect( stats.count ).to.eql( { foobar: 1 , foobaz: 1 , foobarbaz: 1 } ) ;
+					expect( stats.endCount ).to.eql( { foobar: 1 , foobaz: 1 } ) ;
 					callback() ;
 					done() ;
 				} , 30 ) ;
@@ -2000,6 +2184,67 @@ describe( "Next Gen feature: contexts serialization" , () => {
 		bus.serializeListenerContext( 'qux' ) ;
 		bus.emit( 'foo' ) ;
 		expect( stats.count ).to.eql( { foobar: 1 } ) ;
+	} ) ;
+
+	it( "yyy serialize bug with nice/desync" , ( done ) => {
+		var bus = new NextGenEvents() ;
+
+		var stats = { count: {} , endCount: {} , orders: [] } ;
+
+		bus.on( 'foo' , {
+			id: 'foobar' ,
+			context: 'qux' ,
+			async: true ,
+			fn: genericListener.bind( undefined , 'foobar' , stats , function() {
+				var callback = arguments[ arguments.length - 1 ] ;
+				expect( stats.count ).to.eql( { foobar: 1 } ) ;
+				expect( stats.endCount ).to.eql( {} ) ;
+				setTimeout( () => {
+					expect( stats.count ).to.eql( { foobar: 1 } ) ;
+					expect( stats.endCount ).to.eql( {} ) ;
+					stats.endCount.foobar = stats.endCount.foobar + 1 || 1 ;
+					callback() ;
+				} , 30 ) ;
+			} )
+		} ) ;
+
+		bus.on( 'foo' , {
+			id: 'foobaz' ,
+			context: 'qux' ,
+			async: true ,
+			fn: genericListener.bind( undefined , 'foobaz' , stats , function() {
+				var callback = arguments[ arguments.length - 1 ] ;
+				expect( stats.count ).to.eql( { foobar: 1 , foobaz: 1 } ) ;
+				expect( stats.endCount ).to.eql( { foobar: 1 } ) ;
+				setTimeout( () => {
+					expect( stats.count ).to.eql( { foobar: 1 , foobaz: 1 } ) ;
+					expect( stats.endCount ).to.eql( { foobar: 1 } ) ;
+					stats.endCount.foobaz = stats.endCount.foobaz + 1 || 1 ;
+					callback() ;
+				} , 30 ) ;
+			} )
+		} ) ;
+
+		bus.on( 'foo' , {
+			id: 'foobarbaz' ,
+			context: 'qux' ,
+			async: true ,
+			fn: genericListener.bind( undefined , 'foobarbaz' , stats , function() {
+				var callback = arguments[ arguments.length - 1 ] ;
+				expect( stats.count ).to.eql( { foobar: 1 , foobaz: 1 , foobarbaz: 1 } ) ;
+				expect( stats.endCount ).to.eql( { foobar: 1 , foobaz: 1 } ) ;
+				setTimeout( () => {
+					expect( stats.count ).to.eql( { foobar: 1 , foobaz: 1 , foobarbaz: 1 } ) ;
+					expect( stats.endCount ).to.eql( { foobar: 1 , foobaz: 1 } ) ;
+					callback() ;
+					done() ;
+				} , 30 ) ;
+			} )
+		} ) ;
+		
+		bus.serializeListenerContext( 'qux' ) ;
+		bus.emit( 10 , 'foo' ) ;
+		expect( stats.count ).to.eql( {} ) ;
 	} ) ;
 
 	it( "3 async listeners for 3 events, tied to a serial context, each listener should be triggered one after the other" , ( done ) => {
