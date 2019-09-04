@@ -1,4 +1,11 @@
 
+v1.3.0
+------
+
+New: NextGenEvents.emitIntricatedEvents() (for Spellcast specific use-case, not sure if it could be useful elsewhere)
+nasty context serialization bug fixed when listeners are not sync
+
+
 v1.2.1
 ------
 
