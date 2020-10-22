@@ -1,4 +1,10 @@
 
+v1.3.1
+------
+
+[optimization] .listenerCount() now longer causes init or create empty event listener array, but simply return 0
+
+
 v1.3.0
 ------
 

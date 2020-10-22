@@ -837,10 +837,7 @@ NextGenEvents.listenerCount = function( emitter , eventName ) {
 
 NextGenEvents.prototype.listenerCount = function( eventName ) {
 	if ( ! eventName || typeof eventName !== 'string' ) { throw new TypeError( ".listenerCount(): argument #1 should be a non-empty string" ) ; }
-
-	if ( ! this.__ngev ) { NextGenEvents.init.call( this ) ; }
-	if ( ! this.__ngev.listeners[ eventName ] ) { this.__ngev.listeners[ eventName ] = [] ; }
-
+	if ( ! this.__ngev || ! this.__ngev.listeners[ eventName ] ) { return 0 ; }
 	return this.__ngev.listeners[ eventName ].length ;
 } ;
 
@@ -2178,7 +2175,7 @@ process.umask = function() { return 0; };
 },{}],5:[function(require,module,exports){
 module.exports={
   "name": "nextgen-events",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "description": "The next generation of events handling for javascript! New: abstract away the network!",
   "main": "lib/NextGenEvents.js",
   "engines": {
