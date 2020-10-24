@@ -503,6 +503,15 @@ NextGenEvents.prototype.emit = function( ... args ) {
 
 
 
+// For performance, do not emit if there is no listener for that event
+NextGenEvents.prototype.emitIfListener = function( ... args ) {
+	if ( ! this.__ngev || ! this.__ngev.listeners[ typeof args[ 0 ] === 'number' ? args[ 1 ] : args[ 0 ] ] ) { return null ; }
+	var event = NextGenEvents.createEvent( this , ... args ) ;
+	return NextGenEvents.emitEvent( event ) ;
+} ;
+
+
+
 NextGenEvents.prototype.waitForEmit = function( ... args ) {
 	return new Promise( resolve => {
 		this.emit( ... args , ( interrupt ) => resolve( interrupt ) ) ;
@@ -2175,7 +2184,7 @@ process.umask = function() { return 0; };
 },{}],5:[function(require,module,exports){
 module.exports={
   "name": "nextgen-events",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "The next generation of events handling for javascript! New: abstract away the network!",
   "main": "lib/NextGenEvents.js",
   "engines": {
@@ -2230,5 +2239,6 @@ module.exports={
     "owner": "Cédric Ronvel"
   }
 }
+
 },{}]},{},[3])(3)
 });
