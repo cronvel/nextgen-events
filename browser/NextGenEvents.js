@@ -503,9 +503,12 @@ NextGenEvents.prototype.emit = function( ... args ) {
 
 
 
-// For performance, do not emit if there is no listener for that event
+// For performance, do not emit if there is no listener for that event,
+// do not even return an Event object, do not throw if the event name is error,
+// or whatever the .emit() process could do when there is no listener.
 NextGenEvents.prototype.emitIfListener = function( ... args ) {
-	if ( ! this.__ngev || ! this.__ngev.listeners[ typeof args[ 0 ] === 'number' ? args[ 1 ] : args[ 0 ] ] ) { return null ; }
+	var eventName = typeof args[ 0 ] === 'number' ? args[ 1 ] : args[ 0 ] ;
+	if ( ! this.__ngev || ! this.__ngev.listeners[ eventName ] || ! this.__ngev.listeners[ eventName ].length ) { return null ; }
 	var event = NextGenEvents.createEvent( this , ... args ) ;
 	return NextGenEvents.emitEvent( event ) ;
 } ;
@@ -2184,7 +2187,7 @@ process.umask = function() { return 0; };
 },{}],5:[function(require,module,exports){
 module.exports={
   "name": "nextgen-events",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "description": "The next generation of events handling for javascript! New: abstract away the network!",
   "main": "lib/NextGenEvents.js",
   "engines": {
