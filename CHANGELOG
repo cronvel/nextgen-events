@@ -1,4 +1,10 @@
 
+v1.3.4
+------
+
+Improved code/performance/memory usage of .removeListener()
+
+
 v1.3.3
 ------
 
