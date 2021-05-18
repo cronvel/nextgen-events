@@ -72,6 +72,7 @@
 	* fn `Function` (mandatory if no `fn` argument provided) the listener function
 	* id `any type` (default to the provided *fn* function) the identifier of the listener, useful if we have to remove it later
 	* once `boolean` (default: false) *true* if this is a one-time-listener
+	* unique `boolean` (default: false) if set, the listener will not be added if there is already another listener with the same ID for this event
 	* context `string` (default: undefined - no context) a non-empty string identifying a context, if defined the listener
 	  will be tied to this context, if this context is unexistant, it will be implicitly defined with default behaviour
 	* nice `integer` (default: -Infinity) see [the nice feature](#ref.note.nice) for details

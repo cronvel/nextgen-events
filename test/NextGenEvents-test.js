@@ -887,6 +887,41 @@ describe( "Basic synchronous event-emitting (NOT compatible with node)" , () => 
 
 
 
+describe( "Next Gen feature: unique event ID" , () => {
+
+	it( ".addListener()/.on() with the 'unique' option should add listeners only if the ID is unique for this event" , () => {
+		var bus = new NextGenEvents() ;
+
+		var onBar1 , onBar2 , onBar3 , onBar4 , onBar5 ;
+		var triggered = {
+			bar1: 0 , bar2: 0 , bar3: 0 , bar4: 0 , bar5: 0
+		} ;
+
+		// 2 listeners for 'bar'
+		bus.on( 'bar' , onBar1 = function() { triggered.bar1 ++ ; } ) ;
+		bus.on( 'bar' , onBar2 = function() { triggered.bar2 ++ ; } ) ;
+		bus.on( 'bar' , onBar2 ) ;
+		bus.on( 'bar' , onBar3 = function() { triggered.bar3 ++ ; } , { unique: true } ) ;
+		bus.on( 'bar' , onBar3 , { unique: true } ) ;
+		bus.on( 'bar' , onBar4 = function() { triggered.bar4 ++ ; } , { id: 'bob' , unique: true } ) ;
+		bus.on( 'bar' , onBar5 = function() { triggered.bar5 ++ ; } , { id: 'bob' , unique: true } ) ;
+
+		bus.emit( 'bar' ) ;
+		expect( triggered ).to.eql( {
+			bar1: 1 , bar2: 2 , bar3: 1 , bar4: 1 , bar5: 0
+		} ) ;
+
+		bus.removeListener( 'bar' , onBar2 ) ;
+		bus.removeListener( 'bar' , onBar3 ) ;
+		bus.emit( 'bar' ) ;
+		expect( triggered ).to.eql( {
+			bar1: 2 , bar2: 2 , bar3: 1 , bar4: 2 , bar5: 0
+		} ) ;
+	} ) ;
+} ) ;
+
+
+
 describe( "Next Gen feature: listener in 'eventObject' mode" , () => {
 
 	it( "listener using 'eventObject' option" , () => {

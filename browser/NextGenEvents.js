@@ -240,6 +240,14 @@ NextGenEvents.prototype.addListener = function( eventName , fn , options ) {
 
 	listener.fn = fn || options.fn ;
 	listener.id = options.id !== undefined ? options.id : listener.fn ;
+
+	if ( options.unique ) {
+		if ( this.__ngev.listeners[ eventName ].find( e => e.id === listener.id ) ) {
+			// Not unique! Return now!
+			return ;
+		}
+	}
+
 	listener.once = !! options.once ;
 	listener.async = !! options.async ;
 	listener.eventObject = !! options.eventObject ;
@@ -2192,7 +2200,7 @@ process.umask = function() { return 0; };
 },{}],5:[function(require,module,exports){
 module.exports={
   "name": "nextgen-events",
-  "version": "1.3.3",
+  "version": "1.3.4",
   "description": "The next generation of events handling for javascript! New: abstract away the network!",
   "main": "lib/NextGenEvents.js",
   "engines": {

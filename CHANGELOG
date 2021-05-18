@@ -1,4 +1,10 @@
 
+v1.4.0
+------
+
+New: .addListener()/.on() now support a 'unique' option, only adding a listener if its ID is unique for this event
+
+
 v1.3.4
 ------
 
