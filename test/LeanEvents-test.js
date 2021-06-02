@@ -41,63 +41,29 @@ else {
 
 
 
-
-
-/* Helpers */
-
-
-
-var genericListener = function( tag , stats , fn , ... args ) {
-	//console.log( 'Listener #' + tag + ' received an event with arguments: ' , arguments ) ;
-
-	if ( ! stats.count[ tag ] ) { stats.count[ tag ] = 1 ; }
-	else { stats.count[ tag ] ++ ; }
-
-	stats.orders.push( tag ) ;
-
-	if ( fn ) { fn( ... args ) ; }
-} ;
-
-
-
-
-
-/* Tests */
-
-
-
-describe( "Basic synchronous event-emitting (node-compatible)" , () => {
-
-	//var LeanEvents = require( 'events' ).EventEmitter ;
+describe( "LeanEvents event-emitting" , () => {
 
 	it( "should add one listener and emit should trigger it, using 'new'" , () => {
-		var bus = new LeanEvents() ;
-
-		var triggered = 0 ;
+		var bus = new LeanEvents() ,
+			triggered = 0 ;
 
 		bus.on( 'hello' , () => { triggered ++ ; } ) ;
-
 		bus.emit( 'hello' ) ;
-
 		expect( triggered ).to.be( 1 ) ;
 	} ) ;
 
 	it( "should add one listener and emit should trigger it, using 'Object.create()'" , () => {
-		var bus = new LeanEvents() ;
-
-		var triggered = 0 ;
+		var bus = new LeanEvents() ,
+			triggered = 0 ;
 
 		bus.on( 'hello' , () => { triggered ++ ; } ) ;
-
 		bus.emit( 'hello' ) ;
-
 		expect( triggered ).to.be( 1 ) ;
 	} ) ;
 
 	it( "should emit without argument" , () => {
-		var bus = new LeanEvents() ;
-
-		var triggered = 0 ;
+		var bus = new LeanEvents() ,
+			triggered = 0 ;
 
 		bus.on( 'hello' , function() {
 			triggered ++ ;
@@ -110,9 +76,8 @@ describe( "Basic synchronous event-emitting (node-compatible)" , () => {
 	} ) ;
 
 	it( "should emit with argument" , () => {
-		var bus = new LeanEvents() ;
-
-		var triggered = 0 ;
+		var bus = new LeanEvents() ,
+			triggered = 0 ;
 
 		bus.on( 'hello' , ( arg1 , arg2 ) => {
 			triggered ++ ;
@@ -146,40 +111,40 @@ describe( "Basic synchronous event-emitting (node-compatible)" , () => {
 		bus.on( 'baz' , onBaz3 = function() { triggered.baz3 ++ ; } ) ;
 
 		bus.emit( 'foo' ) ;
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 1 , bar1: 0 , bar2: 0 , baz1: 0 , baz2: 0 , baz3: 0 , qux: 0
 		} ) ;
 
 		bus.emit( 'bar' ) ;
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 1 , bar1: 1 , bar2: 1 , baz1: 0 , baz2: 0 , baz3: 0 , qux: 0
 		} ) ;
 
 		bus.emit( 'baz' ) ;
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 1 , bar1: 1 , bar2: 1 , baz1: 1 , baz2: 1 , baz3: 1 , qux: 0
 		} ) ;
 
 		bus.emit( 'qux' ) ;
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 1 , bar1: 1 , bar2: 1 , baz1: 1 , baz2: 1 , baz3: 1 , qux: 0
 		} ) ;
 
 		bus.emit( 'foo' ) ;
 		bus.emit( 'foo' ) ;
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 3 , bar1: 1 , bar2: 1 , baz1: 1 , baz2: 1 , baz3: 1 , qux: 0
 		} ) ;
 
 		bus.emit( 'qux' ) ;
 		bus.emit( 'qux' ) ;
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 3 , bar1: 1 , bar2: 1 , baz1: 1 , baz2: 1 , baz3: 1 , qux: 0
 		} ) ;
 
 		bus.emit( 'baz' ) ;
 		bus.emit( 'baz' ) ;
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 3 , bar1: 1 , bar2: 1 , baz1: 3 , baz2: 3 , baz3: 3 , qux: 0
 		} ) ;
 	} ) ;
@@ -205,24 +170,24 @@ describe( "Basic synchronous event-emitting (node-compatible)" , () => {
 		bus.on( 'baz' , onBaz3 = function() { triggered.baz3 ++ ; } ) ;
 
 		bus.emit( 'foo' ) ;
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 1 , foo2: 0 , bar1: 0 , bar2: 0 , baz1: 0 , baz2: 0 , baz3: 0 , qux: 0
 		} ) ;
 
 		bus.emit( 'bar' ) ;
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 1 , foo2: 0 , bar1: 1 , bar2: 1 , baz1: 0 , baz2: 0 , baz3: 0 , qux: 0
 		} ) ;
 
 		bus.removeListener( 'bar' , onBar2 ) ;
 		bus.emit( 'bar' ) ;
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 1 , foo2: 0 , bar1: 2 , bar2: 1 , baz1: 0 , baz2: 0 , baz3: 0 , qux: 0
 		} ) ;
 
 		bus.removeListener( 'bar' , onBar2 ) ;
 		bus.emit( 'bar' ) ;
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 1 , foo2: 0 , bar1: 3 , bar2: 1 , baz1: 0 , baz2: 0 , baz3: 0 , qux: 0
 		} ) ;
 
@@ -230,14 +195,14 @@ describe( "Basic synchronous event-emitting (node-compatible)" , () => {
 		bus.removeListener( 'bar' , () => {} ) ; // Not event registered
 		bus.emit( 'foo' ) ;
 		bus.emit( 'bar' ) ;
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 2 , foo2: 0 , bar1: 4 , bar2: 1 , baz1: 0 , baz2: 0 , baz3: 0 , qux: 0
 		} ) ;
 
 		bus.once( 'foo' , onFoo2 = function() { triggered.foo2 ++ ; } ) ;
 		bus.removeListener( 'foo' , onFoo2 ) ; // This is a one-time listener
 		bus.emit( 'foo' ) ;
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 3 , foo2: 0 , bar1: 4 , bar2: 1 , baz1: 0 , baz2: 0 , baz3: 0 , qux: 0
 		} ) ;
 	} ) ;
@@ -265,18 +230,18 @@ describe( "Basic synchronous event-emitting (node-compatible)" , () => {
 		bus.emit( 'foo' ) ;
 		bus.emit( 'bar' ) ;
 		bus.emit( 'baz' ) ;
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 1 , bar1: 1 , bar2: 1 , baz1: 1 , baz2: 1 , baz3: 1 , qux: 0
 		} ) ;
 
 		bus.removeAllListeners( 'bar' ) ;
 		bus.emit( 'bar' ) ;
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 1 , bar1: 1 , bar2: 1 , baz1: 1 , baz2: 1 , baz3: 1 , qux: 0
 		} ) ;
 
 		bus.emit( 'foo' ) ;
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 2 , bar1: 1 , bar2: 1 , baz1: 1 , baz2: 1 , baz3: 1 , qux: 0
 		} ) ;
 
@@ -284,7 +249,7 @@ describe( "Basic synchronous event-emitting (node-compatible)" , () => {
 		bus.emit( 'foo' ) ;
 		bus.emit( 'bar' ) ;
 		bus.emit( 'baz' ) ;
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 3 , bar1: 1 , bar2: 1 , baz1: 1 , baz2: 1 , baz3: 1 , qux: 0
 		} ) ;
 	} ) ;
@@ -312,7 +277,7 @@ describe( "Basic synchronous event-emitting (node-compatible)" , () => {
 		bus.emit( 'foo' ) ;
 		bus.emit( 'bar' ) ;
 		bus.emit( 'baz' ) ;
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 1 , bar1: 1 , bar2: 1 , baz1: 1 , baz2: 1 , baz3: 1 , qux: 0
 		} ) ;
 
@@ -321,7 +286,7 @@ describe( "Basic synchronous event-emitting (node-compatible)" , () => {
 		bus.emit( 'bar' ) ;
 		bus.emit( 'baz' ) ;
 		bus.emit( 'qux' ) ;
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 1 , bar1: 1 , bar2: 1 , baz1: 1 , baz2: 1 , baz3: 1 , qux: 0
 		} ) ;
 	} ) ;
@@ -351,22 +316,22 @@ describe( "Basic synchronous event-emitting (node-compatible)" , () => {
 		bus.emit( 'foo' ) ;
 		bus.emit( 'bar' ) ;
 		bus.emit( 'baz' ) ;
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 1 , bar1: 1 , bar2: 1 , baz1: 1 , baz2: 3 , qux: 0
 		} ) ;
 
 		bus.emit( 'foo' ) ;
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 1 , bar1: 1 , bar2: 1 , baz1: 1 , baz2: 3 , qux: 0
 		} ) ;
 
 		bus.emit( 'bar' ) ;
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 1 , bar1: 2 , bar2: 1 , baz1: 1 , baz2: 3 , qux: 0
 		} ) ;
 
 		bus.emit( 'baz' ) ;
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 1 , bar1: 2 , bar2: 1 , baz1: 2 , baz2: 3 , qux: 0
 		} ) ;
 	} ) ;
@@ -382,7 +347,7 @@ describe( "Basic synchronous event-emitting (node-compatible)" , () => {
 		var bus = new LeanEvents() ;
 		setTimeout( () => bus.emit( 'foo' , 'bar' , 'baz' , 'qux' ) , 100 ) ;
 		var result = await bus.waitForAll( 'foo' ) ;
-		expect( result ).to.eql( [ 'bar' , 'baz' , 'qux' ] ) ;
+		expect( result ).to.equal( [ 'bar' , 'baz' , 'qux' ] ) ;
 	} ) ;
 
 	it( ".listenerCount() should count listeners for an event" , () => {
@@ -415,11 +380,6 @@ describe( "Basic synchronous event-emitting (node-compatible)" , () => {
 		expect( bus.listenerCount( 'foo' ) ).to.be( 0 ) ;
 		expect( bus.listenerCount( 'bar' ) ).to.be( 0 ) ;
 	} ) ;
-} ) ;
-
-
-
-describe( "Basic synchronous event-emitting (NOT compatible with node)" , () => {
 
 	it( "should remove every occurences of a listener for one event" , () => {
 		var bus = new LeanEvents() ;
@@ -444,11 +404,11 @@ describe( "Basic synchronous event-emitting (NOT compatible with node)" , () => 
 
 		bus.emit( 'foo' ) ;
 		bus.emit( 'bar' ) ;
-		expect( triggered ).to.eql( { foo1: 1 , bar1: 1 , bar2: 3 } ) ;
+		expect( triggered ).to.equal( { foo1: 1 , bar1: 1 , bar2: 3 } ) ;
 
 		bus.removeListener( 'bar' , onBar2 ) ;
 		bus.emit( 'bar' ) ;
-		expect( triggered ).to.eql( { foo1: 1 , bar1: 2 , bar2: 3 } ) ;
+		expect( triggered ).to.equal( { foo1: 1 , bar1: 2 , bar2: 3 } ) ;
 	} ) ;
 
 	it( ".listeners() should return all the listeners for an event" , () => {
@@ -492,12 +452,11 @@ describe( "Basic synchronous event-emitting (NOT compatible with node)" , () => 
 
 
 
-describe( "Next Gen feature: state-events" , () => {
+describe( "Next Gen feature (LeanEvents): state-events" , () => {
 
 	it( "should emit a state-event, further listeners should receive the last emitted event immediately" , () => {
-		var bus = new LeanEvents() ;
-
-		var triggered = 0 ;
+		var bus = new LeanEvents() ,
+			triggered = 0 ;
 
 		bus.defineStates( 'ready' ) ;
 
@@ -507,12 +466,12 @@ describe( "Next Gen feature: state-events" , () => {
 		} ) ;
 		expect( triggered ).to.be( 0 ) ;
 		expect( bus.hasState( 'ready' ) ).to.be( false ) ;
-		expect( bus.getAllStates() ).to.eql( [] ) ;
+		expect( bus.getAllStates() ).to.equal( [] ) ;
 
 		bus.emit( 'ready' , 'ok!' ) ;
 		expect( triggered ).to.be( 1 ) ;
 		expect( bus.hasState( 'ready' ) ).to.be( true ) ;
-		expect( bus.getAllStates() ).to.eql( [ 'ready' ] ) ;
+		expect( bus.getAllStates() ).to.equal( [ 'ready' ] ) ;
 
 		bus.on( 'ready' , ( arg ) => {
 			triggered ++ ;
@@ -548,13 +507,12 @@ describe( "Next Gen feature: state-events" , () => {
 		} ) ;
 		expect( triggered ).to.be( 7 ) ;
 		expect( bus.hasState( 'ready' ) ).to.be( true ) ;
-		expect( bus.getAllStates() ).to.eql( [ 'ready' ] ) ;
+		expect( bus.getAllStates() ).to.equal( [ 'ready' ] ) ;
 	} ) ;
 
 	it( "when the state remains the same, nothing should be emitted" , () => {
-		var bus = new LeanEvents() ;
-
-		var triggered = 0 ;
+		var bus = new LeanEvents() ,
+			triggered = 0 ;
 
 		bus.defineStates( 'ready' , 'notReady' ) ;
 
@@ -563,12 +521,12 @@ describe( "Next Gen feature: state-events" , () => {
 		} ) ;
 		expect( triggered ).to.be( 0 ) ;
 		expect( bus.hasState( 'ready' ) ).to.be( false ) ;
-		expect( bus.getAllStates() ).to.eql( [] ) ;
+		expect( bus.getAllStates() ).to.equal( [] ) ;
 
 		bus.emit( 'ready' ) ;
 		expect( triggered ).to.be( 1 ) ;
 		expect( bus.hasState( 'ready' ) ).to.be( true ) ;
-		expect( bus.getAllStates() ).to.eql( [ 'ready' ] ) ;
+		expect( bus.getAllStates() ).to.equal( [ 'ready' ] ) ;
 
 		bus.on( 'ready' , () => {
 			triggered ++ ;
@@ -576,55 +534,55 @@ describe( "Next Gen feature: state-events" , () => {
 
 		expect( triggered ).to.be( 2 ) ;
 		expect( bus.hasState( 'ready' ) ).to.be( true ) ;
-		expect( bus.getAllStates() ).to.eql( [ 'ready' ] ) ;
+		expect( bus.getAllStates() ).to.equal( [ 'ready' ] ) ;
 
 		bus.emit( 'ready' ) ;
 
 		expect( triggered ).to.be( 2 ) ;
 		expect( bus.hasState( 'ready' ) ).to.be( true ) ;
-		expect( bus.getAllStates() ).to.eql( [ 'ready' ] ) ;
+		expect( bus.getAllStates() ).to.equal( [ 'ready' ] ) ;
 
 		bus.emit( 'ready' , '#1' ) ;
 
 		expect( triggered ).to.be( 4 ) ;
 		expect( bus.hasState( 'ready' ) ).to.be( true ) ;
-		expect( bus.getAllStates() ).to.eql( [ 'ready' ] ) ;
+		expect( bus.getAllStates() ).to.equal( [ 'ready' ] ) ;
 
 		bus.emit( 'ready' , '#1' ) ;
 
 		expect( triggered ).to.be( 4 ) ;
 		expect( bus.hasState( 'ready' ) ).to.be( true ) ;
-		expect( bus.getAllStates() ).to.eql( [ 'ready' ] ) ;
+		expect( bus.getAllStates() ).to.equal( [ 'ready' ] ) ;
 
 		bus.emit( 'ready' , '#2' ) ;
 
 		expect( triggered ).to.be( 6 ) ;
 		expect( bus.hasState( 'ready' ) ).to.be( true ) ;
-		expect( bus.getAllStates() ).to.eql( [ 'ready' ] ) ;
+		expect( bus.getAllStates() ).to.equal( [ 'ready' ] ) ;
 
 		bus.emit( 'ready' , '#2' ) ;
 
 		expect( triggered ).to.be( 6 ) ;
 		expect( bus.hasState( 'ready' ) ).to.be( true ) ;
-		expect( bus.getAllStates() ).to.eql( [ 'ready' ] ) ;
+		expect( bus.getAllStates() ).to.equal( [ 'ready' ] ) ;
 
 		bus.emit( 'ready' ) ;
 
 		expect( triggered ).to.be( 8 ) ;
 		expect( bus.hasState( 'ready' ) ).to.be( true ) ;
-		expect( bus.getAllStates() ).to.eql( [ 'ready' ] ) ;
+		expect( bus.getAllStates() ).to.equal( [ 'ready' ] ) ;
 
 		bus.emit( 'notReady' ) ;
 		expect( triggered ).to.be( 8 ) ;
 		expect( bus.hasState( 'ready' ) ).to.be( false ) ;
 		expect( bus.hasState( 'notReady' ) ).to.be( true ) ;
-		expect( bus.getAllStates() ).to.eql( [ 'notReady' ] ) ;
+		expect( bus.getAllStates() ).to.equal( [ 'notReady' ] ) ;
 
 		bus.emit( 'ready' ) ;
 		expect( triggered ).to.be( 10 ) ;
 		expect( bus.hasState( 'ready' ) ).to.be( true ) ;
 		expect( bus.hasState( 'notReady' ) ).to.be( false ) ;
-		expect( bus.getAllStates() ).to.eql( [ 'ready' ] ) ;
+		expect( bus.getAllStates() ).to.equal( [ 'ready' ] ) ;
 	} ) ;
 
 	it( "should define three exclusive states, emitting one should discard the two others" , () => {
@@ -637,7 +595,7 @@ describe( "Next Gen feature: state-events" , () => {
 		expect( bus.hasState( 'starting' ) ).to.be( false ) ;
 		expect( bus.hasState( 'running' ) ).to.be( false ) ;
 		expect( bus.hasState( 'ending' ) ).to.be( false ) ;
-		expect( bus.getAllStates() ).to.eql( [] ) ;
+		expect( bus.getAllStates() ).to.equal( [] ) ;
 
 		bus.on( 'starting' , () => {
 			startingTriggered ++ ;
@@ -648,7 +606,7 @@ describe( "Next Gen feature: state-events" , () => {
 		expect( bus.hasState( 'starting' ) ).to.be( true ) ;
 		expect( bus.hasState( 'running' ) ).to.be( false ) ;
 		expect( bus.hasState( 'ending' ) ).to.be( false ) ;
-		expect( bus.getAllStates() ).to.eql( [ 'starting' ] ) ;
+		expect( bus.getAllStates() ).to.equal( [ 'starting' ] ) ;
 		expect( startingTriggered ).to.be( 1 ) ;
 
 		bus.on( 'starting' , () => {
@@ -667,7 +625,7 @@ describe( "Next Gen feature: state-events" , () => {
 		expect( bus.hasState( 'starting' ) ).to.be( false ) ;
 		expect( bus.hasState( 'running' ) ).to.be( true ) ;
 		expect( bus.hasState( 'ending' ) ).to.be( false ) ;
-		expect( bus.getAllStates() ).to.eql( [ 'running' ] ) ;
+		expect( bus.getAllStates() ).to.equal( [ 'running' ] ) ;
 		expect( startingTriggered ).to.be( 2 ) ;
 		expect( runningTriggered ).to.be( 1 ) ;
 
@@ -695,7 +653,7 @@ describe( "Next Gen feature: state-events" , () => {
 		expect( bus.hasState( 'starting' ) ).to.be( false ) ;
 		expect( bus.hasState( 'running' ) ).to.be( false ) ;
 		expect( bus.hasState( 'ending' ) ).to.be( true ) ;
-		expect( bus.getAllStates() ).to.eql( [ 'ending' ] ) ;
+		expect( bus.getAllStates() ).to.equal( [ 'ending' ] ) ;
 		expect( startingTriggered ).to.be( 2 ) ;
 		expect( runningTriggered ).to.be( 2 ) ;
 		expect( endingTriggered ).to.be( 1 ) ;
@@ -705,7 +663,7 @@ describe( "Next Gen feature: state-events" , () => {
 		expect( bus.hasState( 'starting' ) ).to.be( true ) ;
 		expect( bus.hasState( 'running' ) ).to.be( false ) ;
 		expect( bus.hasState( 'ending' ) ).to.be( false ) ;
-		expect( bus.getAllStates() ).to.eql( [ 'starting' ] ) ;
+		expect( bus.getAllStates() ).to.equal( [ 'starting' ] ) ;
 		expect( startingTriggered ).to.be( 5 ) ;
 		expect( runningTriggered ).to.be( 2 ) ;
 		expect( endingTriggered ).to.be( 1 ) ;

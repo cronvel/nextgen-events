@@ -247,40 +247,40 @@ describe( "Basic synchronous event-emitting (node-compatible)" , () => {
 		bus.on( 'baz' , onBaz3 = function() { triggered.baz3 ++ ; } ) ;
 
 		bus.emit( 'foo' ) ;
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 1 , bar1: 0 , bar2: 0 , baz1: 0 , baz2: 0 , baz3: 0 , qux: 0
 		} ) ;
 
 		bus.emit( 'bar' ) ;
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 1 , bar1: 1 , bar2: 1 , baz1: 0 , baz2: 0 , baz3: 0 , qux: 0
 		} ) ;
 
 		bus.emit( 'baz' ) ;
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 1 , bar1: 1 , bar2: 1 , baz1: 1 , baz2: 1 , baz3: 1 , qux: 0
 		} ) ;
 
 		bus.emit( 'qux' ) ;
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 1 , bar1: 1 , bar2: 1 , baz1: 1 , baz2: 1 , baz3: 1 , qux: 0
 		} ) ;
 
 		bus.emit( 'foo' ) ;
 		bus.emit( 'foo' ) ;
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 3 , bar1: 1 , bar2: 1 , baz1: 1 , baz2: 1 , baz3: 1 , qux: 0
 		} ) ;
 
 		bus.emit( 'qux' ) ;
 		bus.emit( 'qux' ) ;
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 3 , bar1: 1 , bar2: 1 , baz1: 1 , baz2: 1 , baz3: 1 , qux: 0
 		} ) ;
 
 		bus.emit( 'baz' ) ;
 		bus.emit( 'baz' ) ;
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 3 , bar1: 1 , bar2: 1 , baz1: 3 , baz2: 3 , baz3: 3 , qux: 0
 		} ) ;
 	} ) ;
@@ -306,24 +306,24 @@ describe( "Basic synchronous event-emitting (node-compatible)" , () => {
 		bus.on( 'baz' , onBaz3 = function() { triggered.baz3 ++ ; } ) ;
 
 		bus.emit( 'foo' ) ;
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 1 , foo2: 0 , bar1: 0 , bar2: 0 , baz1: 0 , baz2: 0 , baz3: 0 , qux: 0
 		} ) ;
 
 		bus.emit( 'bar' ) ;
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 1 , foo2: 0 , bar1: 1 , bar2: 1 , baz1: 0 , baz2: 0 , baz3: 0 , qux: 0
 		} ) ;
 
 		bus.removeListener( 'bar' , onBar2 ) ;
 		bus.emit( 'bar' ) ;
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 1 , foo2: 0 , bar1: 2 , bar2: 1 , baz1: 0 , baz2: 0 , baz3: 0 , qux: 0
 		} ) ;
 
 		bus.removeListener( 'bar' , onBar2 ) ;
 		bus.emit( 'bar' ) ;
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 1 , foo2: 0 , bar1: 3 , bar2: 1 , baz1: 0 , baz2: 0 , baz3: 0 , qux: 0
 		} ) ;
 
@@ -331,14 +331,14 @@ describe( "Basic synchronous event-emitting (node-compatible)" , () => {
 		bus.removeListener( 'bar' , () => {} ) ; // Not event registered
 		bus.emit( 'foo' ) ;
 		bus.emit( 'bar' ) ;
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 2 , foo2: 0 , bar1: 4 , bar2: 1 , baz1: 0 , baz2: 0 , baz3: 0 , qux: 0
 		} ) ;
 
 		bus.once( 'foo' , onFoo2 = function() { triggered.foo2 ++ ; } ) ;
 		bus.removeListener( 'foo' , onFoo2 ) ; // This is a one-time listener
 		bus.emit( 'foo' ) ;
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 3 , foo2: 0 , bar1: 4 , bar2: 1 , baz1: 0 , baz2: 0 , baz3: 0 , qux: 0
 		} ) ;
 	} ) ;
@@ -366,18 +366,18 @@ describe( "Basic synchronous event-emitting (node-compatible)" , () => {
 		bus.emit( 'foo' ) ;
 		bus.emit( 'bar' ) ;
 		bus.emit( 'baz' ) ;
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 1 , bar1: 1 , bar2: 1 , baz1: 1 , baz2: 1 , baz3: 1 , qux: 0
 		} ) ;
 
 		bus.removeAllListeners( 'bar' ) ;
 		bus.emit( 'bar' ) ;
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 1 , bar1: 1 , bar2: 1 , baz1: 1 , baz2: 1 , baz3: 1 , qux: 0
 		} ) ;
 
 		bus.emit( 'foo' ) ;
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 2 , bar1: 1 , bar2: 1 , baz1: 1 , baz2: 1 , baz3: 1 , qux: 0
 		} ) ;
 
@@ -385,7 +385,7 @@ describe( "Basic synchronous event-emitting (node-compatible)" , () => {
 		bus.emit( 'foo' ) ;
 		bus.emit( 'bar' ) ;
 		bus.emit( 'baz' ) ;
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 3 , bar1: 1 , bar2: 1 , baz1: 1 , baz2: 1 , baz3: 1 , qux: 0
 		} ) ;
 	} ) ;
@@ -413,7 +413,7 @@ describe( "Basic synchronous event-emitting (node-compatible)" , () => {
 		bus.emit( 'foo' ) ;
 		bus.emit( 'bar' ) ;
 		bus.emit( 'baz' ) ;
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 1 , bar1: 1 , bar2: 1 , baz1: 1 , baz2: 1 , baz3: 1 , qux: 0
 		} ) ;
 
@@ -422,7 +422,7 @@ describe( "Basic synchronous event-emitting (node-compatible)" , () => {
 		bus.emit( 'bar' ) ;
 		bus.emit( 'baz' ) ;
 		bus.emit( 'qux' ) ;
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 1 , bar1: 1 , bar2: 1 , baz1: 1 , baz2: 1 , baz3: 1 , qux: 0
 		} ) ;
 	} ) ;
@@ -452,22 +452,22 @@ describe( "Basic synchronous event-emitting (node-compatible)" , () => {
 		bus.emit( 'foo' ) ;
 		bus.emit( 'bar' ) ;
 		bus.emit( 'baz' ) ;
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 1 , bar1: 1 , bar2: 1 , baz1: 1 , baz2: 3 , qux: 0
 		} ) ;
 
 		bus.emit( 'foo' ) ;
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 1 , bar1: 1 , bar2: 1 , baz1: 1 , baz2: 3 , qux: 0
 		} ) ;
 
 		bus.emit( 'bar' ) ;
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 1 , bar1: 2 , bar2: 1 , baz1: 1 , baz2: 3 , qux: 0
 		} ) ;
 
 		bus.emit( 'baz' ) ;
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 1 , bar1: 2 , bar2: 1 , baz1: 2 , baz2: 3 , qux: 0
 		} ) ;
 	} ) ;
@@ -483,7 +483,7 @@ describe( "Basic synchronous event-emitting (node-compatible)" , () => {
 		var bus = new NextGenEvents() ;
 		setTimeout( () => bus.emit( 'foo' , 'bar' , 'baz' , 'qux' ) , 100 ) ;
 		var result = await bus.waitForAll( 'foo' ) ;
-		expect( result ).to.eql( [ 'bar' , 'baz' , 'qux' ] ) ;
+		expect( result ).to.equal( [ 'bar' , 'baz' , 'qux' ] ) ;
 	} ) ;
 
 	it( ".waitForEmit() should work as the Promise-returning counterpart of .emit() with completion callback" , async () => {
@@ -666,11 +666,11 @@ describe( "Basic synchronous event-emitting (NOT compatible with node)" , () => 
 
 		bus.emit( 'foo' ) ;
 		bus.emit( 'bar' ) ;
-		expect( triggered ).to.eql( { foo1: 1 , bar1: 1 , bar2: 3 } ) ;
+		expect( triggered ).to.equal( { foo1: 1 , bar1: 1 , bar2: 3 } ) ;
 
 		bus.removeListener( 'bar' , onBar2 ) ;
 		bus.emit( 'bar' ) ;
-		expect( triggered ).to.eql( { foo1: 1 , bar1: 2 , bar2: 3 } ) ;
+		expect( triggered ).to.equal( { foo1: 1 , bar1: 2 , bar2: 3 } ) ;
 	} ) ;
 
 	it( "should emit 'newListener' every time a new listener is added, with an array of listener object" , () => {
@@ -698,16 +698,16 @@ describe( "Basic synchronous event-emitting (NOT compatible with node)" , () => 
 			}
 		} ) ) ;
 
-		expect( stats.count ).to.eql( {} ) ;
+		expect( stats.count ).to.equal( {} ) ;
 
 
 		bus.on( 'foo' , genericListener.bind( undefined , 'foo' , stats , undefined ) ) ;
-		expect( stats.count ).to.eql( { new1: 1 } ) ;
-		expect( stats.orders ).to.eql( [ 'new1' ] ) ;
+		expect( stats.count ).to.equal( { new1: 1 } ) ;
+		expect( stats.orders ).to.equal( [ 'new1' ] ) ;
 
 		bus.emit( 'foo' ) ;
-		expect( stats.count ).to.eql( { new1: 1 , foo: 1 } ) ;
-		expect( stats.orders ).to.eql( [ 'new1' , 'foo' ] ) ;
+		expect( stats.count ).to.equal( { new1: 1 , foo: 1 } ) ;
+		expect( stats.orders ).to.equal( [ 'new1' , 'foo' ] ) ;
 
 
 		bus.on( 'newListener' , genericListener.bind( undefined , 'new2' , stats , ( listeners ) => {
@@ -724,19 +724,19 @@ describe( "Basic synchronous event-emitting (NOT compatible with node)" , () => 
 			}
 		} ) ) ;
 
-		expect( stats.count ).to.eql( { new1: 2 , foo: 1 } ) ;
-		expect( stats.orders ).to.eql( [ 'new1' , 'foo' , 'new1' ] ) ;
+		expect( stats.count ).to.equal( { new1: 2 , foo: 1 } ) ;
+		expect( stats.orders ).to.equal( [ 'new1' , 'foo' , 'new1' ] ) ;
 
 
 		bus.once( 'bar' , genericListener.bind( undefined , 'bar' , stats , undefined ) ) ;
-		expect( stats.count ).to.eql( { new1: 3 , new2: 1 , foo: 1 } ) ;
-		expect( stats.orders ).to.eql( [ 'new1' , 'foo' , 'new1' , 'new1' , 'new2' ] ) ;
+		expect( stats.count ).to.equal( { new1: 3 , new2: 1 , foo: 1 } ) ;
+		expect( stats.orders ).to.equal( [ 'new1' , 'foo' , 'new1' , 'new1' , 'new2' ] ) ;
 
 		bus.emit( 'bar' ) ;
-		expect( stats.count ).to.eql( {
+		expect( stats.count ).to.equal( {
 			new1: 3 , new2: 1 , foo: 1 , bar: 1
 		} ) ;
-		expect( stats.orders ).to.eql( [ 'new1' , 'foo' , 'new1' , 'new1' , 'new2' , 'bar' ] ) ;
+		expect( stats.orders ).to.equal( [ 'new1' , 'foo' , 'new1' , 'new1' , 'new2' , 'bar' ] ) ;
 	} ) ;
 
 	it( "should emit 'removeListener' every time a new listener is removed (one time listener count as well once triggered), with an array of listener object" , () => {
@@ -790,42 +790,42 @@ describe( "Basic synchronous event-emitting (NOT compatible with node)" , () => 
 			}
 		} ) ) ;
 
-		expect( stats.count ).to.eql( {} ) ;
+		expect( stats.count ).to.equal( {} ) ;
 
 
 		bus.on( 'foo' , onFoo ) ;
-		expect( stats.count ).to.eql( {} ) ;
-		expect( stats.orders ).to.eql( [] ) ;
+		expect( stats.count ).to.equal( {} ) ;
+		expect( stats.orders ).to.equal( [] ) ;
 
 		bus.off( 'foo' , onFoo ) ;
-		expect( stats.count ).to.eql( { rm1: 1 } ) ;
-		expect( stats.orders ).to.eql( [ 'rm1' ] ) ;
+		expect( stats.count ).to.equal( { rm1: 1 } ) ;
+		expect( stats.orders ).to.equal( [ 'rm1' ] ) ;
 
 		bus.on( 'foo' , onFoo ) ;
 		bus.on( 'foo' , onFoo ) ;
 		bus.on( 'foo' , onFoo ) ;
-		expect( stats.count ).to.eql( { rm1: 1 } ) ;
-		expect( stats.orders ).to.eql( [ 'rm1' ] ) ;
+		expect( stats.count ).to.equal( { rm1: 1 } ) ;
+		expect( stats.orders ).to.equal( [ 'rm1' ] ) ;
 
 		bus.off( 'foo' , onFoo ) ;
-		expect( stats.count ).to.eql( { rm1: 2 } ) ;
-		expect( stats.orders ).to.eql( [ 'rm1' , 'rm1' ] ) ;
+		expect( stats.count ).to.equal( { rm1: 2 } ) ;
+		expect( stats.orders ).to.equal( [ 'rm1' , 'rm1' ] ) ;
 
 		bus.once( 'foo' , onFoo ) ;
-		expect( stats.count ).to.eql( { rm1: 2 } ) ;
-		expect( stats.orders ).to.eql( [ 'rm1' , 'rm1' ] ) ;
+		expect( stats.count ).to.equal( { rm1: 2 } ) ;
+		expect( stats.orders ).to.equal( [ 'rm1' , 'rm1' ] ) ;
 
 		bus.emit( 'foo' ) ;
-		expect( stats.count ).to.eql( { rm1: 3 , foo: 1 } ) ;
-		expect( stats.orders ).to.eql( [ 'rm1' , 'rm1' , 'foo' , 'rm1' ] ) ;
+		expect( stats.count ).to.equal( { rm1: 3 , foo: 1 } ) ;
+		expect( stats.orders ).to.equal( [ 'rm1' , 'rm1' , 'foo' , 'rm1' ] ) ;
 
 		bus.on( 'foo' , onFoo ) ;
 		bus.on( 'bar' , onBar1 ) ;
 		bus.on( 'bar' , onBar2 ) ;
 		bus.removeAllListeners( 'bar' ) ;
 
-		expect( stats.count ).to.eql( { rm1: 4 , foo: 1 } ) ;
-		expect( stats.orders ).to.eql( [ 'rm1' , 'rm1' , 'foo' , 'rm1' , 'rm1' ] ) ;
+		expect( stats.count ).to.equal( { rm1: 4 , foo: 1 } ) ;
+		expect( stats.orders ).to.equal( [ 'rm1' , 'rm1' , 'foo' , 'rm1' , 'rm1' ] ) ;
 
 		bus.on( 'foo' , onFoo ) ;
 		bus.on( 'bar' , onBar1 ) ;
@@ -833,8 +833,8 @@ describe( "Basic synchronous event-emitting (NOT compatible with node)" , () => 
 		bus.removeAllListeners() ;
 
 		// 'removeListener' listener are not fired: they are already deleted
-		expect( stats.count ).to.eql( { rm1: 4 , foo: 1 } ) ;
-		expect( stats.orders ).to.eql( [ 'rm1' , 'rm1' , 'foo' , 'rm1' , 'rm1' ] ) ;
+		expect( stats.count ).to.equal( { rm1: 4 , foo: 1 } ) ;
+		expect( stats.orders ).to.equal( [ 'rm1' , 'rm1' , 'foo' , 'rm1' , 'rm1' ] ) ;
 	} ) ;
 
 	it( ".listeners() should return all the listeners for an event" , () => {
@@ -906,14 +906,14 @@ describe( "Next Gen feature: unique event ID" , () => {
 		bus.on( 'bar' , onBar5 = function() { triggered.bar5 ++ ; } , { id: 'bob' , unique: true } ) ;
 
 		bus.emit( 'bar' ) ;
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			bar1: 1 , bar2: 2 , bar3: 1 , bar4: 1 , bar5: 0
 		} ) ;
 
 		bus.removeListener( 'bar' , onBar2 ) ;
 		bus.removeListener( 'bar' , onBar3 ) ;
 		bus.emit( 'bar' ) ;
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			bar1: 2 , bar2: 2 , bar3: 1 , bar4: 2 , bar5: 0
 		} ) ;
 	} ) ;
@@ -1039,12 +1039,12 @@ describe( "Next Gen feature: state-events" , () => {
 		} ) ;
 		expect( triggered ).to.be( 0 ) ;
 		expect( bus.hasState( 'ready' ) ).to.be( false ) ;
-		expect( bus.getAllStates() ).to.eql( [] ) ;
+		expect( bus.getAllStates() ).to.equal( [] ) ;
 
 		bus.emit( 'ready' , 'ok!' ) ;
 		expect( triggered ).to.be( 1 ) ;
 		expect( bus.hasState( 'ready' ) ).to.be( true ) ;
-		expect( bus.getAllStates() ).to.eql( [ 'ready' ] ) ;
+		expect( bus.getAllStates() ).to.equal( [ 'ready' ] ) ;
 
 		bus.on( 'ready' , ( arg ) => {
 			triggered ++ ;
@@ -1080,7 +1080,7 @@ describe( "Next Gen feature: state-events" , () => {
 		} ) ;
 		expect( triggered ).to.be( 7 ) ;
 		expect( bus.hasState( 'ready' ) ).to.be( true ) ;
-		expect( bus.getAllStates() ).to.eql( [ 'ready' ] ) ;
+		expect( bus.getAllStates() ).to.equal( [ 'ready' ] ) ;
 	} ) ;
 
 	it( "when the state remains the same, nothing should be emitted" , () => {
@@ -1095,12 +1095,12 @@ describe( "Next Gen feature: state-events" , () => {
 		} ) ;
 		expect( triggered ).to.be( 0 ) ;
 		expect( bus.hasState( 'ready' ) ).to.be( false ) ;
-		expect( bus.getAllStates() ).to.eql( [] ) ;
+		expect( bus.getAllStates() ).to.equal( [] ) ;
 
 		bus.emit( 'ready' ) ;
 		expect( triggered ).to.be( 1 ) ;
 		expect( bus.hasState( 'ready' ) ).to.be( true ) ;
-		expect( bus.getAllStates() ).to.eql( [ 'ready' ] ) ;
+		expect( bus.getAllStates() ).to.equal( [ 'ready' ] ) ;
 
 		bus.on( 'ready' , () => {
 			triggered ++ ;
@@ -1108,55 +1108,55 @@ describe( "Next Gen feature: state-events" , () => {
 
 		expect( triggered ).to.be( 2 ) ;
 		expect( bus.hasState( 'ready' ) ).to.be( true ) ;
-		expect( bus.getAllStates() ).to.eql( [ 'ready' ] ) ;
+		expect( bus.getAllStates() ).to.equal( [ 'ready' ] ) ;
 
 		bus.emit( 'ready' ) ;
 
 		expect( triggered ).to.be( 2 ) ;
 		expect( bus.hasState( 'ready' ) ).to.be( true ) ;
-		expect( bus.getAllStates() ).to.eql( [ 'ready' ] ) ;
+		expect( bus.getAllStates() ).to.equal( [ 'ready' ] ) ;
 
 		bus.emit( 'ready' , '#1' ) ;
 
 		expect( triggered ).to.be( 4 ) ;
 		expect( bus.hasState( 'ready' ) ).to.be( true ) ;
-		expect( bus.getAllStates() ).to.eql( [ 'ready' ] ) ;
+		expect( bus.getAllStates() ).to.equal( [ 'ready' ] ) ;
 
 		bus.emit( 'ready' , '#1' ) ;
 
 		expect( triggered ).to.be( 4 ) ;
 		expect( bus.hasState( 'ready' ) ).to.be( true ) ;
-		expect( bus.getAllStates() ).to.eql( [ 'ready' ] ) ;
+		expect( bus.getAllStates() ).to.equal( [ 'ready' ] ) ;
 
 		bus.emit( 'ready' , '#2' ) ;
 
 		expect( triggered ).to.be( 6 ) ;
 		expect( bus.hasState( 'ready' ) ).to.be( true ) ;
-		expect( bus.getAllStates() ).to.eql( [ 'ready' ] ) ;
+		expect( bus.getAllStates() ).to.equal( [ 'ready' ] ) ;
 
 		bus.emit( 'ready' , '#2' ) ;
 
 		expect( triggered ).to.be( 6 ) ;
 		expect( bus.hasState( 'ready' ) ).to.be( true ) ;
-		expect( bus.getAllStates() ).to.eql( [ 'ready' ] ) ;
+		expect( bus.getAllStates() ).to.equal( [ 'ready' ] ) ;
 
 		bus.emit( 'ready' ) ;
 
 		expect( triggered ).to.be( 8 ) ;
 		expect( bus.hasState( 'ready' ) ).to.be( true ) ;
-		expect( bus.getAllStates() ).to.eql( [ 'ready' ] ) ;
+		expect( bus.getAllStates() ).to.equal( [ 'ready' ] ) ;
 
 		bus.emit( 'notReady' ) ;
 		expect( triggered ).to.be( 8 ) ;
 		expect( bus.hasState( 'ready' ) ).to.be( false ) ;
 		expect( bus.hasState( 'notReady' ) ).to.be( true ) ;
-		expect( bus.getAllStates() ).to.eql( [ 'notReady' ] ) ;
+		expect( bus.getAllStates() ).to.equal( [ 'notReady' ] ) ;
 
 		bus.emit( 'ready' ) ;
 		expect( triggered ).to.be( 10 ) ;
 		expect( bus.hasState( 'ready' ) ).to.be( true ) ;
 		expect( bus.hasState( 'notReady' ) ).to.be( false ) ;
-		expect( bus.getAllStates() ).to.eql( [ 'ready' ] ) ;
+		expect( bus.getAllStates() ).to.equal( [ 'ready' ] ) ;
 	} ) ;
 
 	it( "should define three exclusive states, emitting one should discard the two others" , () => {
@@ -1169,7 +1169,7 @@ describe( "Next Gen feature: state-events" , () => {
 		expect( bus.hasState( 'starting' ) ).to.be( false ) ;
 		expect( bus.hasState( 'running' ) ).to.be( false ) ;
 		expect( bus.hasState( 'ending' ) ).to.be( false ) ;
-		expect( bus.getAllStates() ).to.eql( [] ) ;
+		expect( bus.getAllStates() ).to.equal( [] ) ;
 
 		bus.on( 'starting' , () => {
 			startingTriggered ++ ;
@@ -1180,7 +1180,7 @@ describe( "Next Gen feature: state-events" , () => {
 		expect( bus.hasState( 'starting' ) ).to.be( true ) ;
 		expect( bus.hasState( 'running' ) ).to.be( false ) ;
 		expect( bus.hasState( 'ending' ) ).to.be( false ) ;
-		expect( bus.getAllStates() ).to.eql( [ 'starting' ] ) ;
+		expect( bus.getAllStates() ).to.equal( [ 'starting' ] ) ;
 		expect( startingTriggered ).to.be( 1 ) ;
 
 		bus.on( 'starting' , () => {
@@ -1199,7 +1199,7 @@ describe( "Next Gen feature: state-events" , () => {
 		expect( bus.hasState( 'starting' ) ).to.be( false ) ;
 		expect( bus.hasState( 'running' ) ).to.be( true ) ;
 		expect( bus.hasState( 'ending' ) ).to.be( false ) ;
-		expect( bus.getAllStates() ).to.eql( [ 'running' ] ) ;
+		expect( bus.getAllStates() ).to.equal( [ 'running' ] ) ;
 		expect( startingTriggered ).to.be( 2 ) ;
 		expect( runningTriggered ).to.be( 1 ) ;
 
@@ -1227,7 +1227,7 @@ describe( "Next Gen feature: state-events" , () => {
 		expect( bus.hasState( 'starting' ) ).to.be( false ) ;
 		expect( bus.hasState( 'running' ) ).to.be( false ) ;
 		expect( bus.hasState( 'ending' ) ).to.be( true ) ;
-		expect( bus.getAllStates() ).to.eql( [ 'ending' ] ) ;
+		expect( bus.getAllStates() ).to.equal( [ 'ending' ] ) ;
 		expect( startingTriggered ).to.be( 2 ) ;
 		expect( runningTriggered ).to.be( 2 ) ;
 		expect( endingTriggered ).to.be( 1 ) ;
@@ -1237,7 +1237,7 @@ describe( "Next Gen feature: state-events" , () => {
 		expect( bus.hasState( 'starting' ) ).to.be( true ) ;
 		expect( bus.hasState( 'running' ) ).to.be( false ) ;
 		expect( bus.hasState( 'ending' ) ).to.be( false ) ;
-		expect( bus.getAllStates() ).to.eql( [ 'starting' ] ) ;
+		expect( bus.getAllStates() ).to.equal( [ 'starting' ] ) ;
 		expect( startingTriggered ).to.be( 5 ) ;
 		expect( runningTriggered ).to.be( 2 ) ;
 		expect( endingTriggered ).to.be( 1 ) ;
@@ -1663,14 +1663,14 @@ describe( "Next Gen feature: async emitting" , () => {
 
 	it( "should emit synchronously, with a synchronous flow (nice = NextGenEvents.SYNC)" , ( done ) => {
 		asyncEventTest( NextGenEvents.SYNC , undefined , undefined , undefined , ( order ) => {
-			expect( order ).to.eql( [ 'listener' , 'flow' , 'setImmediate' , 'setTimeout25' , 'setTimeout50' ] ) ;
+			expect( order ).to.equal( [ 'listener' , 'flow' , 'setImmediate' , 'setTimeout25' , 'setTimeout50' ] ) ;
 			done() ;
 		} ) ;
 	} ) ;
 
 	it( "should emit asynchronously, with an asynchronous flow, almost as fast as possible (nice = -1)" , ( done ) => {
 		asyncEventTest( -1 , undefined , undefined , undefined , ( order ) => {
-			expect( order ).to.eql( [ 'flow' , 'listener' , 'setImmediate' , 'setTimeout25' , 'setTimeout50' ] ) ;
+			expect( order ).to.equal( [ 'flow' , 'listener' , 'setImmediate' , 'setTimeout25' , 'setTimeout50' ] ) ;
 			done() ;
 		} ) ;
 	} ) ;
@@ -1680,15 +1680,15 @@ describe( "Next Gen feature: async emitting" , () => {
 			// Sometime setImmediate() is unpredictable and is slower than setTimeout(fn,0)
 			// It is a bug of V8, not a bug of the lib
 			try {
-				expect( order ).to.eql( [ 'flow' , 'listener' , 'setImmediate' , 'setTimeout25' , 'setTimeout50' ] ) ;
+				expect( order ).to.equal( [ 'flow' , 'listener' , 'setImmediate' , 'setTimeout25' , 'setTimeout50' ] ) ;
 			}
 			catch( error ) {
 				try {
-					expect( order ).to.eql( [ 'flow' , 'setImmediate' , 'listener' , 'setTimeout25' , 'setTimeout50' ] ) ;
+					expect( order ).to.equal( [ 'flow' , 'setImmediate' , 'listener' , 'setTimeout25' , 'setTimeout50' ] ) ;
 				}
 				catch( error_ ) {
 					// Or even slower than setTimeout(fn,25)... -_-'
-					expect( order ).to.eql( [ 'flow' , 'listener' , 'setTimeout25' , 'setImmediate' , 'setTimeout50' ] ) ;
+					expect( order ).to.equal( [ 'flow' , 'listener' , 'setTimeout25' , 'setImmediate' , 'setTimeout50' ] ) ;
 				}
 			}
 			//}
@@ -1698,25 +1698,25 @@ describe( "Next Gen feature: async emitting" , () => {
 
 	it( "should emit asynchronously, with an asynchronous flow, with a 35ms delay (nice = 35 -> setTimeout 35ms)" , ( done ) => {
 		asyncEventTest( 35 , undefined , undefined , undefined , ( order ) => {
-			expect( order ).to.eql( [ 'flow' , 'setImmediate' , 'setTimeout25' , 'listener' , 'setTimeout50' ] ) ;
+			expect( order ).to.equal( [ 'flow' , 'setImmediate' , 'setTimeout25' , 'listener' , 'setTimeout50' ] ) ;
 			done() ;
 		} ) ;
 	} ) ;
 
 	it( "should emit asynchronously, with an asynchronous flow, with a 70ms delay (nice = 70 -> setTimeout 70ms)" , ( done ) => {
 		asyncEventTest( 70 , undefined , undefined , undefined , ( order ) => {
-			expect( order ).to.eql( [ 'flow' , 'setImmediate' , 'setTimeout25' , 'setTimeout50' , 'listener' ] ) ;
+			expect( order ).to.equal( [ 'flow' , 'setImmediate' , 'setTimeout25' , 'setTimeout50' , 'listener' ] ) ;
 			done() ;
 		} ) ;
 	} ) ;
 
 	it( ".emit( nice , event , ... ) should overide emitter's nice value" , ( done ) => {
 		asyncEventTest( undefined , 35 , undefined , undefined , ( order ) => {
-			expect( order ).to.eql( [ 'flow' , 'setImmediate' , 'setTimeout25' , 'listener' , 'setTimeout50' ] ) ;
+			expect( order ).to.equal( [ 'flow' , 'setImmediate' , 'setTimeout25' , 'listener' , 'setTimeout50' ] ) ;
 			asyncEventTest( NextGenEvents.SYNC , 35 , undefined , undefined , ( order ) => {
-				expect( order ).to.eql( [ 'flow' , 'setImmediate' , 'setTimeout25' , 'listener' , 'setTimeout50' ] ) ;
+				expect( order ).to.equal( [ 'flow' , 'setImmediate' , 'setTimeout25' , 'listener' , 'setTimeout50' ] ) ;
 				asyncEventTest( 100 , 35 , undefined , undefined , ( order ) => {
-					expect( order ).to.eql( [ 'flow' , 'setImmediate' , 'setTimeout25' , 'listener' , 'setTimeout50' ] ) ;
+					expect( order ).to.equal( [ 'flow' , 'setImmediate' , 'setTimeout25' , 'listener' , 'setTimeout50' ] ) ;
 					done() ;
 				} ) ;
 			} ) ;
@@ -1725,11 +1725,11 @@ describe( "Next Gen feature: async emitting" , () => {
 
 	it( "should use the highest nice value between the context's nice, the listener's nice and the emitter's nice" , ( done ) => {
 		asyncEventTest( undefined , 35 , NextGenEvents.SYNC , NextGenEvents.SYNC , ( order ) => {
-			expect( order ).to.eql( [ 'flow' , 'setImmediate' , 'setTimeout25' , 'listener' , 'setTimeout50' ] ) ;
+			expect( order ).to.equal( [ 'flow' , 'setImmediate' , 'setTimeout25' , 'listener' , 'setTimeout50' ] ) ;
 			asyncEventTest( undefined , NextGenEvents.SYNC , 35 , NextGenEvents.SYNC , ( order ) => {
-				expect( order ).to.eql( [ 'flow' , 'setImmediate' , 'setTimeout25' , 'listener' , 'setTimeout50' ] ) ;
+				expect( order ).to.equal( [ 'flow' , 'setImmediate' , 'setTimeout25' , 'listener' , 'setTimeout50' ] ) ;
 				asyncEventTest( undefined , NextGenEvents.SYNC , NextGenEvents.SYNC , 35 , ( order ) => {
-					expect( order ).to.eql( [ 'flow' , 'setImmediate' , 'setTimeout25' , 'listener' , 'setTimeout50' ] ) ;
+					expect( order ).to.equal( [ 'flow' , 'setImmediate' , 'setTimeout25' , 'listener' , 'setTimeout50' ] ) ;
 					done() ;
 				} ) ;
 			} ) ;
@@ -1825,29 +1825,29 @@ describe( "Next Gen feature: contexts" , () => {
 		} ) ;
 
 		bus.emit( 'foo' ) ;
-		expect( stats.count ).to.eql( { foo1: 1 , foo2: 1 } ) ;
+		expect( stats.count ).to.equal( { foo1: 1 , foo2: 1 } ) ;
 		bus.emit( 'baz' ) ;
-		expect( stats.count ).to.eql( {
+		expect( stats.count ).to.equal( {
 			foo1: 1 , foo2: 1 , baz1: 1 , baz2: 1
 		} ) ;
 
 		bus.destroyListenerContext( 'bar' ) ;
 		bus.emit( 'foo' ) ;
-		expect( stats.count ).to.eql( {
+		expect( stats.count ).to.equal( {
 			foo1: 1 , foo2: 1 , baz1: 1 , baz2: 1
 		} ) ;
 		bus.emit( 'baz' ) ;
-		expect( stats.count ).to.eql( {
+		expect( stats.count ).to.equal( {
 			foo1: 1 , foo2: 1 , baz1: 1 , baz2: 2
 		} ) ;
 
 		bus.destroyListenerContext( 'qux' ) ;
 		bus.emit( 'foo' ) ;
-		expect( stats.count ).to.eql( {
+		expect( stats.count ).to.equal( {
 			foo1: 1 , foo2: 1 , baz1: 1 , baz2: 2
 		} ) ;
 		bus.emit( 'baz' ) ;
-		expect( stats.count ).to.eql( {
+		expect( stats.count ).to.equal( {
 			foo1: 1 , foo2: 1 , baz1: 1 , baz2: 2
 		} ) ;
 	} ) ;
@@ -1870,16 +1870,16 @@ describe( "Next Gen feature: contexts queue" , () => {
 				var args = Array.prototype.slice.call( arguments ) ;
 				switch ( stats.count.foobar ) {
 					case 1 :
-						expect( args ).to.eql( [ 'one' , 'two' , 'three' ] ) ;
+						expect( args ).to.equal( [ 'one' , 'two' , 'three' ] ) ;
 						break ;
 					case 2 :
-						expect( args ).to.eql( [ 'four' , 'five' , 'six' ] ) ;
+						expect( args ).to.equal( [ 'four' , 'five' , 'six' ] ) ;
 						break ;
 					case 3 :
-						expect( args ).to.eql( [] ) ;
+						expect( args ).to.equal( [] ) ;
 						break ;
 					case 4 :
-						expect( args ).to.eql( [ 'seven' ] ) ;
+						expect( args ).to.equal( [ 'seven' ] ) ;
 						break ;
 				}
 			} )
@@ -1892,16 +1892,16 @@ describe( "Next Gen feature: contexts queue" , () => {
 				var args = Array.prototype.slice.call( arguments ) ;
 				switch ( stats.count.foobaz ) {
 					case 1 :
-						expect( args ).to.eql( [ 'one' , 'two' , 'three' ] ) ;
+						expect( args ).to.equal( [ 'one' , 'two' , 'three' ] ) ;
 						break ;
 					case 2 :
-						expect( args ).to.eql( [ 'four' , 'five' , 'six' ] ) ;
+						expect( args ).to.equal( [ 'four' , 'five' , 'six' ] ) ;
 						break ;
 					case 3 :
-						expect( args ).to.eql( [] ) ;
+						expect( args ).to.equal( [] ) ;
 						break ;
 					case 4 :
-						expect( args ).to.eql( [ 'seven' ] ) ;
+						expect( args ).to.equal( [ 'seven' ] ) ;
 						break ;
 				}
 			} )
@@ -1915,17 +1915,17 @@ describe( "Next Gen feature: contexts queue" , () => {
 
 		bus.emit( 'foo' , 'one' , 'two' , 'three' ) ;
 		bus.emit( 'qbar' ) ;
-		expect( stats.count ).to.eql( { foobar: 1 , foobaz: 1 , qbarbaz: 1 } ) ;
+		expect( stats.count ).to.equal( { foobar: 1 , foobaz: 1 , qbarbaz: 1 } ) ;
 
 		bus.queueListenerContext( 'qux' ) ;
 		bus.emit( 'foo' , 'four' , 'five' , 'six' ) ;
 		bus.emit( 'foo' ) ;
 		bus.emit( 'foo' , 'seven' ) ;
 		bus.emit( 'qbar' ) ;
-		expect( stats.count ).to.eql( { foobar: 1 , foobaz: 1 , qbarbaz: 2 } ) ;
+		expect( stats.count ).to.equal( { foobar: 1 , foobaz: 1 , qbarbaz: 2 } ) ;
 
 		bus.enableListenerContext( 'qux' ) ;
-		expect( stats.count ).to.eql( { foobar: 4 , foobaz: 4 , qbarbaz: 2 } ) ;
+		expect( stats.count ).to.equal( { foobar: 4 , foobaz: 4 , qbarbaz: 2 } ) ;
 	} ) ;
 
 } ) ;
@@ -1945,11 +1945,11 @@ describe( "Next Gen feature: contexts serialization" , () => {
 			async: true ,
 			fn: genericListener.bind( undefined , 'foobar' , stats , function() {
 				var callback = arguments[ arguments.length - 1 ] ;
-				expect( stats.count ).to.eql( { foobar: 1 } ) ;
-				expect( stats.endCount ).to.eql( {} ) ;
+				expect( stats.count ).to.equal( { foobar: 1 } ) ;
+				expect( stats.endCount ).to.equal( {} ) ;
 				setTimeout( () => {
-					expect( stats.count ).to.eql( { foobar: 1 } ) ;
-					expect( stats.endCount ).to.eql( {} ) ;
+					expect( stats.count ).to.equal( { foobar: 1 } ) ;
+					expect( stats.endCount ).to.equal( {} ) ;
 					stats.endCount.foobar = stats.endCount.foobar + 1 || 1 ;
 					callback() ;
 				} , 30 ) ;
@@ -1962,11 +1962,11 @@ describe( "Next Gen feature: contexts serialization" , () => {
 			async: true ,
 			fn: genericListener.bind( undefined , 'foobaz' , stats , function() {
 				var callback = arguments[ arguments.length - 1 ] ;
-				expect( stats.count ).to.eql( { foobar: 1 , foobaz: 1 } ) ;
-				expect( stats.endCount ).to.eql( { foobar: 1 } ) ;
+				expect( stats.count ).to.equal( { foobar: 1 , foobaz: 1 } ) ;
+				expect( stats.endCount ).to.equal( { foobar: 1 } ) ;
 				setTimeout( () => {
-					expect( stats.count ).to.eql( { foobar: 1 , foobaz: 1 } ) ;
-					expect( stats.endCount ).to.eql( { foobar: 1 } ) ;
+					expect( stats.count ).to.equal( { foobar: 1 , foobaz: 1 } ) ;
+					expect( stats.endCount ).to.equal( { foobar: 1 } ) ;
 					stats.endCount.foobaz = stats.endCount.foobaz + 1 || 1 ;
 					callback() ;
 				} , 30 ) ;
@@ -1979,11 +1979,11 @@ describe( "Next Gen feature: contexts serialization" , () => {
 			async: true ,
 			fn: genericListener.bind( undefined , 'foobarbaz' , stats , function() {
 				var callback = arguments[ arguments.length - 1 ] ;
-				expect( stats.count ).to.eql( { foobar: 1 , foobaz: 1 , foobarbaz: 1 } ) ;
-				expect( stats.endCount ).to.eql( { foobar: 1 , foobaz: 1 } ) ;
+				expect( stats.count ).to.equal( { foobar: 1 , foobaz: 1 , foobarbaz: 1 } ) ;
+				expect( stats.endCount ).to.equal( { foobar: 1 , foobaz: 1 } ) ;
 				setTimeout( () => {
-					expect( stats.count ).to.eql( { foobar: 1 , foobaz: 1 , foobarbaz: 1 } ) ;
-					expect( stats.endCount ).to.eql( { foobar: 1 , foobaz: 1 } ) ;
+					expect( stats.count ).to.equal( { foobar: 1 , foobaz: 1 , foobarbaz: 1 } ) ;
+					expect( stats.endCount ).to.equal( { foobar: 1 , foobaz: 1 } ) ;
 					stats.endCount.foobarbaz = stats.endCount.foobarbaz + 1 || 1 ;
 					callback() ;
 					done() ;
@@ -1993,7 +1993,7 @@ describe( "Next Gen feature: contexts serialization" , () => {
 
 		bus.serializeListenerContext( 'qux' ) ;
 		bus.emit( 'foo' ) ;
-		expect( stats.count ).to.eql( { foobar: 1 } ) ;
+		expect( stats.count ).to.equal( { foobar: 1 } ) ;
 	} ) ;
 
 	it( "3 async listeners for 3 events, tied to a serial context, each listener should be triggered one after the other" , ( done ) => {
@@ -2016,7 +2016,7 @@ describe( "Next Gen feature: contexts serialization" , () => {
 			context: 'qux' ,
 			async: true ,
 			fn: genericListener.bind( undefined , 'foobaz' , stats , function() {
-				expect( stats.count ).to.eql( { foobar: 1 , foobaz: 1 } ) ;
+				expect( stats.count ).to.equal( { foobar: 1 , foobaz: 1 } ) ;
 				var callback = arguments[ arguments.length - 1 ] ;
 				setTimeout( callback , 30 ) ;
 			} )
@@ -2027,7 +2027,7 @@ describe( "Next Gen feature: contexts serialization" , () => {
 			context: 'qux' ,
 			async: true ,
 			fn: genericListener.bind( undefined , 'foobarbaz' , stats , function() {
-				expect( stats.count ).to.eql( { foobar: 1 , foobaz: 1 , foobarbaz: 1 } ) ;
+				expect( stats.count ).to.equal( { foobar: 1 , foobaz: 1 , foobarbaz: 1 } ) ;
 				var callback = arguments[ arguments.length - 1 ] ;
 				setTimeout( () => {
 					callback() ;
@@ -2040,7 +2040,7 @@ describe( "Next Gen feature: contexts serialization" , () => {
 		bus.emit( 'bar' ) ;
 		bus.emit( 'baz' ) ;
 		bus.emit( 'barbaz' ) ;
-		expect( stats.count ).to.eql( { foobar: 1 } ) ;
+		expect( stats.count ).to.equal( { foobar: 1 } ) ;
 	} ) ;
 
 	it( "mixing sync and async listeners tied to a serial context, sync event should not block (test 1)" , ( done ) => {
@@ -2067,7 +2067,7 @@ describe( "Next Gen feature: contexts serialization" , () => {
 			context: 'qux' ,
 			async: true ,
 			fn: genericListener.bind( undefined , 'foobarbaz' , stats , function() {
-				expect( stats.count ).to.eql( { foobar: 1 , foobaz: 1 , foobarbaz: 1 } ) ;
+				expect( stats.count ).to.equal( { foobar: 1 , foobaz: 1 , foobarbaz: 1 } ) ;
 				var callback = arguments[ arguments.length - 1 ] ;
 				setTimeout( () => {
 					callback() ;
@@ -2080,7 +2080,7 @@ describe( "Next Gen feature: contexts serialization" , () => {
 		bus.emit( 'bar' ) ;
 		bus.emit( 'baz' ) ;
 		bus.emit( 'barbaz' ) ;
-		expect( stats.count ).to.eql( { foobar: 1 , foobaz: 1 , foobarbaz: 1 } ) ;
+		expect( stats.count ).to.equal( { foobar: 1 , foobaz: 1 , foobarbaz: 1 } ) ;
 	} ) ;
 
 	it( "mixing sync and async listeners tied to a serial context, sync event should not block (test 2)" , ( done ) => {
@@ -2100,7 +2100,7 @@ describe( "Next Gen feature: contexts serialization" , () => {
 			context: 'qux' ,
 			async: true ,
 			fn: genericListener.bind( undefined , 'foobaz' , stats , function() {
-				expect( stats.count ).to.eql( { foobar: 1 , foobaz: 1 } ) ;
+				expect( stats.count ).to.equal( { foobar: 1 , foobaz: 1 } ) ;
 				var callback = arguments[ arguments.length - 1 ] ;
 				setTimeout( callback , 30 ) ;
 			} )
@@ -2111,7 +2111,7 @@ describe( "Next Gen feature: contexts serialization" , () => {
 			context: 'qux' ,
 			async: true ,
 			fn: genericListener.bind( undefined , 'foobarbaz' , stats , function() {
-				expect( stats.count ).to.eql( { foobar: 1 , foobaz: 1 , foobarbaz: 1 } ) ;
+				expect( stats.count ).to.equal( { foobar: 1 , foobaz: 1 , foobarbaz: 1 } ) ;
 				var callback = arguments[ arguments.length - 1 ] ;
 				setTimeout( () => {
 					callback() ;
@@ -2124,7 +2124,7 @@ describe( "Next Gen feature: contexts serialization" , () => {
 		bus.emit( 'bar' ) ;
 		bus.emit( 'baz' ) ;
 		bus.emit( 'barbaz' ) ;
-		expect( stats.count ).to.eql( { foobar: 1 , foobaz: 1 } ) ;
+		expect( stats.count ).to.equal( { foobar: 1 , foobaz: 1 } ) ;
 	} ) ;
 
 	it( "mixing sync and async listeners tied to a serial context, sync event should not block (test 3)" , ( done ) => {
@@ -2146,11 +2146,11 @@ describe( "Next Gen feature: contexts serialization" , () => {
 			id: 'foobaz' ,
 			context: 'qux' ,
 			fn: genericListener.bind( undefined , 'foobaz' , stats , () => {
-				expect( stats.count ).to.eql( { foobar: 1 , foobaz: 1 } ) ;
+				expect( stats.count ).to.equal( { foobar: 1 , foobaz: 1 } ) ;
 
 				// 'barbaz' should trigger immediately
 				process.nextTick( () => {
-					expect( stats.count ).to.eql( { foobar: 1 , foobaz: 1 , foobarbaz: 1 } ) ;
+					expect( stats.count ).to.equal( { foobar: 1 , foobaz: 1 , foobarbaz: 1 } ) ;
 				} ) ;
 			} )
 		} ) ;
@@ -2160,7 +2160,7 @@ describe( "Next Gen feature: contexts serialization" , () => {
 			context: 'qux' ,
 			async: true ,
 			fn: genericListener.bind( undefined , 'foobarbaz' , stats , function() {
-				expect( stats.count ).to.eql( { foobar: 1 , foobaz: 1 , foobarbaz: 1 } ) ;
+				expect( stats.count ).to.equal( { foobar: 1 , foobaz: 1 , foobarbaz: 1 } ) ;
 				var callback = arguments[ arguments.length - 1 ] ;
 				setTimeout( () => {
 					callback() ;
@@ -2173,7 +2173,7 @@ describe( "Next Gen feature: contexts serialization" , () => {
 		bus.emit( 'bar' ) ;
 		bus.emit( 'baz' ) ;
 		bus.emit( 'barbaz' ) ;
-		expect( stats.count ).to.eql( { foobar: 1 } ) ;
+		expect( stats.count ).to.equal( { foobar: 1 } ) ;
 	} ) ;
 } ) ;
 
@@ -2197,16 +2197,16 @@ describe( "Next Gen feature: interrupt event emitting, and 'interrupt' event" , 
 
 		bus.on( 'interrupt' , onInterrupt1 = function( object ) {
 			triggered.interrupt1 ++ ;
-			expect( object ).to.eql( { want: 'interruption' } ) ;
+			expect( object ).to.equal( { want: 'interruption' } ) ;
 		} ) ;
 
 		bus.on( 'interrupt' , onInterrupt2 = function( object ) {
 			triggered.interrupt2 ++ ;
-			expect( object ).to.eql( { want: 'interruption' } ) ;
+			expect( object ).to.equal( { want: 'interruption' } ) ;
 		} ) ;
 
 		bus.emit( 'foo' ) ;
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 1 , foo2: 0 , foo3: 0 , interrupt1: 1 , interrupt2: 1
 		} ) ;
 	} ) ;
@@ -2227,14 +2227,14 @@ describe( "Next Gen feature: interrupt event emitting, and 'interrupt' event" , 
 
 		bus.on( 'interrupt' , onInterrupt1 = function( object ) {
 			triggered.interrupt1 ++ ;
-			expect( object ).to.eql( { want: 'interruption' } ) ;
+			expect( object ).to.equal( { want: 'interruption' } ) ;
 		} ) ;
 
 		bus.on( 'interrupt' , onInterrupt2 = function( object ) {
 			triggered.interrupt2 ++ ;
 			//console.error( ">>> object: " , object ) ;
-			expect( object ).to.eql( { want: 'interruption' } ) ;
-			expect( triggered ).to.eql( {
+			expect( object ).to.equal( { want: 'interruption' } ) ;
+			expect( triggered ).to.equal( {
 				foo1: 1 , foo2: 0 , foo3: 0 , interrupt1: 1 , interrupt2: 1
 			} ) ;
 			done() ;
@@ -2263,14 +2263,14 @@ describe( "Next Gen feature: interrupt event emitting, and 'interrupt' event" , 
 
 		bus.on( 'interrupt' , onInterrupt1 = function( object ) {
 			triggered.interrupt1 ++ ;
-			expect( object ).to.eql( { want: 'interruption' } ) ;
+			expect( object ).to.equal( { want: 'interruption' } ) ;
 		} ) ;
 
 		bus.on( 'interrupt' , onInterrupt2 = function( object ) {
 			triggered.interrupt2 ++ ;
 			//console.error( ">>> object: " , object ) ;
-			expect( object ).to.eql( { want: 'interruption' } ) ;
-			expect( triggered ).to.eql( {
+			expect( object ).to.equal( { want: 'interruption' } ) ;
+			expect( triggered ).to.equal( {
 				foo1: 1 , foo2: 0 , foo3: 0 , interrupt1: 1 , interrupt2: 1
 			} ) ;
 			done() ;
@@ -2298,15 +2298,15 @@ describe( "Next Gen feature: completion callback" , () => {
 
 		bus.emit( 'foo' , function() {
 			expect( arguments.length ).to.be( 2 ) ;
-			expect( triggered ).to.eql( { foo1: 1 , foo2: 1 , foo3: 1 } ) ;
+			expect( triggered ).to.equal( { foo1: 1 , foo2: 1 , foo3: 1 } ) ;
 
 			bus.emit( -1 , 'foo' , function() {
 				expect( arguments.length ).to.be( 2 ) ;
-				expect( triggered ).to.eql( { foo1: 2 , foo2: 2 , foo3: 2 } ) ;
+				expect( triggered ).to.equal( { foo1: 2 , foo2: 2 , foo3: 2 } ) ;
 
 				bus.emit( 10 , 'foo' , function() {
 					expect( arguments.length ).to.be( 2 ) ;
-					expect( triggered ).to.eql( { foo1: 3 , foo2: 3 , foo3: 3 } ) ;
+					expect( triggered ).to.equal( { foo1: 3 , foo2: 3 , foo3: 3 } ) ;
 					done() ;
 				} ) ;
 			} ) ;
@@ -2327,18 +2327,18 @@ describe( "Next Gen feature: completion callback" , () => {
 
 		bus.emit( 'foo' , function( interruption ) {
 			expect( arguments.length ).to.be( 2 ) ;
-			expect( interruption ).to.eql( { want: 'interruption' } ) ;
-			expect( triggered ).to.eql( { foo1: 1 , foo2: 1 , foo3: 0 } ) ;
+			expect( interruption ).to.equal( { want: 'interruption' } ) ;
+			expect( triggered ).to.equal( { foo1: 1 , foo2: 1 , foo3: 0 } ) ;
 
 			bus.emit( -1 , 'foo' , function( interruption ) {
 				expect( arguments.length ).to.be( 2 ) ;
-				expect( interruption ).to.eql( { want: 'interruption' } ) ;
-				expect( triggered ).to.eql( { foo1: 2 , foo2: 2 , foo3: 0 } ) ;
+				expect( interruption ).to.equal( { want: 'interruption' } ) ;
+				expect( triggered ).to.equal( { foo1: 2 , foo2: 2 , foo3: 0 } ) ;
 
 				bus.emit( 10 , 'foo' , function( interruption ) {
 					expect( arguments.length ).to.be( 2 ) ;
-					expect( interruption ).to.eql( { want: 'interruption' } ) ;
-					expect( triggered ).to.eql( { foo1: 3 , foo2: 3 , foo3: 0 } ) ;
+					expect( interruption ).to.equal( { want: 'interruption' } ) ;
+					expect( triggered ).to.equal( { foo1: 3 , foo2: 3 , foo3: 0 } ) ;
 					done() ;
 				} ) ;
 			} ) ;
@@ -2365,15 +2365,15 @@ describe( "Next Gen feature: completion callback" , () => {
 
 		bus.emit( 'foo' , function() {
 			expect( arguments.length ).to.be( 2 ) ;
-			expect( triggered ).to.eql( { foo1: 1 , foo2: 1 , foo3: 1 } ) ;
+			expect( triggered ).to.equal( { foo1: 1 , foo2: 1 , foo3: 1 } ) ;
 
 			bus.emit( -1 , 'foo' , function() {
 				expect( arguments.length ).to.be( 2 ) ;
-				expect( triggered ).to.eql( { foo1: 2 , foo2: 2 , foo3: 2 } ) ;
+				expect( triggered ).to.equal( { foo1: 2 , foo2: 2 , foo3: 2 } ) ;
 
 				bus.emit( 10 , 'foo' , function() {
 					expect( arguments.length ).to.be( 2 ) ;
-					expect( triggered ).to.eql( { foo1: 3 , foo2: 3 , foo3: 3 } ) ;
+					expect( triggered ).to.equal( { foo1: 3 , foo2: 3 , foo3: 3 } ) ;
 					done() ;
 				} ) ;
 			} ) ;
@@ -2400,18 +2400,18 @@ describe( "Next Gen feature: completion callback" , () => {
 
 		bus.emit( 'foo' , function( interruption ) {
 			expect( arguments.length ).to.be( 2 ) ;
-			expect( interruption ).to.eql( { want: 'interruption' } ) ;
-			expect( triggered ).to.eql( { foo1: 1 , foo2: 1 , foo3: 1 } ) ;
+			expect( interruption ).to.equal( { want: 'interruption' } ) ;
+			expect( triggered ).to.equal( { foo1: 1 , foo2: 1 , foo3: 1 } ) ;
 
 			bus.emit( -1 , 'foo' , function( interruption ) {
 				expect( arguments.length ).to.be( 2 ) ;
-				expect( interruption ).to.eql( { want: 'interruption' } ) ;
-				expect( triggered ).to.eql( { foo1: 2 , foo2: 2 , foo3: 2 } ) ;
+				expect( interruption ).to.equal( { want: 'interruption' } ) ;
+				expect( triggered ).to.equal( { foo1: 2 , foo2: 2 , foo3: 2 } ) ;
 
 				bus.emit( 10 , 'foo' , function( interruption ) {
 					expect( arguments.length ).to.be( 2 ) ;
-					expect( interruption ).to.eql( { want: 'interruption' } ) ;
-					expect( triggered ).to.eql( { foo1: 3 , foo2: 3 , foo3: 3 } ) ;
+					expect( interruption ).to.equal( { want: 'interruption' } ) ;
+					expect( triggered ).to.equal( { foo1: 3 , foo2: 3 , foo3: 3 } ) ;
 					done() ;
 				} ) ;
 			} ) ;
@@ -2436,18 +2436,18 @@ describe( "Next Gen feature: completion callback" , () => {
 
 		bus.emit( 'foo' , function( interruption ) {
 			expect( arguments.length ).to.be( 2 ) ;
-			expect( interruption ).to.eql( { want: 'interruption' } ) ;
-			expect( triggered ).to.eql( { foo1: 1 , foo2: 0 , foo3: 0 } ) ;
+			expect( interruption ).to.equal( { want: 'interruption' } ) ;
+			expect( triggered ).to.equal( { foo1: 1 , foo2: 0 , foo3: 0 } ) ;
 
 			bus.emit( -1 , 'foo' , function( interruption ) {
 				expect( arguments.length ).to.be( 2 ) ;
-				expect( interruption ).to.eql( { want: 'interruption' } ) ;
-				expect( triggered ).to.eql( { foo1: 2 , foo2: 0 , foo3: 0 } ) ;
+				expect( interruption ).to.equal( { want: 'interruption' } ) ;
+				expect( triggered ).to.equal( { foo1: 2 , foo2: 0 , foo3: 0 } ) ;
 
 				bus.emit( 10 , 'foo' , function( interruption ) {
 					expect( arguments.length ).to.be( 2 ) ;
-					expect( interruption ).to.eql( { want: 'interruption' } ) ;
-					expect( triggered ).to.eql( { foo1: 3 , foo2: 0 , foo3: 0 } ) ;
+					expect( interruption ).to.equal( { want: 'interruption' } ) ;
+					expect( triggered ).to.equal( { foo1: 3 , foo2: 0 , foo3: 0 } ) ;
 					done() ;
 				} ) ;
 			} ) ;
@@ -2478,22 +2478,22 @@ describe( "Next Gen feature: completion callback" , () => {
 
 		bus.emit( 'foo' , function( interruption ) {
 			expect( arguments.length ).to.be( 2 ) ;
-			expect( interruption ).to.eql( { want: 'interruption' } ) ;
-			expect( triggered ).to.eql( {
+			expect( interruption ).to.equal( { want: 'interruption' } ) ;
+			expect( triggered ).to.equal( {
 				foo1: 1 , foo1timeout: 0 , foo2: 0 , foo3: 0
 			} ) ;
 
 			bus.emit( -1 , 'foo' , function( interruption ) {
 				expect( arguments.length ).to.be( 2 ) ;
-				expect( interruption ).to.eql( { want: 'interruption' } ) ;
-				expect( triggered ).to.eql( {
+				expect( interruption ).to.equal( { want: 'interruption' } ) ;
+				expect( triggered ).to.equal( {
 					foo1: 2 , foo1timeout: 0 , foo2: 0 , foo3: 0
 				} ) ;
 
 				bus.emit( 10 , 'foo' , function( interruption ) {
 					expect( arguments.length ).to.be( 2 ) ;
-					expect( interruption ).to.eql( { want: 'interruption' } ) ;
-					expect( triggered ).to.eql( {
+					expect( interruption ).to.equal( { want: 'interruption' } ) ;
+					expect( triggered ).to.equal( {
 						foo1: 3 , foo1timeout: 2 , foo2: 0 , foo3: 0
 					} ) ;
 					done() ;
@@ -2548,13 +2548,13 @@ describe( "Next Gen feature: completion callback" , () => {
 		bus.emit( 'foo' , function() {
 			triggered.fooCb ++ ;
 			expect( arguments.length ).to.be( 2 ) ;
-			expect( triggered ).to.eql( {
+			expect( triggered ).to.equal( {
 				foo1: 1 , foo2: 1 , fooCb: 1 , qux1: 1 , qux2: 1
 			} ) ;
 			done() ;
 		} ) ;
 
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 0 , foo2: 0 , fooCb: 0 , qux1: 0 , qux2: 0
 		} ) ;
 	} ) ;
@@ -2605,13 +2605,13 @@ describe( "Next Gen feature: completion callback" , () => {
 		bus.emit( 'foo' , function() {
 			triggered.fooCb ++ ;
 			expect( arguments.length ).to.be( 2 ) ;
-			expect( triggered ).to.eql( {
+			expect( triggered ).to.equal( {
 				foo1: 1 , foo2: 1 , fooCb: 1 , qux1: 1 , qux2: 1
 			} ) ;
 			done() ;
 		} ) ;
 
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 0 , foo2: 0 , fooCb: 0 , qux1: 0 , qux2: 0
 		} ) ;
 	} ) ;
@@ -2664,13 +2664,13 @@ describe( "Next Gen feature: completion callback" , () => {
 		bus.emit( 'foo' , function() {
 			triggered.fooCb ++ ;
 			expect( arguments.length ).to.be( 2 ) ;
-			expect( triggered ).to.eql( {
+			expect( triggered ).to.equal( {
 				foo1: 1 , foo2: 1 , fooCb: 1 , qux1: 2 , qux2: 2
 			} ) ;
 			done() ;
 		} ) ;
 
-		expect( triggered ).to.eql( {
+		expect( triggered ).to.equal( {
 			foo1: 0 , foo2: 0 , fooCb: 0 , qux1: 0 , qux2: 0
 		} ) ;
 	} ) ;
@@ -3016,11 +3016,11 @@ describe( "Historical bugs" , () => {
 			async: true ,
 			fn: genericListener.bind( undefined , 'foobar' , stats , function() {
 				var callback = arguments[ arguments.length - 1 ] ;
-				expect( stats.count ).to.eql( { foobar: 1 } ) ;
-				expect( stats.endCount ).to.eql( {} ) ;
+				expect( stats.count ).to.equal( { foobar: 1 } ) ;
+				expect( stats.endCount ).to.equal( {} ) ;
 				setTimeout( () => {
-					expect( stats.count ).to.eql( { foobar: 1 } ) ;
-					expect( stats.endCount ).to.eql( {} ) ;
+					expect( stats.count ).to.equal( { foobar: 1 } ) ;
+					expect( stats.endCount ).to.equal( {} ) ;
 					stats.endCount.foobar = stats.endCount.foobar + 1 || 1 ;
 					callback() ;
 				} , 30 ) ;
@@ -3033,11 +3033,11 @@ describe( "Historical bugs" , () => {
 			async: true ,
 			fn: genericListener.bind( undefined , 'foobaz' , stats , function() {
 				var callback = arguments[ arguments.length - 1 ] ;
-				expect( stats.count ).to.eql( { foobar: 1 , foobaz: 1 } ) ;
-				expect( stats.endCount ).to.eql( { foobar: 1 } ) ;
+				expect( stats.count ).to.equal( { foobar: 1 , foobaz: 1 } ) ;
+				expect( stats.endCount ).to.equal( { foobar: 1 } ) ;
 				setTimeout( () => {
-					expect( stats.count ).to.eql( { foobar: 1 , foobaz: 1 } ) ;
-					expect( stats.endCount ).to.eql( { foobar: 1 } ) ;
+					expect( stats.count ).to.equal( { foobar: 1 , foobaz: 1 } ) ;
+					expect( stats.endCount ).to.equal( { foobar: 1 } ) ;
 					stats.endCount.foobaz = stats.endCount.foobaz + 1 || 1 ;
 					callback() ;
 				} , 30 ) ;
@@ -3050,11 +3050,11 @@ describe( "Historical bugs" , () => {
 			async: true ,
 			fn: genericListener.bind( undefined , 'foobarbaz' , stats , function() {
 				var callback = arguments[ arguments.length - 1 ] ;
-				expect( stats.count ).to.eql( { foobar: 1 , foobaz: 1 , foobarbaz: 1 } ) ;
-				expect( stats.endCount ).to.eql( { foobar: 1 , foobaz: 1 } ) ;
+				expect( stats.count ).to.equal( { foobar: 1 , foobaz: 1 , foobarbaz: 1 } ) ;
+				expect( stats.endCount ).to.equal( { foobar: 1 , foobaz: 1 } ) ;
 				setTimeout( () => {
-					expect( stats.count ).to.eql( { foobar: 1 , foobaz: 1 , foobarbaz: 1 } ) ;
-					expect( stats.endCount ).to.eql( { foobar: 1 , foobaz: 1 } ) ;
+					expect( stats.count ).to.equal( { foobar: 1 , foobaz: 1 , foobarbaz: 1 } ) ;
+					expect( stats.endCount ).to.equal( { foobar: 1 , foobaz: 1 } ) ;
 					stats.endCount.foobarbaz = stats.endCount.foobarbaz + 1 || 1 ;
 					callback() ;
 					done() ;
@@ -3064,7 +3064,7 @@ describe( "Historical bugs" , () => {
 		
 		bus.serializeListenerContext( 'qux' ) ;
 		bus.emit( 10 , 'foo' ) ;
-		expect( stats.count ).to.eql( {} ) ;
+		expect( stats.count ).to.equal( {} ) ;
 	} ) ;
 } ) ;
 

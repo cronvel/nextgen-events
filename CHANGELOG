@@ -1,4 +1,11 @@
 
+v1.5.0
+------
+
+New: LeanEvents class, with only the most basic (observer) features + state events
+faster than full blown NextGenEvents, no high level reserved event (error/newListener/removeListener/etc)
+
+
 v1.4.0
 ------
 
