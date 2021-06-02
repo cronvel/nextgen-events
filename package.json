@@ -11,9 +11,9 @@
   },
   "dependencies": {},
   "devDependencies": {
-    "browserify": "^16.2.2",
+    "browserify": "^17.0.0",
     "uglify-js-es6": "^2.8.9",
-    "ws": "^5.1.1"
+    "ws": "^7.4.6"
   },
   "scripts": {
     "test": "tea-time -R dot"
@@ -50,7 +50,7 @@
     "title": "Next-Gen Events",
     "years": [
       2015,
-      2019
+      2021
     ],
     "owner": "Cédric Ronvel"
   }
