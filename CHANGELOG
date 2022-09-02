@@ -1,4 +1,10 @@
 
+v1.5.3
+------
+
+Fix bug with listener calling .removeAllListener() and another being a one-time listener (.once())
+
+
 v1.5.2
 ------
 
